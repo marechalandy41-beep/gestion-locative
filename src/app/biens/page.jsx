@@ -52,11 +52,11 @@ export default function Biens() {
     <main style={{minHeight:'100vh',background:'#f9fafb'}}>
       <nav style={{background:'white',borderBottom:'1px solid #e5e7eb',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'16px 24px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <h1 style={{fontSize:22,fontWeight:700,color:'#2563eb'}}>GestionLocative</h1>
+          <a href="/" style={{fontSize:22,fontWeight:700,color:'#2563eb',textDecoration:'none'}}>GestionLocative</a>
           <div style={{display:'flex',gap:24,fontSize:14,fontWeight:500}}>
-            <span style={{color:'#6b7280',cursor:'pointer'}}>Mes Briques</span>
-            <span style={{color:'#2563eb',borderBottom:'2px solid #2563eb',paddingBottom:4,cursor:'pointer'}}>Mes Biens</span>
-            <span style={{color:'#6b7280',cursor:'pointer'}}>Mon Compte</span>
+            <a href="/dashboard" style={{color:'#6b7280',textDecoration:'none'}}>Mes Briques</a>
+            <a href="/biens" style={{color:'#2563eb',borderBottom:'2px solid #2563eb',paddingBottom:4,textDecoration:'none'}}>Mes Biens</a>
+            <a href="/compte" style={{color:'#6b7280',textDecoration:'none'}}>Mon Compte</a>
           </div>
         </div>
       </nav>
@@ -79,7 +79,6 @@ export default function Biens() {
               onClick={() => setSelectionne(selectionne === bien.id ? null : bien.id)}
               style={{background:'white',borderRadius:20,border: selectionne === bien.id ? '2px solid #2563eb' : '1px solid #f3f4f6',boxShadow:'0 1px 3px rgba(0,0,0,0.05)',padding:24,cursor:'pointer'}}
             >
-              {/* En-tête bien */}
               <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
                 <div style={{fontSize:32}}>{iconeType[bien.type] || '🏠'}</div>
                 <div>
@@ -88,7 +87,6 @@ export default function Biens() {
                 </div>
               </div>
 
-              {/* Stats lots */}
               <div style={{display:'flex',gap:12,marginBottom:16}}>
                 <div style={{flex:1,background:'#f0fdf4',borderRadius:8,padding:'8px 12px',textAlign:'center'}}>
                   <p style={{fontSize:18,fontWeight:700,color:'#16a34a'}}>{bien.lots.filter(l=>l.statut==='loue').length}</p>
@@ -104,7 +102,6 @@ export default function Biens() {
                 </div>
               </div>
 
-              {/* Liste des lots si sélectionné */}
               {selectionne === bien.id && (
                 <div style={{borderTop:'1px solid #f3f4f6',paddingTop:16,marginTop:4}}>
                   <p style={{fontSize:12,fontWeight:600,color:'#6b7280',marginBottom:8,textTransform:'uppercase',letterSpacing:0.5}}>Lots</p>

@@ -71,11 +71,11 @@ export default function Dashboard() {
     <main style={{minHeight:'100vh',background:'#f9fafb'}}>
       <nav style={{background:'white',borderBottom:'1px solid #e5e7eb',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'16px 24px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <h1 style={{fontSize:22,fontWeight:700,color:'#2563eb'}}>GestionLocative</h1>
+          <a href="/" style={{fontSize:22,fontWeight:700,color:'#2563eb',textDecoration:'none'}}>GestionLocative</a>
           <div style={{display:'flex',gap:24,fontSize:14,fontWeight:500}}>
-            <span style={{color:'#2563eb',borderBottom:'2px solid #2563eb',paddingBottom:4,cursor:'pointer'}}>Mes Briques</span>
-            <span style={{color:'#6b7280',cursor:'pointer'}}>Mes Biens</span>
-            <span style={{color:'#6b7280',cursor:'pointer'}}>Mon Compte</span>
+            <a href="/dashboard" style={{color:'#2563eb',borderBottom:'2px solid #2563eb',paddingBottom:4,textDecoration:'none'}}>Mes Briques</a>
+            <a href="/biens" style={{color:'#6b7280',textDecoration:'none'}}>Mes Biens</a>
+            <a href="/compte" style={{color:'#6b7280',textDecoration:'none'}}>Mon Compte</a>
           </div>
         </div>
       </nav>
@@ -91,7 +91,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Résumé */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:32}}>
           <div style={{background:'white',borderRadius:12,padding:20,border:'1px solid #f3f4f6',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
             <p style={{color:'#6b7280',fontSize:13}}>Loyers du mois</p>
@@ -107,7 +106,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Briques */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:24}}>
           {biens.map(bien => (
             <div key={bien.id} style={{background:'white',borderRadius:20,border:'1px solid #f3f4f6',boxShadow:'0 1px 3px rgba(0,0,0,0.05)',padding:24,cursor:'pointer',display:'flex',flexDirection:'column',justifyContent:'space-between',minHeight:220}}>
@@ -118,7 +116,6 @@ export default function Dashboard() {
                 </div>
                 <StatutBadge statut={bien.statut} />
               </div>
-
               <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderTop:'1px solid #f9fafb',borderBottom:'1px solid #f9fafb',margin:'12px 0'}}>
                 <div>
                   <p style={{fontSize:11,color:'#9ca3af'}}>Locataire</p>
@@ -129,7 +126,6 @@ export default function Dashboard() {
                   <p style={{fontSize:18,fontWeight:700,color:'#111827',marginTop:2}}>{bien.loyer}€<span style={{fontSize:11,fontWeight:400,color:'#9ca3af'}}>/mois</span></p>
                 </div>
               </div>
-
               <ProgressionBarre progression={bien.progression} />
             </div>
           ))}
