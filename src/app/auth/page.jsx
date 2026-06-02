@@ -1,111 +1,218 @@
 'use client';
 import { useState } from 'react';
+import { supabase } from '../../supabase';
 
 export default function Auth() {
-  const [mode, setMode] = useState('connexion');
+
+  // ========== ÉTATS DU COMPOSANT ==========
+  const [mode, setMode] = useState('connexion'); // 'connexion' ou 'inscription'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [erreur, setErreur] = useState('');
+
+  // ========== FONCTION: CONNEXION ==========
+  async function handleConnexion() {
+    setLoading(true);
+    setErreur('');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setErreur('Email ou mot de passe incorrect');
+    } else {
+      // Redirection vers le dashboard après connexion
+      window.location.href = '/dashboard';
+    }
+    setLoading(false);
+  }
+
+  // ========== FONCTION: INSCRIPTION ==========
+  async function handleInscription() {
+    setLoading(true);
+    setErreur('');
+    if (!prenom || !nom || !email || !password) {
+      setErreur('Veuillez remplir tous les champs');
+      setLoading(false);
+      return;
+    }
+    if (password.length < 6) {
+      setErreur('Le mot de passe doit contenir au moins 6 caractères');
+      setLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { prenom, nom }
+      }
+    });
+    if (error) {
+      setErreur('Erreur lors de la création du compte : ' + error.message);
+    } else {
+      setMessage('Compte créé ! Vérifiez votre email pour confirmer votre inscription.');
+    }
+    setLoading(false);
+  }
+
+  // ========== STYLE DES INPUTS ==========
+  const inputStyle = {
+    width: '100%',
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: '10px 12px',
+    fontSize: 14,
+    outline: 'none',
+    boxSizing: 'border-box'
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-md">
-        
-        {/* Logo */}
-        <h1 className="text-2xl font-bold text-blue-600 text-center mb-8">GestionLocative</h1>
+    <main style={{minHeight:'100vh', background:'#f9fafb', display:'flex', alignItems:'center', justifyContent:'center'}}>
+      <div style={{background:'white', borderRadius:20, border:'1px solid #f3f4f6', padding:32, width:'100%', maxWidth:440, boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
 
-        {/* Onglets */}
-        <div className="flex bg-gray-100 rounded-lg p-1 mb-8">
+        {/* ========== LOGO ========== */}
+        <h1 style={{fontSize:22, fontWeight:700, color:'#2563eb', textAlign:'center', marginBottom:24}}>GestionLocative</h1>
+
+        {/* ========== ONGLETS CONNEXION / INSCRIPTION ========== */}
+        <div style={{display:'flex', background:'#f3f4f6', borderRadius:10, padding:4, marginBottom:24}}>
+          {/* Bouton onglet Connexion */}
           <button
-            onClick={() => setMode('connexion')}
-            className={`flex-1 py-2 rounded-md font-medium text-sm transition-all ${
-              mode === 'connexion' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
-            }`}
+            onClick={() => { setMode('connexion'); setErreur(''); setMessage(''); }}
+            style={{flex:1, padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500,
+              background: mode === 'connexion' ? 'white' : 'transparent',
+              color: mode === 'connexion' ? '#2563eb' : '#6b7280',
+              boxShadow: mode === 'connexion' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+            }}
           >
             Connexion
           </button>
+          {/* Bouton onglet Inscription */}
           <button
-            onClick={() => setMode('inscription')}
-            className={`flex-1 py-2 rounded-md font-medium text-sm transition-all ${
-              mode === 'inscription' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
-            }`}
+            onClick={() => { setMode('inscription'); setErreur(''); setMessage(''); }}
+            style={{flex:1, padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500,
+              background: mode === 'inscription' ? 'white' : 'transparent',
+              color: mode === 'inscription' ? '#2563eb' : '#6b7280',
+              boxShadow: mode === 'inscription' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+            }}
           >
             Inscription
           </button>
         </div>
 
-        {/* Formulaire connexion */}
+        {/* ========== MESSAGE DE SUCCÈS ========== */}
+        {message && (
+          <div style={{background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:12, marginBottom:16}}>
+            <p style={{color:'#15803d', fontSize:13}}>{message}</p>
+          </div>
+        )}
+
+        {/* ========== MESSAGE D'ERREUR ========== */}
+        {erreur && (
+          <div style={{background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:12, marginBottom:16}}>
+            <p style={{color:'#dc2626', fontSize:13}}>{erreur}</p>
+          </div>
+        )}
+
+        {/* ========== FORMULAIRE CONNEXION ========== */}
         {mode === 'connexion' && (
-          <div className="flex flex-col gap-4">
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Email</label>
               <input
                 type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                style={inputStyle}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Mot de passe</label>
               <input
                 type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                style={inputStyle}
               />
             </div>
-            <button className="bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 mt-2">
-              Se connecter
+            {/* Bouton se connecter - appelle handleConnexion */}
+            <button
+              onClick={handleConnexion}
+              disabled={loading}
+              style={{background:'#2563eb', color:'white', padding:'12px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:14, marginTop:8}}
+            >
+              {loading ? 'Connexion...' : 'Se connecter'}
             </button>
-            <p className="text-center text-sm text-gray-500">
+            <p style={{textAlign:'center', fontSize:13, color:'#6b7280'}}>
               Mot de passe oublié ?{' '}
-              <span className="text-blue-600 cursor-pointer hover:underline">Réinitialiser</span>
+              <span style={{color:'#2563eb', cursor:'pointer'}}>Réinitialiser</span>
             </p>
           </div>
         )}
 
-        {/* Formulaire inscription */}
+        {/* ========== FORMULAIRE INSCRIPTION ========== */}
         {mode === 'inscription' && (
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
+              <div>
+                <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Prénom</label>
                 <input
                   type="text"
+                  value={prenom}
+                  onChange={e => setPrenom(e.target.value)}
                   placeholder="Jean"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                  style={inputStyle}
                 />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <div>
+                <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Nom</label>
                 <input
                   type="text"
+                  value={nom}
+                  onChange={e => setNom(e.target.value)}
                   placeholder="Dupont"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                  style={inputStyle}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Email</label>
               <input
                 type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                style={inputStyle}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Mot de passe</label>
               <input
                 type="password"
-                placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="6 caractères minimum"
+                style={inputStyle}
               />
             </div>
-            <button className="bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 mt-2">
-              Créer mon compte
+            {/* Bouton créer un compte - appelle handleInscription */}
+            <button
+              onClick={handleInscription}
+              disabled={loading}
+              style={{background:'#2563eb', color:'white', padding:'12px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:14, marginTop:8}}
+            >
+              {loading ? 'Création...' : 'Créer mon compte'}
             </button>
-            <p className="text-center text-sm text-gray-500">
+            <p style={{textAlign:'center', fontSize:13, color:'#6b7280'}}>
               En vous inscrivant vous acceptez nos{' '}
-              <span className="text-blue-600 cursor-pointer hover:underline">CGU</span>
+              <span style={{color:'#2563eb', cursor:'pointer'}}>CGU</span>
             </p>
           </div>
         )}
+
       </div>
     </main>
   );
