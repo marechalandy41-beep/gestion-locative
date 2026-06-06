@@ -148,7 +148,21 @@ export default function Auth() {
             </button>
             <p style={{textAlign:'center', fontSize:13, color:'#6b7280'}}>
               Mot de passe oublié ?{' '}
-              <span style={{color:'#2563eb', cursor:'pointer'}}>Réinitialiser</span>
+              <span 
+  style={{color:'#2563eb', cursor:'pointer'}}
+  onClick={async () => {
+    if (!email) {
+      setErreur('Entrez votre email d\'abord')
+      return
+    }
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'http://localhost:3000/auth/reset-password'
+    })
+    setMessage('Email de réinitialisation envoyé !')
+  }}
+>
+  Réinitialiser
+</span>
             </p>
           </div>
         )}

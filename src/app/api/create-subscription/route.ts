@@ -3,34 +3,19 @@ import { stripe } from '@/stripe'
 
 export async function POST(req: NextRequest) {
   try {
-    const { customerId, priceId, quantity } = await req.json()
+    const { customerId, priceId } = await req.json()
 
-    const subscription = await stripe.subscriptions.create({
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      items: [
-        {
-          price: priceId,
-          quantity: quantity,
-        },
-      ],
-      payment_behavior: 'default_incomplete',
-      payment_settings: {
-        save_default_payment_method: 'on_subscription',
-      },
-      expand: ['latest_invoice.payment_intent'],
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      success_url: 'http://localhost:3000/dashboard?success=true',
+      cancel_url: 'http://localhost:3000/abonnement?cancelled=true',
     })
 
-    const invoice = subscription.latest_invoice as any
-    const paymentIntent = invoice?.payment_intent as any
-
-    return NextResponse.json({
-      subscriptionId: subscription.id,
-      clientSecret: paymentIntent?.client_secret,
-    })
+    return NextResponse.json({ url: session.url })
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 400 })
   }
 }

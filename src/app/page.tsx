@@ -6,10 +6,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-blue-600">GestionLocative</h1>
           <div className="flex gap-4">
-            <button className="text-gray-600 hover:text-blue-600 font-medium">Connexion</button>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
+            <a href="/auth" className="text-gray-600 hover:text-blue-600 font-medium">Connexion</a>
+            <a href="/auth" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
               Commencer gratuitement
-            </button>
+            </a>
           </div>
         </div>
       </nav>
@@ -25,9 +25,9 @@ export default function Home() {
           coffre-fort numérique. Tout ce dont vous avez besoin pour gérer 
           votre patrimoine immobilier.
         </p>
-        <button className="bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700">
+        <a href="/auth" className="bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700">
           Essayer gratuitement
-        </button>
+        </a>
       </div>
 
       {/* Fonctionnalités */}
