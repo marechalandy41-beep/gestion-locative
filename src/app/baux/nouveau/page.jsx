@@ -14,22 +14,19 @@ export default function NouveauBail() {
   const [canvasRef, setCanvasRef] = useState(null);
   const [dessin, setDessin] = useState(false);
   const [bailId, setBailId] = useState(null);
+  const [bienIdUpload, setBienIdUpload] = useState('');
 
   const [bail, setBail] = useState({
-    // Bailleur
     bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '',
     bailleur_naissance: '', bailleur_lieu_naissance: '', bailleur_nationalite: 'Française',
-    // Locataire
     locataire_prenom: '', locataire_nom: '', locataire_email: '',
     locataire_telephone: '', locataire_naissance: '', locataire_adresse: '',
     locataire_nationalite: 'Française', locataire_profession: '',
-    // Bien & loyer
     bien_id: '', type_bail: 'Non meublé', loyer_hc: '',
     charges: '', type_charges: 'Forfaitaires', depot_garantie: '',
     surface_habitable: '', nombre_pieces: '', etage: '',
     equipements: '', classe_dpe: 'D', numero_lot: '',
     modalite_paiement: 'Virement bancaire', date_exigibilite: '1', revision_irl: true,
-    // Dates & clauses
     date_debut: '', date_fin: '', clauses: '',
   });
 
@@ -93,74 +90,48 @@ export default function NouveauBail() {
   function genererPDFBail() {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const bienSel = biens.find(b => b.id === parseInt(bail.bien_id));
-    const pageW = 210;
-    const margin = 20;
-    const contenuW = pageW - margin * 2;
+    const pageW = 210, margin = 20, contenuW = pageW - margin * 2;
     let y = 20;
-
     const checkPage = () => { if (y > 270) { doc.addPage(); y = 20; } };
-
     const titre = (texte) => {
       checkPage();
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(37, 99, 235);
-      doc.text(texte, margin, y);
-      y += 2;
-      doc.setDrawColor(37, 99, 235);
-      doc.setLineWidth(0.4);
-      doc.line(margin, y, pageW - margin, y);
-      y += 6;
-      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235);
+      doc.text(texte, margin, y); y += 2;
+      doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.4);
+      doc.line(margin, y, pageW - margin, y); y += 6; doc.setTextColor(0, 0, 0);
     };
-
     const ligne = (label, valeur) => {
       checkPage();
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, margin, y);
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(label, margin, y);
       doc.setFont('helvetica', 'normal');
       const val = valeur?.toString() || '—';
       const lignes = doc.splitTextToSize(val, contenuW - 55);
       doc.text(lignes, margin + 55, y);
       y += Math.max(5, lignes.length * 4.5);
     };
-
-    const texte = (t, taille = 9) => {
+    const texte = (t) => {
       checkPage();
-      doc.setFontSize(taille);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
       const lignes = doc.splitTextToSize(t, contenuW);
       lignes.forEach(l => { checkPage(); doc.text(l, margin, y); y += 4.5; });
-      doc.setTextColor(0, 0, 0);
-      y += 2;
+      doc.setTextColor(0, 0, 0); y += 2;
     };
-
     const saut = (n = 5) => { y += n; };
 
-    // EN-TÊTE
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, 210, 20, 'F');
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(37, 99, 235); doc.rect(0, 0, 210, 20, 'F');
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
     doc.text('CONTRAT DE BAIL', pageW / 2, 10, { align: 'center' });
     doc.setFontSize(9);
     doc.text(`${bail.type_bail.toUpperCase()} — Loi n°89-462 du 6 juillet 1989 modifiée par la loi ALUR du 24 mars 2014`, pageW / 2, 16, { align: 'center' });
-    y = 28;
-    doc.setTextColor(0, 0, 0);
+    y = 28; doc.setTextColor(0, 0, 0);
 
-    // ARTICLE 1 — BAILLEUR
     titre('ARTICLE 1 — LE BAILLEUR');
     ligne('Nom et prénom :', `${bail.bailleur_prenom} ${bail.bailleur_nom}`);
     ligne('Date de naissance :', bail.bailleur_naissance ? new Date(bail.bailleur_naissance).toLocaleDateString('fr-FR') : '');
     ligne('Lieu de naissance :', bail.bailleur_lieu_naissance);
     ligne('Nationalité :', bail.bailleur_nationalite);
-    ligne('Adresse :', bail.bailleur_adresse);
-    saut();
+    ligne('Adresse :', bail.bailleur_adresse); saut();
 
-    // ARTICLE 2 — LOCATAIRE
     titre('ARTICLE 2 — LE LOCATAIRE');
     ligne('Nom et prénom :', `${bail.locataire_prenom} ${bail.locataire_nom}`);
     ligne('Date de naissance :', bail.locataire_naissance ? new Date(bail.locataire_naissance).toLocaleDateString('fr-FR') : '');
@@ -168,10 +139,8 @@ export default function NouveauBail() {
     ligne('Profession :', bail.locataire_profession);
     ligne('Adresse actuelle :', bail.locataire_adresse);
     ligne('Email :', bail.locataire_email);
-    ligne('Téléphone :', bail.locataire_telephone);
-    saut();
+    ligne('Téléphone :', bail.locataire_telephone); saut();
 
-    // ARTICLE 3 — BIEN
     titre('ARTICLE 3 — DÉSIGNATION DU BIEN LOUÉ');
     ligne('Adresse :', bienSel?.adresse || '');
     ligne('Type de bien :', bienSel?.type || '');
@@ -180,17 +149,14 @@ export default function NouveauBail() {
     if (bail.etage) ligne('Étage / Bâtiment :', bail.etage);
     if (bail.numero_lot) ligne('Numéro de lot :', bail.numero_lot);
     ligne('Classe énergétique (DPE) :', bail.classe_dpe);
-    if (bail.equipements) ligne('Équipements inclus :', bail.equipements);
-    saut();
+    if (bail.equipements) ligne('Équipements inclus :', bail.equipements); saut();
 
-    // ARTICLE 4 — DURÉE
     titre('ARTICLE 4 — DURÉE DU BAIL');
     const duree = bail.type_bail === 'Meublé' ? '1 an' : bail.type_bail === 'Commercial (3-6-9)' ? '9 ans' : '3 ans';
     ligne('Date de début :', bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : '');
     ligne('Date de fin :', bail.date_fin ? new Date(bail.date_fin).toLocaleDateString('fr-FR') : `Reconduction tacite (${duree})`);
     texte(`Le présent bail est conclu pour une durée de ${duree}, conformément à la loi du 6 juillet 1989. À l'expiration de ce délai, le bail sera reconduit tacitement pour la même durée, sauf congé donné dans les délais légaux (6 mois pour le bailleur, 3 mois pour le locataire, 1 mois en zone tendue).`);
 
-    // ARTICLE 5 — LOYER
     titre('ARTICLE 5 — CONDITIONS FINANCIÈRES');
     ligne('Loyer mensuel hors charges :', `${bail.loyer_hc} €`);
     ligne('Charges mensuelles :', `${bail.charges || 0} €`);
@@ -198,105 +164,71 @@ export default function NouveauBail() {
     ligne('Total mensuel charges comprises :', `${(parseFloat(bail.loyer_hc) || 0) + (parseFloat(bail.charges) || 0)} €`);
     ligne('Dépôt de garantie :', `${bail.depot_garantie || 0} €`);
     ligne('Modalité de paiement :', bail.modalite_paiement);
-    ligne('Date d\'exigibilité :', `Le ${bail.date_exigibilite} de chaque mois`);
-    ligne('Révision annuelle IRL :', bail.revision_irl ? 'Oui — selon l\'Indice de Référence des Loyers (INSEE)' : 'Non');
+    ligne("Date d'exigibilité :", `Le ${bail.date_exigibilite} de chaque mois`);
+    ligne('Révision annuelle IRL :', bail.revision_irl ? "Oui — selon l'Indice de Référence des Loyers (INSEE)" : 'Non');
     saut(2);
     texte(`Le loyer est payable mensuellement et d'avance, le ${bail.date_exigibilite} de chaque mois par ${bail.modalite_paiement.toLowerCase()}. Les charges sont de type ${bail.type_charges.toLowerCase()}.`);
-    if (bail.revision_irl) {
-      texte('Le loyer sera révisé chaque année à la date anniversaire du bail sur la base de la variation de l\'Indice de Référence des Loyers (IRL) publié par l\'INSEE, conformément à l\'article 17-1 de la loi du 6 juillet 1989.');
-    }
+    if (bail.revision_irl) texte("Le loyer sera révisé chaque année à la date anniversaire du bail sur la base de la variation de l'Indice de Référence des Loyers (IRL) publié par l'INSEE, conformément à l'article 17-1 de la loi du 6 juillet 1989.");
 
-    // ARTICLE 6 — OBLIGATIONS
     titre('ARTICLE 6 — OBLIGATIONS DU BAILLEUR');
-    texte('Le bailleur s\'engage à : délivrer le logement en bon état d\'usage et de réparation, assurer la jouissance paisible des lieux, entretenir les locaux en état de servir à l\'usage prévu, réaliser les réparations autres que locatives, garantir contre les vices ou défauts cachés.');
+    texte("Le bailleur s'engage à : délivrer le logement en bon état d'usage et de réparation, assurer la jouissance paisible des lieux, entretenir les locaux en état de servir à l'usage prévu, réaliser les réparations autres que locatives, garantir contre les vices ou défauts cachés.");
 
     titre('ARTICLE 7 — OBLIGATIONS DU LOCATAIRE');
-    texte('Le locataire s\'engage à : payer le loyer et les charges aux termes convenus, user paisiblement des locaux, répondre des dégradations survenues pendant la durée du contrat, prendre à sa charge l\'entretien courant et les menues réparations, souscrire une assurance multirisque habitation et en justifier chaque année, ne pas transformer les lieux sans accord écrit du bailleur, ne pas sous-louer sans autorisation écrite.');
+    texte("Le locataire s'engage à : payer le loyer et les charges aux termes convenus, user paisiblement des locaux, répondre des dégradations survenues pendant la durée du contrat, prendre à sa charge l'entretien courant et les menues réparations, souscrire une assurance multirisque habitation et en justifier chaque année, ne pas transformer les lieux sans accord écrit du bailleur, ne pas sous-louer sans autorisation écrite.");
 
     titre('ARTICLE 8 — DÉPÔT DE GARANTIE');
     texte(`Un dépôt de garantie de ${bail.depot_garantie || 0} € est versé à la signature du présent bail. Il sera restitué dans un délai d'un mois à compter de la remise des clés si aucune dégradation n'est constatée, ou de deux mois en cas de dégradations imputables au locataire, déduction faite des sommes dues.`);
 
-    // ARTICLE 9 — CLAUSES
     if (bail.clauses && bail.clauses.trim()) {
       titre('ARTICLE 9 — CLAUSES PARTICULIÈRES');
       texte(bail.clauses);
     }
 
-    // SIGNATURES
     if (y > 210) { doc.addPage(); y = 20; }
-    saut(5);
-    titre('SIGNATURES');
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
+    saut(5); titre('SIGNATURES');
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
     doc.text(`Fait en deux exemplaires originaux, le ${new Date().toLocaleDateString('fr-FR')}`, margin, y); y += 12;
-
     doc.setFont('helvetica', 'bold');
-    doc.text('Le Bailleur', margin, y);
-    doc.text('Le Locataire', pageW / 2 + 5, y);
-    y += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.text('Le Bailleur', margin, y); doc.text('Le Locataire', pageW / 2 + 5, y); y += 4;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
     doc.text(`${bail.bailleur_prenom} ${bail.bailleur_nom}`, margin, y);
-    doc.text(`${bail.locataire_prenom} ${bail.locataire_nom}`, pageW / 2 + 5, y);
-    y += 2;
+    doc.text(`${bail.locataire_prenom} ${bail.locataire_nom}`, pageW / 2 + 5, y); y += 2;
     doc.text('(Précédé de la mention "Lu et approuvé")', margin, y);
-    doc.text('(Précédé de la mention "Lu et approuvé")', pageW / 2 + 5, y);
-    y += 4;
-
+    doc.text('(Précédé de la mention "Lu et approuvé")', pageW / 2 + 5, y); y += 4;
     doc.setDrawColor(180, 180, 180);
-    doc.rect(margin, y, 80, 38);
-    doc.rect(pageW / 2 + 5, y, 80, 38);
-
+    doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38);
     if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 1, 78, 36);
     if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36);
-
-    y += 44;
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
+    y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150);
     doc.text('Document généré par GestionLocative — Conforme loi n°89-462 du 6 juillet 1989 et loi ALUR du 24 mars 2014', pageW / 2, y, { align: 'center' });
-
-    const nomFichier = `Bail_${bail.locataire_nom}_${bail.bailleur_nom}_${bail.date_debut || 'date'}.pdf`;
-    doc.save(nomFichier);
+    doc.save(`Bail_${bail.locataire_nom}_${bail.bailleur_nom}_${bail.date_debut || 'date'}.pdf`);
   }
 
   async function sauvegarderBail(statut = 'actif') {
     setLoading(true);
     const payload = {
-      bien_id: parseInt(bail.bien_id),
+      bien_id: parseInt(bail.bien_id) || null,
       type_bail: bail.type_bail,
-      loyer_hc: parseFloat(bail.loyer_hc),
+      loyer_hc: parseFloat(bail.loyer_hc) || null,
       charges: parseFloat(bail.charges) || 0,
       type_charges: bail.type_charges,
       depot_garantie: parseFloat(bail.depot_garantie) || 0,
-      date_debut: bail.date_debut,
+      date_debut: bail.date_debut || null,
       date_fin: bail.date_fin || null,
-      locataire_prenom: bail.locataire_prenom,
-      locataire_nom: bail.locataire_nom,
-      locataire_email: bail.locataire_email,
-      locataire_telephone: bail.locataire_telephone,
-      locataire_naissance: bail.locataire_naissance || null,
-      locataire_adresse: bail.locataire_adresse,
-      locataire_nationalite: bail.locataire_nationalite,
-      locataire_profession: bail.locataire_profession,
-      bailleur_prenom: bail.bailleur_prenom,
-      bailleur_nom: bail.bailleur_nom,
-      bailleur_adresse: bail.bailleur_adresse,
-      bailleur_naissance: bail.bailleur_naissance || null,
-      bailleur_lieu_naissance: bail.bailleur_lieu_naissance,
-      bailleur_nationalite: bail.bailleur_nationalite,
+      locataire_prenom: bail.locataire_prenom, locataire_nom: bail.locataire_nom,
+      locataire_email: bail.locataire_email, locataire_telephone: bail.locataire_telephone,
+      locataire_naissance: bail.locataire_naissance || null, locataire_adresse: bail.locataire_adresse,
+      locataire_nationalite: bail.locataire_nationalite, locataire_profession: bail.locataire_profession,
+      bailleur_prenom: bail.bailleur_prenom, bailleur_nom: bail.bailleur_nom,
+      bailleur_adresse: bail.bailleur_adresse, bailleur_naissance: bail.bailleur_naissance || null,
+      bailleur_lieu_naissance: bail.bailleur_lieu_naissance, bailleur_nationalite: bail.bailleur_nationalite,
       surface_habitable: parseFloat(bail.surface_habitable) || null,
       nombre_pieces: parseInt(bail.nombre_pieces) || null,
-      etage: bail.etage,
-      equipements: bail.equipements,
-      classe_dpe: bail.classe_dpe,
-      numero_lot: bail.numero_lot,
-      modalite_paiement: bail.modalite_paiement,
+      etage: bail.etage, equipements: bail.equipements, classe_dpe: bail.classe_dpe,
+      numero_lot: bail.numero_lot, modalite_paiement: bail.modalite_paiement,
       date_exigibilite: parseInt(bail.date_exigibilite) || 1,
-      revision_irl: bail.revision_irl,
-      clauses: bail.clauses,
-      signature_bailleur: signatureBailleur,
-      signature_locataire: signatureLocataire,
-      statut,
+      revision_irl: bail.revision_irl, clauses: bail.clauses,
+      signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut,
     };
     let error;
     if (bailId) {
@@ -309,47 +241,33 @@ export default function NouveauBail() {
     else { alert('Erreur : ' + error.message); }
   }
 
-  async function finaliserBailSigne() {
-    genererPDFBail();
-    await sauvegarderBail('actif');
-  }
+  async function finaliserBailSigne() { genererPDFBail(); await sauvegarderBail('actif'); }
 
   function initCanvas(canvas) {
     if (!canvas) return;
     setCanvasRef(canvas);
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = '#1e40af';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#1e40af'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
   }
-
   function startDraw(e) {
     setDessin(true);
-    const canvas = canvasRef;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
+    const ctx = canvasRef.getContext('2d');
+    const rect = canvasRef.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     ctx.beginPath(); ctx.moveTo(x, y);
   }
-
   function draw(e) {
     if (!dessin) return;
     e.preventDefault();
-    const canvas = canvasRef;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
+    const ctx = canvasRef.getContext('2d');
+    const rect = canvasRef.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     ctx.lineTo(x, y); ctx.stroke();
   }
-
   function stopDraw() { setDessin(false); }
-
-  function effacerCanvas() {
-    canvasRef.getContext('2d').clearRect(0, 0, canvasRef.width, canvasRef.height);
-  }
-
+  function effacerCanvas() { canvasRef.getContext('2d').clearRect(0, 0, canvasRef.width, canvasRef.height); }
   function validerSignature(pour) {
     const dataUrl = canvasRef.toDataURL('image/png');
     if (pour === 'bailleur') setSignatureBailleur(dataUrl);
@@ -369,29 +287,150 @@ export default function NouveauBail() {
         <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Nouveau bail</h1>
         <p style={{ color: '#6b7280', fontSize: 15, marginBottom: 28 }}>Vous avez déjà un bail ou vous souhaitez en créer un ?</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div onClick={() => alert('Upload bail existant — bientôt disponible')}
-            style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', cursor: 'pointer', border: '2px solid transparent', display: 'flex', gap: 16, alignItems: 'center' }}
-            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 36 }}>📄</div>
-            <div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>J'ai déjà un bail signé</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Importez votre PDF — il sera stocké dans votre coffre-fort.</p></div>
+
+          {/* BAIL EXISTANT */}
+          {/* BAIL EXISTANT */}
+<div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '2px solid transparent' }}
+  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+  <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+    <div style={{ fontSize: 36 }}>📄</div>
+    <div style={{ flex: 1 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>J'ai déjà un bail signé</h3>
+      <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 12px' }}>Importez votre PDF et renseignez les infos principales.</p>
+
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Bien concerné *</label>
+        <select value={bienIdUpload} onChange={e => setBienIdUpload(e.target.value)}
+          style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', background: 'white' }}>
+          <option value="">— Sélectionnez un bien —</option>
+          {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
+        </select>
+      </div>
+
+      {bienIdUpload && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Loyer HC (€) *</label>
+              <input type="number" placeholder="800" value={bail.loyer_hc} onChange={e => setBail({...bail, loyer_hc: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Charges (€)</label>
+              <input type="number" placeholder="100" value={bail.charges} onChange={e => setBail({...bail, charges: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Dépôt (€)</label>
+              <input type="number" placeholder="800" value={bail.depot_garantie} onChange={e => setBail({...bail, depot_garantie: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Prénom locataire</label>
+              <input placeholder="Prénom" value={bail.locataire_prenom} onChange={e => setBail({...bail, locataire_prenom: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Nom locataire</label>
+              <input placeholder="Nom" value={bail.locataire_nom} onChange={e => setBail({...bail, locataire_nom: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Date de début</label>
+              <input type="date" value={bail.date_debut} onChange={e => setBail({...bail, date_debut: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Date de fin</label>
+              <input type="date" value={bail.date_fin} onChange={e => setBail({...bail, date_fin: e.target.value})}
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }} />
+            </div>
+          </div>
+
+          <input type="file" accept=".pdf" id="upload-bail-existant" style={{ display: 'none' }}
+            onChange={async (e) => {
+              const fichier = e.target.files[0];
+              if (!fichier) return;
+              if (!bail.loyer_hc) { alert('Renseignez au moins le loyer.'); return; }
+              if (fichier.size > 10 * 1024 * 1024) { alert('Fichier trop lourd — maximum 10 Mo.'); return; }
+              setLoading(true);
+              try {
+                const nomFichier = `baux/${user.id}/${Date.now()}_${fichier.name}`;
+                const { error: uploadError } = await supabase.storage.from('documents').upload(nomFichier, fichier, { contentType: 'application/pdf' });
+                if (uploadError) { alert('Erreur upload : ' + uploadError.message); setLoading(false); return; }
+                const { data: urlData } = supabase.storage.from('documents').getPublicUrl(nomFichier);
+                const { error: insertError } = await supabase.from('Baux').insert([{
+                  user_id: user.id,
+                  bien_id: parseInt(bienIdUpload),
+                  bail_pdf_url: urlData.publicUrl,
+                  loyer_hc: parseFloat(bail.loyer_hc),
+                  charges: parseFloat(bail.charges) || 0,
+                  depot_garantie: parseFloat(bail.depot_garantie) || 0,
+                  locataire_prenom: bail.locataire_prenom,
+                  locataire_nom: bail.locataire_nom,
+                  date_debut: bail.date_debut || null,
+                  date_fin: bail.date_fin || null,
+                  date_exigibilite: parseInt(bail.date_exigibilite) || 1,
+                  mode_bail: 'existant',
+                  statut: 'actif',
+                }]);
+                if (insertError) { alert('Erreur : ' + insertError.message); setLoading(false); return; }
+                alert('✅ Bail importé avec succès !');
+                window.location.href = '/baux';
+              } catch (err) { alert('Erreur : ' + err.message); }
+              setLoading(false);
+            }} />
+            <div style={{ marginBottom: 12 }}>
+  <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Jour d'échéance du loyer</label>
+  <select value={bail.date_exigibilite} onChange={e => setBail({...bail, date_exigibilite: e.target.value})}
+    style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, outline: 'none', background: 'white' }}>
+    {[1,5,10,15,20,25].map(j => <option key={j} value={j}>Le {j} du mois</option>)}
+  </select>
+  <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>Un rappel sera envoyé automatiquement si le loyer n'est pas reçu à cette date.</p>
+</div>
+          <label htmlFor="upload-bail-existant" style={{
+            display: 'inline-block',
+            background: '#2563eb', color: 'white',
+            padding: '8px 16px', borderRadius: 8, fontSize: 13,
+            fontWeight: 600, cursor: 'pointer'
+          }}>
+            {loading ? 'Upload en cours...' : '📁 Choisir le PDF et importer'}
+          </label>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+          {/* CRÉER UN BAIL */}
           <div onClick={() => setEcran('formulaire')}
             style={{ background: '#2563eb', borderRadius: 16, padding: 24, boxShadow: '0 4px 12px rgba(37,99,235,0.3)', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center' }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.92'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
             <div style={{ fontSize: 36 }}>✍️</div>
-            <div><h3 style={{ fontSize: 15, fontWeight: 700, color: 'white', margin: '0 0 4px' }}>Créer un bail officiel</h3>
-              <p style={{ fontSize: 13, color: '#bfdbfe', margin: 0 }}>Formulaire complet — PDF généré + signature sur tablette.</p></div>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: 'white', margin: '0 0 4px' }}>Créer un bail officiel</h3>
+              <p style={{ fontSize: 13, color: '#bfdbfe', margin: 0 }}>Formulaire complet — PDF généré + signature sur tablette.</p>
+            </div>
           </div>
+
+          {/* PLUS TARD */}
           <div onClick={() => sauvegarderBail('brouillon')}
             style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', cursor: 'pointer', border: '2px solid transparent', display: 'flex', gap: 16, alignItems: 'center' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #e5e7eb'}
             onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
             <div style={{ fontSize: 36 }}>⏰</div>
-            <div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', margin: '0 0 4px' }}>Plus tard</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Créez le bail maintenant, ajoutez le document plus tard.</p></div>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#374151', margin: '0 0 4px' }}>Plus tard</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Créez le bail maintenant, ajoutez le document plus tard.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -406,8 +445,6 @@ export default function NouveauBail() {
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <button onClick={() => setEcran('choix')} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, marginBottom: 24 }}>← Retour</button>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', marginBottom: 28 }}>Créer un bail officiel</h1>
-
-          {/* Stepper */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
             {etapes.map((e, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < etapes.length - 1 ? 1 : 0 }}>
@@ -421,10 +458,8 @@ export default function NouveauBail() {
               </div>
             ))}
           </div>
-
           <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
 
-            {/* ÉTAPE 1 — BAILLEUR */}
             {etape === 1 && (
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>🏠 Informations bailleur</h3>
@@ -436,20 +471,13 @@ export default function NouveauBail() {
                   <div><label style={lbl}>Date de naissance</label><input style={inp} type="date" value={bail.bailleur_naissance} onChange={e => setBail({...bail, bailleur_naissance: e.target.value})} /></div>
                   <div><label style={lbl}>Lieu de naissance</label><input style={inp} value={bail.bailleur_lieu_naissance} onChange={e => setBail({...bail, bailleur_lieu_naissance: e.target.value})} placeholder="Paris, France" /></div>
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={lbl}>Nationalité</label>
-                  <input style={inp} value={bail.bailleur_nationalite} onChange={e => setBail({...bail, bailleur_nationalite: e.target.value})} placeholder="Française" />
-                </div>
-                <div style={{ marginBottom: 24 }}>
-                  <label style={lbl}>Adresse complète *</label>
-                  <input style={inp} value={bail.bailleur_adresse} onChange={e => setBail({...bail, bailleur_adresse: e.target.value})} placeholder="12 rue de la Paix, 75001 Paris" />
-                </div>
+                <div style={{ marginBottom: 14 }}><label style={lbl}>Nationalité</label><input style={inp} value={bail.bailleur_nationalite} onChange={e => setBail({...bail, bailleur_nationalite: e.target.value})} placeholder="Française" /></div>
+                <div style={{ marginBottom: 24 }}><label style={lbl}>Adresse complète *</label><input style={inp} value={bail.bailleur_adresse} onChange={e => setBail({...bail, bailleur_adresse: e.target.value})} placeholder="12 rue de la Paix, 75001 Paris" /></div>
                 <button onClick={() => { if (!bail.bailleur_prenom || !bail.bailleur_nom || !bail.bailleur_adresse) { alert('Prénom, nom et adresse obligatoires.'); return; } setEtape(2); }}
                   style={{ width: '100%', background: '#2563eb', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>Suivant →</button>
               </div>
             )}
 
-            {/* ÉTAPE 2 — LOCATAIRE */}
             {etape === 2 && (
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>👤 Informations locataire</h3>
@@ -475,25 +503,20 @@ export default function NouveauBail() {
               </div>
             )}
 
-            {/* ÉTAPE 3 — BIEN & LOYER */}
             {etape === 3 && (
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>💰 Bien & conditions financières</h3>
                 <div style={{ marginBottom: 14 }}>
                   <label style={lbl}>Bien concerné *</label>
                   <select style={inp} value={bail.bien_id} onChange={e => {
-  const bienChoisi = biens.find(b => b.id === parseInt(e.target.value));
-  setBail({
-    ...bail,
-    bien_id: e.target.value,
-    surface_habitable: bienChoisi?.surface?.toString() || '',
-    nombre_pieces: bienChoisi?.nombre_pieces?.toString() || '',
-    etage: bienChoisi?.etage || '',
-    classe_dpe: bienChoisi?.classe_dpe || 'D',
-    equipements: bienChoisi?.equipements || '',
-    numero_lot: bienChoisi?.numero_lot || '',
-  });
-}}>
+                    const bienChoisi = biens.find(b => b.id === parseInt(e.target.value));
+                    setBail({ ...bail, bien_id: e.target.value,
+                      surface_habitable: bienChoisi?.surface?.toString() || '',
+                      nombre_pieces: bienChoisi?.nombre_pieces?.toString() || '',
+                      etage: bienChoisi?.etage || '', classe_dpe: bienChoisi?.classe_dpe || 'D',
+                      equipements: bienChoisi?.equipements || '', numero_lot: bienChoisi?.numero_lot || '',
+                    });
+                  }}>
                     <option value="">— Sélectionnez un bien —</option>
                     {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
                   </select>
@@ -518,10 +541,7 @@ export default function NouveauBail() {
                   </div>
                   <div><label style={lbl}>Numéro de lot</label><input style={inp} value={bail.numero_lot} onChange={e => setBail({...bail, numero_lot: e.target.value})} placeholder="Lot 12 (copropriété)" /></div>
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={lbl}>Équipements inclus</label>
-                  <input style={inp} value={bail.equipements} onChange={e => setBail({...bail, equipements: e.target.value})} placeholder="Cuisine équipée, chaudière gaz, interphone..." />
-                </div>
+                <div style={{ marginBottom: 14 }}><label style={lbl}>Équipements inclus</label><input style={inp} value={bail.equipements} onChange={e => setBail({...bail, equipements: e.target.value})} placeholder="Cuisine équipée, chaudière gaz..." /></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
                   <div><label style={lbl}>Loyer HC (€) *</label><input style={inp} type="number" value={bail.loyer_hc} onChange={e => setBail({...bail, loyer_hc: e.target.value})} placeholder="800" /></div>
                   <div><label style={lbl}>Charges (€)</label><input style={inp} type="number" value={bail.charges} onChange={e => setBail({...bail, charges: e.target.value})} placeholder="100" /></div>
@@ -531,17 +551,13 @@ export default function NouveauBail() {
                   <div>
                     <label style={lbl}>Type de charges</label>
                     <select style={inp} value={bail.type_charges} onChange={e => setBail({...bail, type_charges: e.target.value})}>
-                      <option value="Forfaitaires">Forfaitaires</option>
-                      <option value="Provisionnelles">Provisionnelles</option>
+                      <option value="Forfaitaires">Forfaitaires</option><option value="Provisionnelles">Provisionnelles</option>
                     </select>
                   </div>
                   <div>
                     <label style={lbl}>Modalité de paiement</label>
                     <select style={inp} value={bail.modalite_paiement} onChange={e => setBail({...bail, modalite_paiement: e.target.value})}>
-                      <option>Virement bancaire</option>
-                      <option>Chèque</option>
-                      <option>Prélèvement automatique</option>
-                      <option>Espèces</option>
+                      <option>Virement bancaire</option><option>Chèque</option><option>Prélèvement automatique</option><option>Espèces</option>
                     </select>
                   </div>
                 </div>
@@ -555,12 +571,8 @@ export default function NouveauBail() {
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <label style={lbl}>Révision IRL annuelle</label>
                     <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-                        <input type="radio" checked={bail.revision_irl === true} onChange={() => setBail({...bail, revision_irl: true})} /> Oui
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-                        <input type="radio" checked={bail.revision_irl === false} onChange={() => setBail({...bail, revision_irl: false})} /> Non
-                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}><input type="radio" checked={bail.revision_irl === true} onChange={() => setBail({...bail, revision_irl: true})} /> Oui</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}><input type="radio" checked={bail.revision_irl === false} onChange={() => setBail({...bail, revision_irl: false})} /> Non</label>
                     </div>
                   </div>
                 </div>
@@ -580,7 +592,6 @@ export default function NouveauBail() {
               </div>
             )}
 
-            {/* ÉTAPE 4 — DATES & CLAUSES */}
             {etape === 4 && (
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>📅 Dates & clauses</h3>
@@ -597,7 +608,7 @@ export default function NouveauBail() {
                 </div>
                 <div style={{ marginBottom: 24 }}>
                   <label style={lbl}>Clauses particulières</label>
-                  <textarea style={{ ...inp, minHeight: 100, resize: 'vertical' }} value={bail.clauses} onChange={e => setBail({...bail, clauses: e.target.value})} placeholder="Ex : animaux interdits, sous-location interdite, jardin privatif..." />
+                  <textarea style={{ ...inp, minHeight: 100, resize: 'vertical' }} value={bail.clauses} onChange={e => setBail({...bail, clauses: e.target.value})} placeholder="Ex : animaux interdits, sous-location interdite..." />
                 </div>
                 {bienSel && (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 14, marginBottom: 20 }}>
@@ -606,7 +617,7 @@ export default function NouveauBail() {
                     <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Locataire :</b> {bail.locataire_prenom} {bail.locataire_nom} — {bail.locataire_profession}</p>
                     <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Bien :</b> {bienSel.nom} — {bail.surface_habitable}m² — {bail.nombre_pieces} pièces — DPE {bail.classe_dpe}</p>
                     <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Loyer :</b> {bail.loyer_hc}€ HC + {bail.charges||0}€ = {(parseFloat(bail.loyer_hc)||0)+(parseFloat(bail.charges)||0)}€ CC</p>
-                    <p style={{ margin: 0, fontSize: 12, color: '#374151' }}><b>DG :</b> {bail.depot_garantie||0}€ — Paiement le {bail.date_exigibilite} — {bail.modalite_paiement} — IRL : {bail.revision_irl ? 'Oui' : 'Non'}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#374151' }}><b>DG :</b> {bail.depot_garantie||0}€ — Le {bail.date_exigibilite} — {bail.modalite_paiement} — IRL : {bail.revision_irl ? 'Oui' : 'Non'}</p>
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 10 }}>
