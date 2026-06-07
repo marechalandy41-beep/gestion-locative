@@ -75,6 +75,15 @@ export default function Documents() {
   <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Rédigez un bail officiel conforme loi ALUR avec signature.</p>
 </div>
 
+{/* Coffre-fort */}
+<div onClick={() => window.location.href = '/coffre-fort'}
+  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+  <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Coffre-fort numérique</h3>
+  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Tous vos documents immobiliers organisés par bien.</p>
+</div>
         </div>
       </div>
     </main>

@@ -314,7 +314,7 @@ export default function Biens() {
                     )}
                     <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12}}>
   <button style={{background:'#f3f4f6', color:'#374151', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>+ Lot</button>
-  <button style={{background:'#eff6ff', color:'#2563eb', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>📁 Coffre-fort</button>
+  <button onClick={e => { e.stopPropagation(); window.location.href = '/coffre-fort?bien=' + bien.id; }} style={{flex:1, background:'#eff6ff', color:'#2563eb', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>📁 Coffre-fort</button>
   <button style={{background:'#fef2f2', color:'#dc2626', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>🏷️ Vendre</button>
   <button
     onClick={async e => {

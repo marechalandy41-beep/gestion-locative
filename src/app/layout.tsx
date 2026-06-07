@@ -12,10 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "GestionLocative — Gérez vos biens en toute simplicité",
-  description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
-};
 
 export default function RootLayout({
   children,
@@ -31,3 +27,9 @@ export default function RootLayout({
     </html>
   );
 }
+export const metadata: Metadata = {
+  title: "GestionLocative — Gérez vos biens en toute simplicité",
+  description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
+  icons: {
+  },
+};
