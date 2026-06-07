@@ -34,10 +34,9 @@ export default function BauxPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
-      {/* NAV */}
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
+          <a href="/dashboard" style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }}>GestionLocative</a>
           <div style={{ display: 'flex', gap: 24, fontSize: 14, fontWeight: 500, alignItems: 'center' }}>
             <a href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>Baux actifs</a>
             <a href="/baux" style={{ color: '#2563eb', borderBottom: '2px solid #2563eb', paddingBottom: 4, textDecoration: 'none' }}>Mes Baux</a>
@@ -53,7 +52,6 @@ export default function BauxPage() {
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
 
-        {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>Mes Baux</h2>
@@ -64,7 +62,6 @@ export default function BauxPage() {
           </a>
         </div>
 
-        {/* LISTE */}
         {baux.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, background: 'white', borderRadius: 20, border: '1px solid #f3f4f6' }}>
             <p style={{ fontSize: 40, marginBottom: 16 }}>📋</p>
@@ -78,7 +75,10 @@ export default function BauxPage() {
             {baux.map(bail => {
               const s = statutStyle(bail.statut)
               return (
-                <div key={bail.id} style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24 }}>
+                <div key={bail.id}
+                  onClick={() => window.location.href = '/baux/' + bail.id}
+                  style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24, cursor: 'pointer' }}>
+
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
                       <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' }}>{bail.type_bail}</span>
@@ -117,7 +117,8 @@ export default function BauxPage() {
                   )}
 
                   {bail.statut === 'brouillon' && (
-                    <button onClick={() => window.location.href = `/baux/nouveau?id=${bail.id}`}
+                    <button
+                      onClick={e => { e.stopPropagation(); window.location.href = '/baux/nouveau?id=' + bail.id; }}
                       style={{ width: '100%', marginTop: 8, background: '#fef9c3', color: '#ca8a04', border: '1px solid #fde68a', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       ✍️ Finaliser et signer
                     </button>
