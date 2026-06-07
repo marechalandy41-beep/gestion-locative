@@ -74,6 +74,7 @@ const [newTel, setNewTel] = useState('');
             <a href="/baux" style={{ color: '#2563eb', borderBottom: '2px solid #2563eb', paddingBottom: 4, textDecoration: 'none' }}>Mes Baux</a>
             <a href="/biens" style={{ color: '#6b7280', textDecoration: 'none' }}>Mes Biens</a>
             <a href="/compte" style={{ color: '#6b7280', textDecoration: 'none' }}>Mon Compte</a>
+            <a href="/documents" style={{ color: '#6b7280', textDecoration: 'none' }}>Documents</a>
             <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth'; }}
               style={{ background: '#fef2f2', color: '#dc2626', padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
               Déconnexion

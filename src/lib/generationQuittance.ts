@@ -60,7 +60,6 @@ export function generateQuittance(data: QuittanceData): void {
   doc.text('BIEN LOUÉ', 20, 95)
   doc.setFont('helvetica', 'normal')
   doc.text(data.bien.adresse, 20, 103)
-  doc.text(`${data.bien.codePostal} ${data.bien.ville}`, 20, 110)
 
   // Ligne séparatrice
   doc.line(20, 120, pageWidth - 20, 120)
