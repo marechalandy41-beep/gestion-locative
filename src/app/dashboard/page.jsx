@@ -50,11 +50,12 @@ export default function Dashboard() {
       {/* ========== NAVIGATION ========== */}
       <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
         <div style={{maxWidth:1280, margin:'0 auto', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-          <a href="/" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
+          <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
           <div style={{display:'flex', gap:24, fontSize:14, fontWeight:500, alignItems:'center'}}>
-            <a href="/dashboard" style={{color:'#2563eb', borderBottom:'2px solid #2563eb', paddingBottom:4, textDecoration:'none'}}>Mes Baux</a>
-            <a href="/biens" style={{color:'#6b7280', textDecoration:'none'}}>Mes Biens</a>
-            <a href="/compte" style={{color:'#6b7280', textDecoration:'none'}}>Mon Compte</a>
+            <a href="/dashboard" style={{color:'#2563eb', borderBottom:'2px solid #2563eb', paddingBottom:4, textDecoration:'none'}}>Baux actifs</a>
+<a href="/baux" style={{color:'#6b7280', textDecoration:'none'}}>Mes Baux</a>
+<a href="/biens" style={{color:'#6b7280', textDecoration:'none'}}>Mes Biens</a>
+<a href="/compte" style={{color:'#6b7280', textDecoration:'none'}}>Mon Compte</a>
             <button onClick={deconnexion} style={{background:'#fef2f2', color:'#dc2626', padding:'6px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500}}>
               Déconnexion
             </button>
