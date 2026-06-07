@@ -47,8 +47,14 @@ export default function Dashboard() {
     window.location.href = '/auth';
   }
 
-  const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
-  const biensSansBail = Math.max(0, biens.length - baux.length);
+ const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
+const biensSansBail = Math.max(0, biens.length - baux.length);
+
+// Compte à rebours connexion bancaire (token Bridge valide 90 jours)
+const bridgeConnectedAt = typeof window !== 'undefined' ? localStorage.getItem('bridge_connected_at') : null;
+const joursRestants = bridgeConnectedAt
+  ? Math.max(0, 90 - Math.floor((Date.now() - parseInt(bridgeConnectedAt)) / (1000 * 60 * 60 * 24)))
+  : null;
 
   return (
     <main style={{minHeight:'100vh', background:'#f9fafb'}}>
@@ -74,16 +80,32 @@ export default function Dashboard() {
 
         {/* ========== EN-TÊTE ========== */}
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:32}}>
-          <div>
-           <h2 style={{fontSize:24, fontWeight:700, color:'#111827'}}>
-  Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
-</h2>
-<p style={{color:'#6b7280', fontSize:14, marginTop:4}}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
-          </div>
-          <a href="/baux/nouveau" style={{background:'#2563eb', color:'white', padding:'10px 20px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none'}}>
-            + Ajouter un bail
-          </a>
-        </div>
+  <div>
+    <h2 style={{fontSize:24, fontWeight:700, color:'#111827'}}>
+      Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
+    </h2>
+    <p style={{color:'#6b7280', fontSize:14, marginTop:4}}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
+  </div>
+
+  {/* Bouton banque centré */}
+  {joursRestants === null ? (
+    <a href="/connexion-bancaire" style={{background:'#f0fdf4', color:'#16a34a', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none', border:'1px solid #bbf7d0', display:'inline-flex', alignItems:'center', gap:8}}>
+      🏦 Connecter ma banque
+    </a>
+  ) : joursRestants > 10 ? (
+    <div style={{background:'#f0fdf4', color:'#16a34a', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, border:'1px solid #bbf7d0', display:'inline-flex', alignItems:'center', gap:8}}>
+      🏦 Banque connectée — {joursRestants}j
+    </div>
+  ) : (
+    <a href="/connexion-bancaire" style={{background:'#fef9c3', color:'#854d0e', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none', border:'1px solid #fde047', display:'inline-flex', alignItems:'center', gap:8}}>
+      ⚠️ Reconnexion dans {joursRestants}j
+    </a>
+  )}
+
+  <a href="/baux/nouveau" style={{background:'#2563eb', color:'white', padding:'10px 20px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none'}}>
+    + Ajouter un bail
+  </a>
+</div>
 
         {/* ========== STATS ========== */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:32}}>
