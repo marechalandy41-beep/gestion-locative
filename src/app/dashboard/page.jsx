@@ -22,6 +22,12 @@ export default function Dashboard() {
 
   async function chargerDonnees(userId) {
     setLoading(true);
+    const { data: profilData } = await supabase
+      .from('profiles')
+      .select('prenom')
+      .eq('id', userId)
+      .single();
+    if (profilData?.prenom) setUser(prev => ({ ...prev, prenom: profilData.prenom }));
     const { data: biensData } = await supabase
       .from('Biens')
       .select('*')
@@ -69,8 +75,10 @@ export default function Dashboard() {
         {/* ========== EN-TÊTE ========== */}
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:32}}>
           <div>
-            <h2 style={{fontSize:24, fontWeight:700, color:'#111827'}}>Mes Baux</h2>
-            <p style={{color:'#6b7280', fontSize:14, marginTop:4}}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
+           <h2 style={{fontSize:24, fontWeight:700, color:'#111827'}}>
+  Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
+</h2>
+<p style={{color:'#6b7280', fontSize:14, marginTop:4}}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
           </div>
           <a href="/baux/nouveau" style={{background:'#2563eb', color:'white', padding:'10px 20px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none'}}>
             + Ajouter un bail
