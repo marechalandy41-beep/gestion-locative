@@ -311,11 +311,25 @@ export default function Biens() {
                         </div>
                       ))
                     )}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <button style={{ flex: 1, background: '#f3f4f6', color: '#374151', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>+ Lot</button>
-                      <button style={{ flex: 1, background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>📁 Coffre-fort</button>
-                      <button style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>🏷️ Vendre</button>
-                    </div>
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12}}>
+  <button style={{background:'#f3f4f6', color:'#374151', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>+ Lot</button>
+  <button style={{background:'#eff6ff', color:'#2563eb', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>📁 Coffre-fort</button>
+  <button style={{background:'#fef2f2', color:'#dc2626', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>🏷️ Vendre</button>
+  <button
+    onClick={async e => {
+      e.stopPropagation();
+      const c1 = confirm('Supprimer définitivement ce bien ?');
+      if (!c1) return;
+      const c2 = confirm('Cette action est irréversible. Confirmer ?');
+      if (!c2) return;
+      const { error } = await supabase.from('Biens').delete().eq('id', bien.id);
+      if (!error) { chargerBiens(user.id); setSelectionne(null); }
+      else { alert('Erreur : ' + error.message); }
+    }}
+    style={{flex:1, background:'white', color:'#6b7280', padding:'8px', borderRadius:8, border:'1px solid #d1d5db', cursor:'pointer', fontSize:12, fontWeight:500}}>
+    🗑 Supprimer
+  </button>
+</div>
                   </div>
                 )}
               </div>

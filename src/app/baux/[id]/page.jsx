@@ -197,20 +197,32 @@ const [newTel, setNewTel] = useState('');
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          {bail.bail_pdf_url && (
-            <a href={bail.bail_pdf_url} target="_blank" rel="noopener noreferrer"
-              style={{ flex: 1, background: '#2563eb', color: 'white', padding: 14, borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
-              📄 Télécharger le PDF du bail
-            </a>
-          )}
-          {bail.statut !== 'termine' && (
-            <button onClick={cloturerBail}
-              style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-              🔒 Clôturer ce bail
-            </button>
-          )}
-        </div>
+       <div style={{ display: 'flex', gap: 12 }}>
+  {bail.bail_pdf_url && (
+    <a href={bail.bail_pdf_url} target="_blank" rel="noopener noreferrer"
+      style={{ flex: 1, background: '#2563eb', color: 'white', padding: 14, borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
+      📄 Télécharger le PDF du bail
+    </a>
+  )}
+  {bail.statut !== 'termine' && (
+    <button onClick={cloturerBail}
+      style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+      🔒 Clôturer ce bail
+    </button>
+  )}
+  <button onClick={async () => {
+    const confirm1 = confirm('Supprimer définitivement ce bail ?');
+    if (!confirm1) return;
+    const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
+    if (!confirm2) return;
+    const { error } = await supabase.from('Baux').delete().eq('id', bail.id);
+    if (!error) { window.location.href = '/baux'; }
+    else { alert('Erreur : ' + error.message); }
+  }}
+    style={{ flex: 1, background: 'white', color: '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+    🗑 Supprimer
+  </button>
+</div>
       </div>
     </main>
   );
