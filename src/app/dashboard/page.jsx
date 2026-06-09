@@ -117,9 +117,9 @@ export default function Dashboard() {
               🏦 Connecter ma banque
             </a>
           ) : joursRestants > 10 ? (
-            <div style={{background:'#f0fdf4', color:'#16a34a', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, border:'1px solid #bbf7d0', display:'inline-flex', alignItems:'center', gap:8}}>
-              🏦 Banque connectée — {joursRestants}j
-            </div>
+    <a href="/connexion-bancaire" style={{background:'#f0fdf4', color:'#16a34a', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, border:'1px solid #bbf7d0', display:'inline-flex', alignItems:'center', gap:8, textDecoration:'none'}}>
+      🏦 Banque connectée — {joursRestants}j
+    </a>
           ) : (
             <a href="/connexion-bancaire" style={{background:'#fef9c3', color:'#854d0e', padding:'10px 24px', borderRadius:12, fontWeight:600, fontSize:14, textDecoration:'none', border:'1px solid #fde047', display:'inline-flex', alignItems:'center', gap:8}}>
               ⚠️ Reconnexion dans {joursRestants}j

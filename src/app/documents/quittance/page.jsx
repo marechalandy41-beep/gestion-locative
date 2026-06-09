@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../supabase'
 import { generateQuittance } from '@/lib/generationQuittance'
+import jsPDF from 'jspdf'
 
 export default function Quittance() {
   const [baux, setBaux] = useState([])
@@ -10,6 +11,7 @@ export default function Quittance() {
   const [mois, setMois] = useState('')
   const [annee, setAnnee] = useState(new Date().getFullYear().toString())
   const [datePaiement, setDatePaiement] = useState('')
+  const [sauvegarde, setSauvegarde] = useState(false)
 
   useEffect(() => {
     chargerBaux()
@@ -36,17 +38,77 @@ export default function Quittance() {
     '09': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'
   }
 
+  async function sauvegarderDansCoffre(bail, pdfBlob, nomFichier) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const path = `${user.id}/${bail.bien_id}/quittances/${nomFichier}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true })
+
+      if (uploadError) { console.error('Upload erreur:', uploadError); return; }
+
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+
+      await supabase.from('Documents').insert({
+  user_id: user.id,
+  bien_id: bail.bien_id,
+  bail_id: bail.id,
+  nom_fichier: nomFichier,
+  categorie: 'Quittance',
+  annee: parseInt(annee),
+  storage_path: path,
+  url: urlData.publicUrl,
+})
+
+      setSauvegarde(true)
+      setTimeout(() => setSauvegarde(false), 3000)
+    } catch (e) {
+      console.error('Erreur sauvegarde coffre:', e)
+    }
+  }
+
   async function handleGenerate() {
     if (!bailId || !mois || !annee || !datePaiement) { alert('Remplissez tous les champs.'); return }
     const bail = baux.find(b => b.id === parseInt(bailId))
     if (!bail) return
     setLoading(true)
+
+    const nomFichier = `Quittance_${moisLabels[mois]}_${annee}_${bail.locataire_nom}.pdf`
+
+    // Générer et télécharger le PDF
     generateQuittance({
       proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
       locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
       loyer: { montant: bail.loyer_hc || 0, charges: bail.charges || 0, periode: `${moisLabels[mois]} ${annee}`, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
     })
+
+    // Générer aussi un blob pour sauvegarder dans le coffre
+    try {
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      doc.setFillColor(37, 99, 235)
+      doc.rect(0, 0, pageWidth, 35, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(18)
+      doc.setFont('helvetica', 'bold')
+      doc.text('QUITTANCE DE LOYER', pageWidth / 2, 22, { align: 'center' })
+      doc.setTextColor(0, 0, 0)
+      let y = 50
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Bien : ${bail.Biens?.nom || ''}`, 14, y); y += 8
+      doc.text(`Locataire : ${bail.locataire_prenom} ${bail.locataire_nom}`, 14, y); y += 8
+      doc.text(`Période : ${moisLabels[mois]} ${annee}`, 14, y); y += 8
+      doc.text(`Loyer CC : ${(bail.loyer_hc || 0) + (bail.charges || 0)}€`, 14, y)
+      const pdfBlob = doc.output('blob')
+      await sauvegarderDansCoffre(bail, pdfBlob, nomFichier)
+    } catch(e) {
+      console.error('Erreur génération blob:', e)
+    }
+
     setLoading(false)
   }
 
@@ -82,6 +144,13 @@ export default function Quittance() {
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>Quittance de loyer</h1>
           <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>Sélectionnez le bail et la période</p>
         </div>
+
+        {sauvegarde && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 12, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 16 }}>✅</span>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#15803d' }}>Quittance sauvegardée dans le coffre-fort !</p>
+          </div>
+        )}
 
         <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
           <div style={{ marginBottom: 16 }}>

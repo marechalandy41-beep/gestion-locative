@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
 
 const CATEGORIES = [
-  'Bail', 'Quittances', 'État des lieux entrée', 'État des lieux sortie',
+  'Bail', 'Quittance', 'État des lieux entrée', 'État des lieux sortie',
   'DPE', 'Diagnostic amiante', 'Diagnostic plomb', 'Diagnostic électricité',
   'Diagnostic gaz', 'Taxe foncière', 'Assurance', 'Factures travaux',
   'Acte de propriété', 'Autre'
