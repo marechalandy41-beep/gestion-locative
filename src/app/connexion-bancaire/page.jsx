@@ -80,7 +80,6 @@ export default function ConnexionBancaire() {
   }
 
   async function chargerComptes(token) {
-    console.log('chargerComptes appelé avec token:', token?.substring(0, 20));
     setLoading(true);
     try {
       const res = await fetch('/api/bridge', {
@@ -90,12 +89,10 @@ export default function ConnexionBancaire() {
       });
       const data = await res.json();
       const liste = data.resources || (Array.isArray(data) ? data : []);
-      console.log('Comptes reçus:', liste.map(c => ({id: c.id, name: c.name})));
-// Dédupliquer par id
-const unique = liste.filter((compte, index, self) => 
-  index === self.findIndex(c => c.name === compte.name)
-);
-setComptes(unique);
+      const unique = liste.filter((compte, index, self) =>
+        index === self.findIndex(c => c.name === compte.name)
+      );
+      setComptes(unique);
     } catch (e) { setErreur('Erreur comptes : ' + e.message); }
     setLoading(false);
   }
@@ -189,13 +186,26 @@ setComptes(unique);
     return doc.output('datauristring').split(',')[1];
   }
 
+  async function simulerVirement() {
+    if (baux.length === 0) { alert('Aucun bail actif trouvé'); return; }
+    const bail = baux[0];
+    await validerLoyer({
+      transaction: {
+        amount: parseFloat(bail.loyer_hc) + parseFloat(bail.charges || 0),
+        date: new Date().toISOString().split('T')[0],
+        label: `VIR ${bail.locataire_nom} LOYER`,
+      },
+      bail,
+      confiance: 'haute',
+    });
+  }
+
   async function validerLoyer(matching) {
     setValidationEnCours(matching.bail.id);
     const mois = new Date().getMonth() + 1;
     const annee = new Date().getFullYear();
-    const datePaiement = matching.transaction.date || matching.transaction.transaction_date || new Date().toISOString().split('T')[0];
+    const datePaiement = matching.transaction.date || new Date().toISOString().split('T')[0];
 
-    // 1. Vérifier unicité quittance ce mois
     const { data: existant } = await supabase
       .from('Documents')
       .select('id')
@@ -209,7 +219,6 @@ setComptes(unique);
       return;
     }
 
-    // 2. Sauvegarder le paiement
     await supabase.from('Paiements').insert({
       bail_id: matching.bail.id,
       user_id: user.id,
@@ -218,14 +227,12 @@ setComptes(unique);
       mois, annee,
       statut: 'paye',
       source: 'bridge_auto',
-      libelle_virement: matching.transaction.label || matching.transaction.description,
+      libelle_virement: matching.transaction.label,
     });
 
-    // 3. Générer PDF base64
     const pdfBase64 = genererPDFQuittance(matching.bail, mois, annee, datePaiement);
     const nomFichier = `Quittance_${moisLabels[mois]}_${annee}_${matching.bail.locataire_nom}.pdf`;
 
-    // 4. Upload coffre-fort
     try {
       const pdfBlob = new Blob([Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
       const path = `${user.id}/${matching.bail.bien_id}/Quittance/${nomFichier}`;
@@ -243,7 +250,6 @@ setComptes(unique);
       });
     } catch (e) { console.error('Erreur upload coffre:', e); }
 
-    // 5. Email locataire
     if (matching.bail.locataire_email) {
       try {
         await fetch('/api/send-quittance', {
@@ -326,6 +332,12 @@ setComptes(unique);
               style={{ background: loading || baux.length === 0 ? '#9ca3af' : '#2563eb', color: 'white', padding: '14px 32px', borderRadius: 10, border: 'none', cursor: loading || baux.length === 0 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 16 }}>
               {loading ? '⏳ Connexion en cours...' : '🔗 Connecter ma banque'}
             </button>
+            <div style={{ marginTop: 16 }}>
+              <button onClick={simulerVirement}
+                style={{ background: '#f3f4f6', color: '#6b7280', padding: '10px 20px', borderRadius: 10, border: '1px dashed #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                🧪 Simuler un virement (test dev)
+              </button>
+            </div>
           </div>
         )}
 
@@ -366,7 +378,7 @@ setComptes(unique);
                     <div>
                       <div style={{ fontWeight: 700, color: '#111827' }}>{m.bail.locataire_prenom} {m.bail.locataire_nom}</div>
                       <div style={{ color: '#6b7280', fontSize: 13 }}>{m.bail.Biens?.nom}</div>
-                      <div style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Libellé : {m.transaction.label || m.transaction.description || 'N/A'}</div>
+                      <div style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Libellé : {m.transaction.label || 'N/A'}</div>
                       <div style={{ color: '#6b7280', fontSize: 13, marginTop: 2 }}>
                         📧 {m.bail.locataire_email || <span style={{ color: '#f59e0b' }}>Pas d'email — quittance sans envoi</span>}
                       </div>
@@ -376,7 +388,7 @@ setComptes(unique);
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontWeight: 700, color: '#2563eb', fontSize: 22 }}>{m.transaction.amount}€</div>
-                      <div style={{ color: '#9ca3af', fontSize: 12 }}>{m.transaction.date || m.transaction.transaction_date}</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>{m.transaction.date}</div>
                       <button onClick={() => validerLoyer(m)} disabled={validationEnCours === m.bail.id}
                         style={{ marginTop: 8, background: validationEnCours === m.bail.id ? '#9ca3af' : '#2563eb', color: 'white', padding: '8px 16px', borderRadius: 8, border: 'none', cursor: validationEnCours === m.bail.id ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13 }}>
                         {validationEnCours === m.bail.id ? '⏳ En cours...' : '✅ Valider + Quittance'}

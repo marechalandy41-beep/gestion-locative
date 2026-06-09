@@ -8,7 +8,7 @@ export async function POST(request) {
     const { locataireEmail, locataireNom, locatairePrenom, bienNom, periode, montant, pdfBase64, proprietaireNom } = await request.json();
 
     const { data, error } = await resend.emails.send({
-      from: 'GestionLocative <noreply@gestionlocative.fr>',
+      from: 'GestionLocative <onboarding@resend.dev>',
       to: [locataireEmail],
       subject: `Quittance de loyer — ${periode}`,
       html: `
