@@ -41,14 +41,16 @@ export default function Documents() {
           </div>
 
          {/* État des lieux */}
-<div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', opacity: 0.6 }}>
+<div onClick={() => window.location.href = '/etats-des-lieux'}
+  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
     <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
     <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Plan payant</span>
   </div>
   <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>État des lieux</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 12px' }}>Créez un état des lieux d'entrée ou de sortie.</p>
-  <span style={{ background: '#f3f4f6', color: '#9ca3af', padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600 }}>🔒 Bientôt disponible</span>
+  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Créez un état des lieux d'entrée ou de sortie avec photos.</p>
 </div>
 
 {/* Récap fiscal */}

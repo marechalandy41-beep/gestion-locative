@@ -36,20 +36,45 @@ export default function etatsdeslieux() {
     setLoading(false);
   }
 
+  async function chargerDonnees(userId) {
+  console.log('Chargement EDL pour user:', userId);
+  const { data: edlData, error } = await supabase
+    .from('EtatsDesLieux')
+    .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(nom))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  console.log('EDL data:', edlData, 'Erreur:', error);
+
+  const { data: bauxData } = await supabase
+    .from('Baux')
+    .select('id, locataire_prenom, locataire_nom, Biens(nom)')
+    .eq('user_id', userId)
+    .in('statut', ['actif', 'brouillon']);
+
+  setEdls(edlData || []);
+  setBaux(bauxData || []);
+  setLoading(false);
+}
+
   const nav = (
-    <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-      <div style={{maxWidth:1280, margin:'0 auto', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-        <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
-        <div style={{display:'flex', gap:24, fontSize:14, fontWeight:500, alignItems:'center'}}>
-          <a href="/dashboard" style={{color:'#6b7280', textDecoration:'none'}}>Baux actifs</a>
-          <a href="/baux" style={{color:'#6b7280', textDecoration:'none'}}>Mes Baux</a>
-          <a href="/biens" style={{color:'#6b7280', textDecoration:'none'}}>Mes Biens</a>
-          <a href="/compte" style={{color:'#6b7280', textDecoration:'none'}}>Mon Compte</a>
-          <a href="/documents" style={{color:'#6b7280', textDecoration:'none'}}>Documents</a>
-        </div>
+  <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
+    <div style={{maxWidth:1280, margin:'0 auto', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+      <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
+      <div style={{display:'flex', gap:24, fontSize:14, fontWeight:500, alignItems:'center'}}>
+        <a href="/dashboard" style={{color:'#6b7280', textDecoration:'none'}}>Baux actifs</a>
+        <a href="/baux" style={{color:'#6b7280', textDecoration:'none'}}>Mes Baux</a>
+        <a href="/biens" style={{color:'#6b7280', textDecoration:'none'}}>Mes Biens</a>
+        <a href="/compte" style={{color:'#6b7280', textDecoration:'none'}}>Mon Compte</a>
+        <a href="/documents" style={{color:'#6b7280', textDecoration:'none'}}>Documents</a>
+        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth'; }}
+          style={{background:'#fef2f2', color:'#dc2626', padding:'6px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500}}>
+          Déconnexion
+        </button>
       </div>
-    </nav>
-  );
+    </div>
+  </nav>
+);
 
   return (
     <main style={{minHeight:'100vh', background:'#f9fafb'}}>

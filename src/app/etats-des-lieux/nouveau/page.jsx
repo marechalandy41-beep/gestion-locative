@@ -62,7 +62,7 @@ export default function NouvelEDL() {
       user_id: user.id,
       type: form.type,
       date_edl: form.date_edl,
-      pieces: pieces.filter(p => p.commentaire || p.photos.length > 0 || p.etat !== 'Bon état'),
+      pieces: pieces,
       compteurs,
       observations: form.observations,
       statut,
