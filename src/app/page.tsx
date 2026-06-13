@@ -4,25 +4,47 @@ import { supabase } from '../supabase'
 
 export default function Home() {
   const [user, setUser] = useState<any>(null)
+  const [settings, setSettings] = useState<any>({
+    prix_manuel: '4',
+    prix_auto: '6',
+    hero_badge: '🇫🇷 Conçu pour les propriétaires français',
+    hero_titre: 'Gérez vos biens locatifs en toute simplicité',
+    hero_sous_titre: 'Connexion bancaire automatique, quittances générées en un clic, coffre-fort numérique.',
+    argument_fiscal: "Selon l'article 31 du Code Général des Impôts, les frais de gestion locative sont déductibles de vos revenus fonciers. Votre abonnement GestionLocative est une charge déductible de votre avis d'imposition.",
+    feat_coffre: '{"gratuit":true,"manuel":true,"auto":true}',
+    feat_biens: '{"gratuit":true,"manuel":true,"auto":true}',
+    feat_quittance_manuelle: '{"gratuit":true,"manuel":true,"auto":true}',
+    feat_baux: '{"gratuit":false,"manuel":true,"auto":true}',
+    feat_edl: '{"gratuit":false,"manuel":true,"auto":true}',
+    feat_email_bail: '{"gratuit":false,"manuel":true,"auto":true}',
+    feat_recap_fiscal: '{"gratuit":false,"manuel":true,"auto":true}',
+    feat_bridge: '{"gratuit":false,"manuel":false,"auto":true}',
+    feat_detection: '{"gratuit":false,"manuel":false,"auto":true}',
+    feat_quittance_auto: '{"gratuit":false,"manuel":false,"auto":true}',
+    feat_relances: '{"gratuit":false,"manuel":false,"auto":true}',
+  })
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) setUser(data.user)
     })
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(data => { if (data.settings) setSettings(data.settings) })
   }, [])
 
   const features = [
-    { label: 'Coffre-fort numérique', gratuit: true, manuel: true, auto: true },
-    { label: 'Mes Biens', gratuit: true, manuel: true, auto: true },
-    { label: 'Quittances manuelles', gratuit: true, manuel: true, auto: true },
-    { label: 'Mes Baux', gratuit: false, manuel: true, auto: true },
-    { label: 'États des lieux numériques', gratuit: false, manuel: true, auto: true },
-    { label: 'Email bail au locataire', gratuit: false, manuel: true, auto: true },
-    { label: 'Récap fiscal annuel', gratuit: false, manuel: true, auto: true },
-    { label: 'Connexion bancaire', gratuit: false, manuel: false, auto: true },
-    { label: 'Détection automatique des loyers', gratuit: false, manuel: false, auto: true },
-    { label: 'Quittances automatiques', gratuit: false, manuel: false, auto: true },
-    { label: 'Relances automatiques locataire', gratuit: false, manuel: false, auto: true },
+    { label: 'Coffre-fort numérique', ...(settings.feat_coffre ? JSON.parse(settings.feat_coffre) : {}) },
+    { label: 'Mes Biens', ...(settings.feat_biens ? JSON.parse(settings.feat_biens) : {}) },
+    { label: 'Quittances manuelles', ...(settings.feat_quittance_manuelle ? JSON.parse(settings.feat_quittance_manuelle) : {}) },
+    { label: 'Mes Baux', ...(settings.feat_baux ? JSON.parse(settings.feat_baux) : {}) },
+    { label: 'États des lieux numériques', ...(settings.feat_edl ? JSON.parse(settings.feat_edl) : {}) },
+    { label: 'Email bail au locataire', ...(settings.feat_email_bail ? JSON.parse(settings.feat_email_bail) : {}) },
+    { label: 'Récap fiscal annuel', ...(settings.feat_recap_fiscal ? JSON.parse(settings.feat_recap_fiscal) : {}) },
+    { label: 'Connexion bancaire', ...(settings.feat_bridge ? JSON.parse(settings.feat_bridge) : {}) },
+    { label: 'Détection automatique des loyers', ...(settings.feat_detection ? JSON.parse(settings.feat_detection) : {}) },
+    { label: 'Quittances automatiques', ...(settings.feat_quittance_auto ? JSON.parse(settings.feat_quittance_auto) : {}) },
+    { label: 'Relances automatiques locataire', ...(settings.feat_relances ? JSON.parse(settings.feat_relances) : {}) },
   ]
 
   const Check = () => <span style={{ color: '#16a34a', fontWeight: 700, fontSize: 18 }}>✓</span>
@@ -56,14 +78,13 @@ export default function Home() {
       <section style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)', padding: '80px 24px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#dbeafe', color: '#1d4ed8', padding: '6px 16px', borderRadius: 99, fontSize: 13, fontWeight: 600, marginBottom: 24 }}>
-            🇫🇷 Conçu pour les propriétaires français
+            {settings.hero_badge}
           </div>
           <h1 style={{ fontSize: 48, fontWeight: 800, color: '#111827', lineHeight: 1.15, margin: '0 0 20px' }}>
-            Gérez vos biens locatifs<br />
-            <span style={{ color: '#2563eb' }}>en toute simplicité</span>
+            {settings.hero_titre}
           </h1>
           <p style={{ fontSize: 18, color: '#6b7280', lineHeight: 1.7, margin: '0 auto 36px', maxWidth: 600 }}>
-            Connexion bancaire automatique, quittances générées en un clic, coffre-fort numérique. Tout ce dont vous avez besoin pour gérer votre patrimoine immobilier.
+            {settings.hero_sous_titre}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/auth" style={{ background: '#2563eb', color: 'white', padding: '14px 32px', borderRadius: 10, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
@@ -109,8 +130,8 @@ export default function Home() {
             Un abonnement déductible de vos impôts
           </h2>
           <p style={{ fontSize: 16, color: '#374151', lineHeight: 1.7, margin: 0 }}>
-  Selon l'article 31 du Code Général des Impôts, les frais de gestion locative sont <strong>déductibles de vos revenus fonciers</strong>. Votre abonnement GestionLocative est une charge déductible de votre avis d'imposition.
-</p>
+            {settings.argument_fiscal}
+          </p>
         </div>
       </section>
 
@@ -124,7 +145,6 @@ export default function Home() {
             Payez uniquement pour vos bails actifs — pas de frais cachés
           </p>
 
-          {/* Cards plans */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 48 }}>
             {[
               {
@@ -133,12 +153,12 @@ export default function Home() {
                 boutonBg: '#111827', desc: 'Pour découvrir la plateforme',
               },
               {
-                nom: 'Manuel', prix: '4€', periode: 'par bail actif / mois',
+                nom: 'Manuel', prix: `${settings.prix_manuel}€`, periode: 'par bail actif / mois',
                 couleur: '#2563eb', bg: '#eff6ff', border: '#bfdbfe',
                 boutonBg: '#2563eb', desc: 'Pour gérer sans banque connectée',
               },
               {
-                nom: 'Automatique', prix: '6€', periode: 'par bail actif / mois',
+                nom: 'Automatique', prix: `${settings.prix_auto}€`, periode: 'par bail actif / mois',
                 couleur: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0',
                 boutonBg: '#16a34a', desc: 'La gestion locative en pilote automatique',
                 populaire: true,
@@ -165,14 +185,12 @@ export default function Home() {
 
           {/* Tableau comparatif */}
           <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-            {/* Header */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
               <div style={{ padding: '14px 20px', fontSize: 13, fontWeight: 700, color: '#374151' }}>Fonctionnalité</div>
               <div style={{ padding: '14px 20px', fontSize: 13, fontWeight: 700, color: '#6b7280', textAlign: 'center' }}>Gratuit</div>
               <div style={{ padding: '14px 20px', fontSize: 13, fontWeight: 700, color: '#2563eb', textAlign: 'center' }}>Manuel</div>
               <div style={{ padding: '14px 20px', fontSize: 13, fontWeight: 700, color: '#16a34a', textAlign: 'center' }}>Automatique</div>
             </div>
-            {/* Lignes */}
             {features.map((f, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < features.length - 1 ? '1px solid #f3f4f6' : 'none', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
                 <div style={{ padding: '13px 20px', fontSize: 14, color: '#374151', fontWeight: 500 }}>{f.label}</div>
