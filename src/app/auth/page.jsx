@@ -8,6 +8,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
+  const [codeParrainage, setCodeParrainage] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [erreur, setErreur] = useState('');
@@ -37,15 +38,31 @@ export default function Auth() {
       setLoading(false);
       return;
     }
-    const { error } = await supabase.auth.signUp({
+
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { prenom, nom } }
     });
+
     if (error) {
       setErreur('Erreur : ' + error.message);
-    } else {
-      setMessage('Compte créé ! Vérifiez votre email pour confirmer votre inscription.');
+      setLoading(false);
+      return;
     }
+
+    // Si un code parrainage a été saisi, on l'applique
+    if (codeParrainage.trim() && data?.user) {
+      await fetch('/api/appliquer-parrainage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: codeParrainage.trim().toUpperCase(),
+          filleulId: data.user.id,
+        }),
+      })
+    }
+
+    setMessage('Compte créé ! Vérifiez votre email pour confirmer votre inscription.');
     setLoading(false);
   }
 
@@ -143,6 +160,14 @@ export default function Auth() {
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleInscription(); }}
                 placeholder="6 caractères minimum" style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>
+                Code parrainage <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optionnel)</span>
+              </label>
+              <input type="text" value={codeParrainage}
+                onChange={e => setCodeParrainage(e.target.value.toUpperCase())}
+                placeholder="Ex: GL-ABC123" style={{ ...inputStyle, textTransform: 'uppercase', letterSpacing: 1 }} />
             </div>
             <button onClick={handleInscription} disabled={loading}
               style={{ background: '#2563eb', color: 'white', padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, marginTop: 8 }}>
