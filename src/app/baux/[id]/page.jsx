@@ -12,6 +12,8 @@ const [newEmail, setNewEmail] = useState('');
 const [newTel, setNewTel] = useState('');
 const [sending, setSending] = useState(false);
 const [emailToast, setEmailToast] = useState(null);
+const [sendingRelance, setSendingRelance] = useState(false);
+const [relanceToast, setRelanceToast] = useState(null);
 
   useEffect(() => {
     chargerBail();
@@ -101,6 +103,44 @@ const [emailToast, setEmailToast] = useState(null);
     </div>
   ) : null;
 
+async function envoyerRelance() {
+  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+  if (!confirm(`Envoyer une relance de loyer à ${bail.locataire_email} ?`)) return;
+
+  setSendingRelance(true);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const moisLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const now = new Date();
+    const res = await fetch('/api/send-relance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        locataireEmail: bail.locataire_email,
+        locatairePrenom: bail.locataire_prenom,
+        locataireNom: bail.locataire_nom,
+        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+        bienNom: bien?.nom || '',
+        montant: (bail.loyer_hc || 0) + (bail.charges || 0),
+        dateEcheance: bail.date_exigibilite || 1,
+        mois: moisLabels[now.getMonth()],
+        annee: now.getFullYear(),
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setRelanceToast({ msg: '✅ Relance envoyée au locataire !', succes: true });
+    } else {
+      setRelanceToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+    }
+  } catch (err) {
+    setRelanceToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+  } finally {
+    setSendingRelance(false);
+    setTimeout(() => setRelanceToast(null), 4000);
+  }
+}
+
   return (
    
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -131,6 +171,18 @@ const [emailToast, setEmailToast] = useState(null);
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
   }}>
     {emailToast.msg}
+    {relanceToast && (
+  <div style={{
+    position: 'fixed', top: 24, right: 24, zIndex: 9999,
+    background: relanceToast.succes ? '#dcfce7' : '#fef2f2',
+    color: relanceToast.succes ? '#15803d' : '#dc2626',
+    border: `1px solid ${relanceToast.succes ? '#86efac' : '#fca5a5'}`,
+    borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  }}>
+    {relanceToast.msg}
+  </div>
+)}
   </div>
 )}
 
@@ -262,6 +314,14 @@ const [emailToast, setEmailToast] = useState(null);
       {sending ? '⏳ Envoi...' : '📧 Envoyer au locataire'}
     </button>
   )}
+  {bail.statut === 'actif' && bail.locataire_email && (
+  <button
+    onClick={envoyerRelance}
+    disabled={sendingRelance}
+    style={{ flex: 1, background: sendingRelance ? '#fde68a' : '#f59e0b', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingRelance ? 'not-allowed' : 'pointer' }}>
+    {sendingRelance ? '⏳ Envoi...' : '⚠️ Relancer le locataire'}
+  </button>
+)}
   {bail.statut !== 'termine' && (
     <button onClick={cloturerBail}
       style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
