@@ -14,6 +14,10 @@ export default function RecapFiscal() {
   const [sauvegarde, setSauvegarde] = useState(false)
   const [chargesParBien, setChargesParBien] = useState({})
   const [showChargesForm, setShowChargesForm] = useState({})
+  const [uploadingJustif, setUploadingJustif] = useState({})
+  const [justificatifsParBien, setJustificatifsParBien] = useState({})
+  const [showJustifModal, setShowJustifModal] = useState({})
+const [categorieJustif, setCategorieJustif] = useState({})
 
   useEffect(() => { init() }, [])
 
@@ -27,6 +31,21 @@ export default function RecapFiscal() {
     setBiens(biensData || [])
     setBaux(bauxData || [])
     setPaiements(paiementsData || [])
+
+    // Charger les justificatifs déjà uploadés par bien
+    const { data: docsData } = await supabase
+      .from('Documents')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('categorie', 'Factures travaux')
+    if (docsData) {
+      const parBien = {}
+      docsData.forEach(d => {
+        if (!parBien[d.bien_id]) parBien[d.bien_id] = []
+        parBien[d.bien_id].push(d)
+      })
+      setJustificatifsParBien(parBien)
+    }
     setLoading(false)
   }
 
@@ -53,6 +72,52 @@ export default function RecapFiscal() {
     setChargesParBien(prev => ({
       ...prev,
       [bienId]: { ...(prev[bienId] || {}), [champ]: valeur }
+    }))
+  }
+
+  async function uploadJustificatif(bienId, fichier, categorie) {
+  if (!fichier) return
+  if (fichier.size > 10 * 1024 * 1024) { alert('Fichier trop lourd — max 10 Mo.'); return }
+  setUploadingJustif(prev => ({ ...prev, [bienId]: true }))
+  try {
+    const nomFichier = `${Date.now()}_${fichier.name}`
+    const categorieSlug = categorie.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_')
+const cheminStorage = `${user.id}/${bienId}/${categorieSlug}/${nomFichier}`
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(cheminStorage, fichier, { contentType: fichier.type, upsert: true })
+    if (uploadError) { alert('Erreur upload : ' + uploadError.message); return }
+    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage)
+    const { data: insertData } = await supabase.from('Documents').insert({
+      user_id: user.id,
+      bien_id: bienId,
+      nom_fichier: fichier.name,
+      categorie: categorie,
+      url: urlData.publicUrl,
+      storage_path: cheminStorage,
+      annee: annee,
+      taille: fichier.size,
+    }).select().single()
+    if (insertData) {
+      setJustificatifsParBien(prev => ({
+        ...prev,
+        [bienId]: [...(prev[bienId] || []), insertData]
+      }))
+    }
+    setShowJustifModal(prev => ({ ...prev, [bienId]: false }))
+  } catch (err) {
+    alert('Erreur : ' + err.message)
+  }
+  setUploadingJustif(prev => ({ ...prev, [bienId]: false }))
+}
+
+  async function supprimerJustificatif(bienId, doc) {
+    if (!confirm('Supprimer ce justificatif ?')) return
+    await supabase.storage.from('documents').remove([doc.storage_path])
+    await supabase.from('Documents').delete().eq('id', doc.id)
+    setJustificatifsParBien(prev => ({
+      ...prev,
+      [bienId]: (prev[bienId] || []).filter(d => d.id !== doc.id)
     }))
   }
 
@@ -104,6 +169,7 @@ export default function RecapFiscal() {
         const s = statsBien(bien.id)
         const charges = chargesParBien[bien.id] || {}
         const totalC = totalChargesBien(bien.id)
+        const justifs = justificatifsParBien[bien.id] || []
 
         doc.setFillColor(37, 99, 235)
         doc.rect(14, y - 5, pageWidth - 28, 10, 'F')
@@ -155,7 +221,17 @@ export default function RecapFiscal() {
         const netBien = s.totalLoyers - totalC
         doc.setTextColor(netBien >= 0 ? 21 : 220, netBien >= 0 ? 128 : 38, netBien >= 0 ? 61 : 38)
         doc.text(`${netBien.toFixed(2)} €`, 150, y)
-        doc.setTextColor(0, 0, 0); y += 14
+        doc.setTextColor(0, 0, 0); y += 10
+
+        if (justifs.length > 0) {
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(9)
+          doc.text(`Justificatifs (${justifs.length}) :`, 18, y); y += 5
+          justifs.forEach(j => {
+            doc.setFont('helvetica', 'normal')
+            doc.text(`• ${j.nom_fichier}`, 22, y); y += 5
+          })
+        }
 
         s.bauxBien.forEach(b => {
           doc.setFont('helvetica', 'normal')
@@ -298,6 +374,8 @@ export default function RecapFiscal() {
               const totalC = totalChargesBien(bien.id)
               const netBien = s.totalLoyers - totalC
               const showForm = showChargesForm[bien.id]
+              const justifs = justificatifsParBien[bien.id] || []
+              const uploading = uploadingJustif[bien.id]
 
               return (
                 <div key={bien.id} style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 16 }}>
@@ -328,36 +406,109 @@ export default function RecapFiscal() {
                     </div>
                   )}
 
-                  {/* Formulaire charges */}
-                  <button onClick={() => setShowChargesForm(prev => ({ ...prev, [bien.id]: !prev[bien.id] }))}
-                    style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: showForm ? 16 : 0 }}>
-                    {showForm ? '▲ Masquer les charges' : '+ Ajouter mes charges déductibles'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+  <button onClick={() => setShowChargesForm(prev => ({ ...prev, [bien.id]: !prev[bien.id] }))}
+    style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+    {showForm ? '▲ Masquer les charges' : '+ Ajouter mes charges'}
+  </button>
+  <button onClick={() => setShowJustifModal(prev => ({ ...prev, [bien.id]: !prev[bien.id] }))}
+    style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+    📎 Ajouter un justificatif
+  </button>
+</div>
 
-                  {showForm && (
-                    <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
-                      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Saisissez vos charges déductibles pour {annee} :</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        {[
-                          ['taxe_fonciere', 'Taxe foncière'],
-                          ['assurance', 'Assurance propriétaire'],
-                          ['travaux', 'Travaux / réparations'],
-                          ['frais_gestion', 'Frais de gestion'],
-                          ['interets_emprunt', "Intérêts d'emprunt"],
-                          ['autres', 'Autres charges'],
-                        ].map(([champ, label]) => (
-                          <div key={champ}>
-                            <label style={lbl}>{label} (€)</label>
-                            <input
-                              type="number"
-                              placeholder="0"
-                              value={charges[champ] || ''}
-                              onChange={e => updateCharge(bien.id, champ, e.target.value)}
-                              style={inp}
-                            />
+{showForm && (
+  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+    <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Saisissez vos charges déductibles pour {annee} :</p>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      {[
+        ['taxe_fonciere', 'Taxe foncière'],
+        ['assurance', 'Assurance propriétaire'],
+        ['travaux', 'Travaux / réparations'],
+        ['frais_gestion', 'Frais de gestion'],
+        ['interets_emprunt', "Intérêts d'emprunt"],
+        ['autres', 'Autres charges'],
+      ].map(([champ, label]) => (
+        <div key={champ}>
+          <label style={lbl}>{label} (€)</label>
+          <input type="number" min="0" placeholder="0"
+            value={charges[champ] || ''}
+            onChange={e => updateCharge(bien.id, champ, e.target.value)}
+            style={inp} />
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Modal sélecteur catégorie + fichier */}
+{showJustifModal[bien.id] && (
+  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginTop: 12 }}>
+    <p style={{ fontSize: 13, fontWeight: 600, color: '#15803d', margin: '0 0 10px' }}>📎 Quel type de justificatif ?</p>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      {[
+        ['Taxe foncière', '🏛️'],
+        ['Assurance', '🛡️'],
+        ['Factures travaux', '🔨'],
+        ['Frais de gestion', '📋'],
+        ['Intérêts emprunt', '🏦'],
+        ['Autre', '📄'],
+      ].map(([cat, emoji]) => (
+        <button key={cat} onClick={() => setCategorieJustif(prev => ({ ...prev, [bien.id]: cat }))}
+          style={{
+            background: categorieJustif[bien.id] === cat ? '#16a34a' : 'white',
+            color: categorieJustif[bien.id] === cat ? 'white' : '#374151',
+            border: `1px solid ${categorieJustif[bien.id] === cat ? '#16a34a' : '#e5e7eb'}`,
+            borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'left'
+          }}>
+          {emoji} {cat}
+        </button>
+      ))}
+    </div>
+    {categorieJustif[bien.id] && (
+      <div>
+        <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 8px' }}>Choisissez votre fichier (PDF, JPG, PNG — max 10 Mo)</p>
+        <input type="file" id={`justif-${bien.id}`} style={{ display: 'none' }}
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={e => {
+            uploadJustificatif(bien.id, e.target.files[0], categorieJustif[bien.id])
+            e.target.value = ''
+          }} />
+        <label htmlFor={`justif-${bien.id}`}
+          style={{ background: uploading ? '#9ca3af' : '#16a34a', color: 'white', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: uploading ? 'not-allowed' : 'pointer', display: 'inline-block' }}>
+          {uploading ? '⏳ Upload...' : '📁 Choisir le fichier'}
+        </label>
+        <button onClick={() => setShowJustifModal(prev => ({ ...prev, [bien.id]: false }))}
+          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, marginLeft: 12 }}>
+          Annuler
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+                  {/* Liste des justificatifs */}
+                  {justifs.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', margin: '0 0 8px' }}>📎 Justificatifs ({justifs.length})</p>
+                      {justifs.map(doc => (
+                        <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9fafb', borderRadius: 8, padding: '8px 12px', marginBottom: 6 }}>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 500, color: '#111827', margin: 0 }}>📄 {doc.nom_fichier}</p>
+                            <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{doc.taille ? `${(doc.taille / 1024).toFixed(0)} Ko` : ''}</p>
                           </div>
-                        ))}
-                      </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                              style={{ background: '#eff6ff', color: '#2563eb', padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500, textDecoration: 'none' }}>
+                              Ouvrir
+                            </a>
+                            <button onClick={() => supprimerJustificatif(bien.id, doc)}
+                              style={{ background: '#fef2f2', color: '#dc2626', padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12 }}>
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
