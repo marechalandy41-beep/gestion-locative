@@ -526,6 +526,77 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
         )}
 
       </div>
+      {/* PARRAINAGE */}
+<div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginTop: 20 }}>
+  <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>🤝 Paramètres parrainage</h3>
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+    {/* Filleul */}
+    <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
+      <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>👤 Filleul (nouveau client)</p>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
+        <select value={settings.parrainage_type_filleul || 'reduction'}
+          onChange={e => {
+            setSettings(prev => ({ ...prev, parrainage_type_filleul: e.target.value }))
+            sauvegarderSetting('parrainage_type_filleul', e.target.value)
+          }}
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+          <option value="reduction">Réduction (%)</option>
+          <option value="mois_gratuit">Mois gratuit(s)</option>
+        </select>
+      </div>
+      <div>
+        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
+          {settings.parrainage_type_filleul === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
+        </label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="number" min="1"
+            value={settings.parrainage_reduction_filleul || ''}
+            onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_filleul: e.target.value }))}
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+          <button onClick={() => sauvegarderSetting('parrainage_reduction_filleul', settings.parrainage_reduction_filleul)}
+            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            ✓
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Parrain */}
+    <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
+      <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>🎁 Parrain (client existant)</p>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
+        <select value={settings.parrainage_type_parrain || 'reduction'}
+          onChange={e => {
+            setSettings(prev => ({ ...prev, parrainage_type_parrain: e.target.value }))
+            sauvegarderSetting('parrainage_type_parrain', e.target.value)
+          }}
+          style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+          <option value="reduction">Réduction (%)</option>
+          <option value="mois_gratuit">Mois gratuit(s)</option>
+        </select>
+      </div>
+      <div>
+        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
+          {settings.parrainage_type_parrain === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
+        </label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="number" min="1"
+            value={settings.parrainage_reduction_parrain || ''}
+            onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_parrain: e.target.value }))}
+            style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+          <button onClick={() => sauvegarderSetting('parrainage_reduction_parrain', settings.parrainage_reduction_parrain)}
+            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            ✓
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
     </main>
   )
 }

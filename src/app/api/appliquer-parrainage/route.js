@@ -10,6 +10,20 @@ export async function POST(request) {
   try {
     const { code, filleulId } = await request.json();
 
+    // Récupérer les settings parrainage
+    const { data: settingsData } = await supabase
+      .from('settings')
+      .select('cle, valeur')
+      .in('cle', ['parrainage_reduction_filleul', 'parrainage_reduction_parrain', 'parrainage_type_filleul', 'parrainage_type_parrain'])
+
+    const settings = {}
+    settingsData?.forEach(s => { settings[s.cle] = s.valeur })
+
+    const reductionFilleul = parseInt(settings.parrainage_reduction_filleul) || 5
+    const reductionParrain = parseInt(settings.parrainage_reduction_parrain) || 5
+    const typeFilleul = settings.parrainage_type_filleul || 'reduction'
+    const typeParrain = settings.parrainage_type_parrain || 'reduction'
+
     // Trouver le parrain avec ce code
     const { data: parrain, error } = await supabase
       .from('customers')
@@ -21,22 +35,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Code parrainage invalide' }, { status: 400 });
     }
 
-    // Vérifier que le filleul ne parraine pas lui-même
     if (parrain.user_id === filleulId) {
       return NextResponse.json({ error: 'Vous ne pouvez pas utiliser votre propre code' }, { status: 400 });
     }
 
-    // Appliquer -5% au filleul
+    // Appliquer la récompense au filleul
     await supabase
       .from('customers')
-      .update({ reduction: 5, code_promo: code })
+      .update({
+        reduction: typeFilleul === 'reduction' ? reductionFilleul : 0,
+        mois_gratuits: typeFilleul === 'mois_gratuit' ? reductionFilleul : 0,
+        code_promo: code
+      })
       .eq('user_id', filleulId);
 
-    // Ajouter -5% au parrain (cumulable avec sa réduction actuelle, max 15%)
-    const nouvelleReduction = Math.min((parrain.reduction || 0) + 5, 15)
+    // Appliquer la récompense au parrain
+    const nouvelleReduction = typeParrain === 'reduction'
+      ? Math.min((parrain.reduction || 0) + reductionParrain, 15)
+      : 0
+    const moisGratuits = typeParrain === 'mois_gratuit' ? reductionParrain : 0
+
     await supabase
       .from('customers')
-      .update({ reduction: nouvelleReduction })
+      .update({
+        reduction: nouvelleReduction,
+        mois_gratuits: moisGratuits,
+      })
       .eq('user_id', parrain.user_id);
 
     // Enregistrer le parrainage
@@ -44,8 +68,8 @@ export async function POST(request) {
       parrain_id: parrain.user_id,
       filleul_id: filleulId,
       code_parrainage: code,
-      reduction_filleul: 5,
-      reduction_parrain: 5,
+      reduction_filleul: reductionFilleul,
+      reduction_parrain: reductionParrain,
     });
 
     return NextResponse.json({ success: true });
