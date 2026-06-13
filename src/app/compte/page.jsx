@@ -5,7 +5,6 @@ import Nav from '../components/nav'
 
 export default function Compte() {
 
-  // ========== ÉTATS DU COMPOSANT ==========
   const [onglet, setOnglet] = useState('profil');
   const [user, setUser] = useState(null);
   const [prenom, setPrenom] = useState('');
@@ -16,13 +15,14 @@ export default function Compte() {
   const [ancienMdp, setAncienMdp] = useState('');
   const [nouveauMdp, setNouveauMdp] = useState('');
   const [confirmMdp, setConfirmMdp] = useState('');
+  const [codePromo, setCodePromo] = useState('');
+  const [codeMessage, setCodeMessage] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false)
 
-  // ========== CHARGEMENT DE L'UTILISATEUR CONNECTÉ ==========
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
         setUser(data.user);
-        // Récupère les infos du profil stockées dans Supabase Auth
         setPrenom(data.user.user_metadata?.prenom || '');
         setNom(data.user.user_metadata?.nom || '');
         setTelephone(data.user.user_metadata?.telephone || '');
@@ -33,7 +33,6 @@ export default function Compte() {
     });
   }, []);
 
-  // ========== FONCTION: SAUVEGARDER LE PROFIL ==========
   async function sauvegarderProfil() {
     const { error } = await supabase.auth.updateUser({
       data: { prenom, nom, telephone }
@@ -44,16 +43,9 @@ export default function Compte() {
     }
   }
 
-  // ========== FONCTION: CHANGER LE MOT DE PASSE ==========
   async function changerMotDePasse() {
-    if (nouveauMdp !== confirmMdp) {
-      setMessage('Les mots de passe ne correspondent pas');
-      return;
-    }
-    if (nouveauMdp.length < 6) {
-      setMessage('Le mot de passe doit contenir au moins 6 caractères');
-      return;
-    }
+    if (nouveauMdp !== confirmMdp) { setMessage('Les mots de passe ne correspondent pas'); return; }
+    if (nouveauMdp.length < 6) { setMessage('Le mot de passe doit contenir au moins 6 caractères'); return; }
     const { error } = await supabase.auth.updateUser({ password: nouveauMdp });
     if (!error) {
       setMessage('Mot de passe modifié avec succès !');
@@ -62,108 +54,159 @@ export default function Compte() {
     }
   }
 
-  // ========== FONCTION: DÉCONNEXION ==========
+  async function appliquerCodePromo() {
+    if (!codePromo.trim()) { setCodeMessage('❌ Saisissez un code'); return; }
+    setCodeLoading(true)
+    setCodeMessage('')
+    try {
+      const res = await fetch('/api/appliquer-code-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codePromo.trim().toUpperCase(), userId: user.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCodeMessage(`✅ Code appliqué ! Réduction de ${data.reduction}% sur votre abonnement.`)
+        setCodePromo('')
+      } else {
+        setCodeMessage('❌ ' + data.error)
+      }
+    } catch (err) {
+      setCodeMessage('❌ Erreur : ' + err.message)
+    }
+    setCodeLoading(false)
+  }
+
   async function deconnexion() {
     await supabase.auth.signOut();
     window.location.href = '/auth';
   }
 
-  // ========== STYLES ==========
   const inputStyle = {
-    width: '100%',
-    border: '1px solid #e5e7eb',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontSize: 14,
-    outline: 'none',
-    boxSizing: 'border-box'
+    width: '100%', border: '1px solid #e5e7eb', borderRadius: 8,
+    padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box'
   };
 
-  if (loading) return <p style={{textAlign:'center', padding:40}}>Chargement...</p>;
+  if (loading) return <p style={{ textAlign: 'center', padding: 40 }}>Chargement...</p>;
 
   return (
-    <main style={{minHeight:'100vh', background:'#f9fafb'}}>
+    <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <Nav pageCourante="compte" />
 
-      {/* ========== BARRE DE NAVIGATION ========== */}
-     <Nav pageCourante="compte" />
-      {/* ========== FIN NAVIGATION ========== */}
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
 
-      <div style={{maxWidth:800, margin:'0 auto', padding:'32px 24px'}}>
-
-        {/* ========== EN-TÊTE AVEC NOM DE L'UTILISATEUR ========== */}
-        <div style={{marginBottom:24}}>
-          <h2 style={{fontSize:24, fontWeight:700, color:'#111827'}}>Mon Compte</h2>
-          {/* Affiche l'email de l'utilisateur connecté */}
-          <p style={{color:'#6b7280', fontSize:14, marginTop:4}}>Connecté en tant que {user?.email}</p>
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>Mon Compte</h2>
+          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Connecté en tant que {user?.email}</p>
         </div>
 
-        {/* ========== MESSAGE DE SUCCÈS ========== */}
         {message && (
-          <div style={{background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:12, marginBottom:16}}>
-            <p style={{color:'#15803d', fontSize:13}}>{message}</p>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 12, marginBottom: 16 }}>
+            <p style={{ color: '#15803d', fontSize: 13 }}>{message}</p>
           </div>
         )}
 
-        {/* ========== ONGLETS ========== */}
-        <div style={{display:'flex', gap:4, background:'#f3f4f6', borderRadius:12, padding:4, marginBottom:32, width:'fit-content'}}>
-          {['profil', 'securite'].map(o => (
-            <button key={o} onClick={() => setOnglet(o)} style={{
-              padding:'8px 20px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500,
-              background: onglet === o ? 'white' : 'transparent',
-              color: onglet === o ? '#2563eb' : '#6b7280',
-              boxShadow: onglet === o ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+        {/* ONGLETS */}
+        <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 12, padding: 4, marginBottom: 32, width: 'fit-content' }}>
+          {[
+            { id: 'profil', label: '👤 Profil' },
+            { id: 'securite', label: '🔒 Sécurité' },
+            { id: 'abonnement', label: '💳 Abonnement' },
+          ].map(o => (
+            <button key={o.id} onClick={() => setOnglet(o.id)} style={{
+              padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              background: onglet === o.id ? 'white' : 'transparent',
+              color: onglet === o.id ? '#2563eb' : '#6b7280',
+              boxShadow: onglet === o.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}>
-              {o === 'profil' ? '👤 Profil' : '🔒 Sécurité'}
+              {o.label}
             </button>
           ))}
         </div>
 
-        {/* ========== ONGLET PROFIL ========== */}
+        {/* ONGLET PROFIL */}
         {onglet === 'profil' && (
-          <div style={{background:'white', borderRadius:20, border:'1px solid #f3f4f6', padding:32, boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-            <h3 style={{fontSize:16, fontWeight:600, color:'#111827', marginBottom:24}}>Informations personnelles</h3>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 24 }}>Informations personnelles</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
               <div>
-                <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Prénom</label>
+                <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Prénom</label>
                 <input value={prenom} onChange={e => setPrenom(e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Nom</label>
+                <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Nom</label>
                 <input value={nom} onChange={e => setNom(e.target.value)} style={inputStyle} />
               </div>
             </div>
-            <div style={{marginBottom:16}}>
-              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Email</label>
-              {/* Email non modifiable - affiché en grisé */}
-              <input value={user?.email || ''} disabled style={{...inputStyle, background:'#f9fafb', color:'#9ca3af'}} />
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Email</label>
+              <input value={user?.email || ''} disabled style={{ ...inputStyle, background: '#f9fafb', color: '#9ca3af' }} />
             </div>
-            <div style={{marginBottom:24}}>
-              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Téléphone</label>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Téléphone</label>
               <input value={telephone} onChange={e => setTelephone(e.target.value)} placeholder="Ex: 06 12 34 56 78" style={inputStyle} />
             </div>
-            {/* Bouton sauvegarder le profil */}
-            <button onClick={sauvegarderProfil} style={{background:'#2563eb', color:'white', padding:'10px 24px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:14}}>
+            <button onClick={sauvegarderProfil} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               Sauvegarder
             </button>
           </div>
         )}
 
-        {/* ========== ONGLET SÉCURITÉ ========== */}
+        {/* ONGLET SÉCURITÉ */}
         {onglet === 'securite' && (
-          <div style={{background:'white', borderRadius:20, border:'1px solid #f3f4f6', padding:32, boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-            <h3 style={{fontSize:16, fontWeight:600, color:'#111827', marginBottom:24}}>Changer le mot de passe</h3>
-            <div style={{marginBottom:16}}>
-              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Nouveau mot de passe</label>
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 24 }}>Changer le mot de passe</h3>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Nouveau mot de passe</label>
               <input type="password" value={nouveauMdp} onChange={e => setNouveauMdp(e.target.value)} placeholder="6 caractères minimum" style={inputStyle} />
             </div>
-            <div style={{marginBottom:24}}>
-              <label style={{fontSize:13, fontWeight:500, color:'#374151', display:'block', marginBottom:6}}>Confirmer le nouveau mot de passe</label>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Confirmer le nouveau mot de passe</label>
               <input type="password" value={confirmMdp} onChange={e => setConfirmMdp(e.target.value)} placeholder="••••••••" style={inputStyle} />
             </div>
-            {/* Bouton changer le mot de passe */}
-            <button onClick={changerMotDePasse} style={{background:'#2563eb', color:'white', padding:'10px 24px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:14}}>
+            <button onClick={changerMotDePasse} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               Changer le mot de passe
             </button>
+          </div>
+        )}
+
+        {/* ONGLET ABONNEMENT */}
+        {onglet === 'abonnement' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Souscrire */}
+            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Passer au plan payant</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Accédez à toutes les fonctionnalités — baux, états des lieux, connexion bancaire et plus.</p>
+              <a href="/abonnement" style={{ display: 'inline-block', background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+                Voir les plans →
+              </a>
+            </div>
+
+            {/* Code promo */}
+            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🎟️ Code promo</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>Vous avez un code de réduction ? Saisissez-le ici.</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={codePromo}
+                  onChange={e => setCodePromo(e.target.value.toUpperCase())}
+                  placeholder="Ex: NOT-12345"
+                  onKeyDown={e => e.key === 'Enter' && appliquerCodePromo()}
+                  style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}
+                />
+                <button onClick={appliquerCodePromo} disabled={codeLoading}
+                  style={{ background: codeLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 20px', borderRadius: 10, border: 'none', cursor: codeLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
+                  {codeLoading ? '⏳' : 'Appliquer'}
+                </button>
+              </div>
+              {codeMessage && (
+                <p style={{ fontSize: 13, marginTop: 10, color: codeMessage.startsWith('✅') ? '#15803d' : '#dc2626', fontWeight: 500 }}>
+                  {codeMessage}
+                </p>
+              )}
+            </div>
+
           </div>
         )}
 
