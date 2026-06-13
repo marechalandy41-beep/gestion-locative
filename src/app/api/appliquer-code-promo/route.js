@@ -32,6 +32,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Ce code a atteint son nombre maximum d\'utilisations' }, { status: 400 });
     }
 
+// Vérifier que l'utilisateur n'a pas déjà un code promo
+const { data: customer } = await supabase
+  .from('customers')
+  .select('code_promo')
+  .eq('user_id', userId)
+  .single();
+
+if (customer?.code_promo) {
+  return NextResponse.json({ error: 'Vous avez déjà utilisé un code promo' }, { status: 400 });
+}
+
     // Incrémenter le compteur d'utilisations
     await supabase
       .from('codes_promo')

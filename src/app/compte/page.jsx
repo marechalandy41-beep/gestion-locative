@@ -18,14 +18,51 @@ export default function Compte() {
   const [codePromo, setCodePromo] = useState('');
   const [codeMessage, setCodeMessage] = useState('');
   const [codeLoading, setCodeLoading] = useState(false)
+  const [codeActuel, setCodeActuel] = useState(null)
+  const [reductionActuelle, setReductionActuelle] = useState(0)
+  const [codeExpire, setCodeExpire] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data?.user) {
         setUser(data.user);
         setPrenom(data.user.user_metadata?.prenom || '');
         setNom(data.user.user_metadata?.nom || '');
         setTelephone(data.user.user_metadata?.telephone || '');
+
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('code_promo, reduction')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (customerData?.code_promo) {
+  const { data: codeData } = await supabase
+    .from('codes_promo')
+    .select('expire_le, actif')
+    .eq('code', customerData.code_promo)
+    .single()
+
+  // Si le code n'existe plus dans la table, on garde quand même la réduction
+  if (!codeData) {
+    setCodeActuel(customerData.code_promo)
+    setReductionActuelle(customerData.reduction)
+  } else {
+    const codeValide = codeData.actif &&
+      (!codeData.expire_le || new Date(codeData.expire_le) >= new Date())
+
+    if (codeValide) {
+      setCodeActuel(customerData.code_promo)
+      setReductionActuelle(customerData.reduction)
+    } else {
+      setCodeExpire(true)
+      await supabase
+        .from('customers')
+        .update({ code_promo: null, reduction: 0 })
+        .eq('user_id', data.user.id)
+    }
+  }
+}
       } else {
         window.location.href = '/auth';
       }
@@ -67,6 +104,9 @@ export default function Compte() {
       const data = await res.json()
       if (data.success) {
         setCodeMessage(`✅ Code appliqué ! Réduction de ${data.reduction}% sur votre abonnement.`)
+        setCodeActuel(codePromo.trim().toUpperCase())
+        setReductionActuelle(data.reduction)
+        setCodeExpire(false)
         setCodePromo('')
       } else {
         setCodeMessage('❌ ' + data.error)
@@ -183,29 +223,50 @@ export default function Compte() {
               </a>
             </div>
 
-            {/* Code promo */}
-            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🎟️ Code promo</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>Vous avez un code de réduction ? Saisissez-le ici.</p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  value={codePromo}
-                  onChange={e => setCodePromo(e.target.value.toUpperCase())}
-                  placeholder="Ex: NOT-12345"
-                  onKeyDown={e => e.key === 'Enter' && appliquerCodePromo()}
-                  style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}
-                />
-                <button onClick={appliquerCodePromo} disabled={codeLoading}
-                  style={{ background: codeLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 20px', borderRadius: 10, border: 'none', cursor: codeLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
-                  {codeLoading ? '⏳' : 'Appliquer'}
-                </button>
-              </div>
-              {codeMessage && (
-                <p style={{ fontSize: 13, marginTop: 10, color: codeMessage.startsWith('✅') ? '#15803d' : '#dc2626', fontWeight: 500 }}>
-                  {codeMessage}
+            {/* Code expiré */}
+            {codeExpire && (
+              <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 12, padding: 14 }}>
+                <p style={{ fontSize: 13, color: '#854d0e', margin: 0, fontWeight: 500 }}>
+                  ⚠️ Votre code promo a expiré. Vous pouvez en saisir un nouveau ci-dessous.
                 </p>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Code promo actif */}
+            {codeActuel && !codeExpire && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>🎟️ Code promo actif</h3>
+                <p style={{ fontSize: 13, color: '#374151', margin: 0 }}>
+                  Code <strong>{codeActuel}</strong> — Réduction de <strong>{reductionActuelle}%</strong> sur votre abonnement
+                </p>
+              </div>
+            )}
+
+            {/* Saisie code promo — visible si pas de code actif ou si code expiré */}
+            {(!codeActuel || codeExpire) && (
+              <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🎟️ Code promo</h3>
+                <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>Vous avez un code de réduction ? Saisissez-le ici.</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={codePromo}
+                    onChange={e => setCodePromo(e.target.value.toUpperCase())}
+                    placeholder="Ex: NOT-12345"
+                    onKeyDown={e => e.key === 'Enter' && appliquerCodePromo()}
+                    style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}
+                  />
+                  <button onClick={appliquerCodePromo} disabled={codeLoading}
+                    style={{ background: codeLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 20px', borderRadius: 10, border: 'none', cursor: codeLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
+                    {codeLoading ? '⏳' : 'Appliquer'}
+                  </button>
+                </div>
+                {codeMessage && (
+                  <p style={{ fontSize: 13, marginTop: 10, color: codeMessage.startsWith('✅') ? '#15803d' : '#dc2626', fontWeight: 500 }}>
+                    {codeMessage}
+                  </p>
+                )}
+              </div>
+            )}
 
           </div>
         )}
