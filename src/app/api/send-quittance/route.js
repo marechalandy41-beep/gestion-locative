@@ -19,14 +19,12 @@ export async function POST(request) {
           <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
             <p style="font-size: 16px; color: #111827;">Bonjour <strong>${locatairePrenom} ${locataireNom}</strong>,</p>
             <p style="color: #374151;">Votre propriétaire <strong>${proprietaireNom}</strong> vous adresse votre quittance de loyer pour la période de <strong>${periode}</strong>.</p>
-            
             <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px;">Bien loué</p>
               <p style="margin: 0; font-weight: 600; color: #111827;">${bienNom}</p>
               <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">Montant total réglé</p>
               <p style="margin: 0; font-weight: 700; font-size: 24px; color: #2563eb;">${montant}€</p>
             </div>
-
             <p style="color: #374151;">Votre quittance est disponible en pièce jointe de cet email.</p>
             <p style="color: #6b7280; font-size: 13px; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
               Ce message est envoyé automatiquement par GestionLocative. Merci de ne pas répondre directement à cet email.
@@ -34,12 +32,7 @@ export async function POST(request) {
           </div>
         </div>
       `,
-      attachments: pdfBase64 ? [
-        {
-          filename: `Quittance_${periode}.pdf`,
-          content: pdfBase64,
-        }
-      ] : [],
+      attachments: pdfBase64 ? [{ filename: `Quittance_${periode}.pdf`, content: pdfBase64 }] : [],
     });
 
     if (error) {

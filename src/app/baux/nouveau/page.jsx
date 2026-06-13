@@ -204,44 +204,203 @@ export default function NouveauBail() {
     doc.save(`Bail_${bail.locataire_nom}_${bail.bailleur_nom}_${bail.date_debut || 'date'}.pdf`);
   }
 
-  async function sauvegarderBail(statut = 'actif') {
-    setLoading(true);
-    const payload = {
-      bien_id: parseInt(bail.bien_id) || null,
-      type_bail: bail.type_bail,
-      loyer_hc: parseFloat(bail.loyer_hc) || null,
-      charges: parseFloat(bail.charges) || 0,
-      type_charges: bail.type_charges,
-      depot_garantie: parseFloat(bail.depot_garantie) || 0,
-      date_debut: bail.date_debut || null,
-      date_fin: bail.date_fin || null,
-      locataire_prenom: bail.locataire_prenom, locataire_nom: bail.locataire_nom,
-      locataire_email: bail.locataire_email, locataire_telephone: bail.locataire_telephone,
-      locataire_naissance: bail.locataire_naissance || null, locataire_adresse: bail.locataire_adresse,
-      locataire_nationalite: bail.locataire_nationalite, locataire_profession: bail.locataire_profession,
-      bailleur_prenom: bail.bailleur_prenom, bailleur_nom: bail.bailleur_nom,
-      bailleur_adresse: bail.bailleur_adresse, bailleur_naissance: bail.bailleur_naissance || null,
-      bailleur_lieu_naissance: bail.bailleur_lieu_naissance, bailleur_nationalite: bail.bailleur_nationalite,
-      surface_habitable: parseFloat(bail.surface_habitable) || null,
-      nombre_pieces: parseInt(bail.nombre_pieces) || null,
-      etage: bail.etage, equipements: bail.equipements, classe_dpe: bail.classe_dpe,
-      numero_lot: bail.numero_lot, modalite_paiement: bail.modalite_paiement,
-      date_exigibilite: parseInt(bail.date_exigibilite) || 1,
-      revision_irl: bail.revision_irl, clauses: bail.clauses,
-      signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut,
-    };
-    let error;
-    if (bailId) {
-      ({ error } = await supabase.from('Baux').update(payload).eq('id', bailId));
-    } else {
-      ({ error } = await supabase.from('Baux').insert([{ ...payload, user_id: user.id }]));
-    }
-    setLoading(false);
-    if (!error) { window.location.href = '/baux'; }
-    else { alert('Erreur : ' + error.message); }
+  async function sauvegarderBail(statut = 'actif', bailPdfUrl = null) {
+  setLoading(true);
+  const payload = {
+    bien_id: parseInt(bail.bien_id) || null,
+    type_bail: bail.type_bail,
+    loyer_hc: parseFloat(bail.loyer_hc) || null,
+    charges: parseFloat(bail.charges) || 0,
+    type_charges: bail.type_charges,
+    depot_garantie: parseFloat(bail.depot_garantie) || 0,
+    date_debut: bail.date_debut || null,
+    date_fin: bail.date_fin || null,
+    locataire_prenom: bail.locataire_prenom, locataire_nom: bail.locataire_nom,
+    locataire_email: bail.locataire_email, locataire_telephone: bail.locataire_telephone,
+    locataire_naissance: bail.locataire_naissance || null, locataire_adresse: bail.locataire_adresse,
+    locataire_nationalite: bail.locataire_nationalite, locataire_profession: bail.locataire_profession,
+    bailleur_prenom: bail.bailleur_prenom, bailleur_nom: bail.bailleur_nom,
+    bailleur_adresse: bail.bailleur_adresse, bailleur_naissance: bail.bailleur_naissance || null,
+    bailleur_lieu_naissance: bail.bailleur_lieu_naissance, bailleur_nationalite: bail.bailleur_nationalite,
+    surface_habitable: parseFloat(bail.surface_habitable) || null,
+    nombre_pieces: parseInt(bail.nombre_pieces) || null,
+    etage: bail.etage, equipements: bail.equipements, classe_dpe: bail.classe_dpe,
+    numero_lot: bail.numero_lot, modalite_paiement: bail.modalite_paiement,
+    date_exigibilite: parseInt(bail.date_exigibilite) || 1,
+    revision_irl: bail.revision_irl, clauses: bail.clauses,
+    signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire,
+    statut,
+    ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
+  };
+  let error;
+  if (bailId) {
+    ({ error } = await supabase.from('Baux').update(payload).eq('id', bailId));
+  } else {
+    ({ error } = await supabase.from('Baux').insert([{ ...payload, user_id: user.id }]));
+  }
+  setLoading(false);
+  if (!error) { window.location.href = '/baux'; }
+  else { alert('Erreur : ' + error.message); }
+}
+
+  async function genererPDFBail() {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const bienSel = biens.find(b => b.id === parseInt(bail.bien_id));
+  const pageW = 210, margin = 20, contenuW = pageW - margin * 2;
+  let y = 20;
+  const checkPage = () => { if (y > 270) { doc.addPage(); y = 20; } };
+  const titre = (texte) => {
+    checkPage();
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235);
+    doc.text(texte, margin, y); y += 2;
+    doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.4);
+    doc.line(margin, y, pageW - margin, y); y += 6; doc.setTextColor(0, 0, 0);
+  };
+  const ligne = (label, valeur) => {
+    checkPage();
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(label, margin, y);
+    doc.setFont('helvetica', 'normal');
+    const val = valeur?.toString() || '—';
+    const lignes = doc.splitTextToSize(val, contenuW - 55);
+    doc.text(lignes, margin + 55, y);
+    y += Math.max(5, lignes.length * 4.5);
+  };
+  const texte = (t) => {
+    checkPage();
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50);
+    const lignes = doc.splitTextToSize(t, contenuW);
+    lignes.forEach(l => { checkPage(); doc.text(l, margin, y); y += 4.5; });
+    doc.setTextColor(0, 0, 0); y += 2;
+  };
+  const saut = (n = 5) => { y += n; };
+
+  doc.setFillColor(37, 99, 235); doc.rect(0, 0, 210, 20, 'F');
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+  doc.text('CONTRAT DE BAIL', pageW / 2, 10, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text(`${bail.type_bail.toUpperCase()} — Loi n°89-462 du 6 juillet 1989 modifiée par la loi ALUR du 24 mars 2014`, pageW / 2, 16, { align: 'center' });
+  y = 28; doc.setTextColor(0, 0, 0);
+
+  titre('ARTICLE 1 — LE BAILLEUR');
+  ligne('Nom et prénom :', `${bail.bailleur_prenom} ${bail.bailleur_nom}`);
+  ligne('Date de naissance :', bail.bailleur_naissance ? new Date(bail.bailleur_naissance).toLocaleDateString('fr-FR') : '');
+  ligne('Lieu de naissance :', bail.bailleur_lieu_naissance);
+  ligne('Nationalité :', bail.bailleur_nationalite);
+  ligne('Adresse :', bail.bailleur_adresse); saut();
+
+  titre('ARTICLE 2 — LE LOCATAIRE');
+  ligne('Nom et prénom :', `${bail.locataire_prenom} ${bail.locataire_nom}`);
+  ligne('Date de naissance :', bail.locataire_naissance ? new Date(bail.locataire_naissance).toLocaleDateString('fr-FR') : '');
+  ligne('Nationalité :', bail.locataire_nationalite);
+  ligne('Profession :', bail.locataire_profession);
+  ligne('Adresse actuelle :', bail.locataire_adresse);
+  ligne('Email :', bail.locataire_email);
+  ligne('Téléphone :', bail.locataire_telephone); saut();
+
+  titre('ARTICLE 3 — DÉSIGNATION DU BIEN LOUÉ');
+  ligne('Adresse :', bienSel?.adresse || '');
+  ligne('Type de bien :', bienSel?.type || '');
+  ligne('Surface habitable :', bail.surface_habitable ? `${bail.surface_habitable} m²` : '');
+  ligne('Nombre de pièces :', bail.nombre_pieces);
+  if (bail.etage) ligne('Étage / Bâtiment :', bail.etage);
+  if (bail.numero_lot) ligne('Numéro de lot :', bail.numero_lot);
+  ligne('Classe énergétique (DPE) :', bail.classe_dpe);
+  if (bail.equipements) ligne('Équipements inclus :', bail.equipements); saut();
+
+  titre('ARTICLE 4 — DURÉE DU BAIL');
+  const duree = bail.type_bail === 'Meublé' ? '1 an' : bail.type_bail === 'Commercial (3-6-9)' ? '9 ans' : '3 ans';
+  ligne('Date de début :', bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : '');
+  ligne('Date de fin :', bail.date_fin ? new Date(bail.date_fin).toLocaleDateString('fr-FR') : `Reconduction tacite (${duree})`);
+  texte(`Le présent bail est conclu pour une durée de ${duree}, conformément à la loi du 6 juillet 1989. À l'expiration de ce délai, le bail sera reconduit tacitement pour la même durée, sauf congé donné dans les délais légaux (6 mois pour le bailleur, 3 mois pour le locataire, 1 mois en zone tendue).`);
+
+  titre('ARTICLE 5 — CONDITIONS FINANCIÈRES');
+  ligne('Loyer mensuel hors charges :', `${bail.loyer_hc} €`);
+  ligne('Charges mensuelles :', `${bail.charges || 0} €`);
+  ligne('Type de charges :', bail.type_charges);
+  ligne('Total mensuel charges comprises :', `${(parseFloat(bail.loyer_hc) || 0) + (parseFloat(bail.charges) || 0)} €`);
+  ligne('Dépôt de garantie :', `${bail.depot_garantie || 0} €`);
+  ligne('Modalité de paiement :', bail.modalite_paiement);
+  ligne("Date d'exigibilité :", `Le ${bail.date_exigibilite} de chaque mois`);
+  ligne('Révision annuelle IRL :', bail.revision_irl ? "Oui — selon l'Indice de Référence des Loyers (INSEE)" : 'Non');
+  saut(2);
+  texte(`Le loyer est payable mensuellement et d'avance, le ${bail.date_exigibilite} de chaque mois par ${bail.modalite_paiement.toLowerCase()}. Les charges sont de type ${bail.type_charges.toLowerCase()}.`);
+  if (bail.revision_irl) texte("Le loyer sera révisé chaque année à la date anniversaire du bail sur la base de la variation de l'Indice de Référence des Loyers (IRL) publié par l'INSEE, conformément à l'article 17-1 de la loi du 6 juillet 1989.");
+
+  titre('ARTICLE 6 — OBLIGATIONS DU BAILLEUR');
+  texte("Le bailleur s'engage à : délivrer le logement en bon état d'usage et de réparation, assurer la jouissance paisible des lieux, entretenir les locaux en état de servir à l'usage prévu, réaliser les réparations autres que locatives, garantir contre les vices ou défauts cachés.");
+
+  titre('ARTICLE 7 — OBLIGATIONS DU LOCATAIRE');
+  texte("Le locataire s'engage à : payer le loyer et les charges aux termes convenus, user paisiblement des locaux, répondre des dégradations survenues pendant la durée du contrat, prendre à sa charge l'entretien courant et les menues réparations, souscrire une assurance multirisque habitation et en justifier chaque année, ne pas transformer les lieux sans accord écrit du bailleur, ne pas sous-louer sans autorisation écrite.");
+
+  titre('ARTICLE 8 — DÉPÔT DE GARANTIE');
+  texte(`Un dépôt de garantie de ${bail.depot_garantie || 0} € est versé à la signature du présent bail. Il sera restitué dans un délai d'un mois à compter de la remise des clés si aucune dégradation n'est constatée, ou de deux mois en cas de dégradations imputables au locataire, déduction faite des sommes dues.`);
+
+  if (bail.clauses && bail.clauses.trim()) {
+    titre('ARTICLE 9 — CLAUSES PARTICULIÈRES');
+    texte(bail.clauses);
   }
 
-  async function finaliserBailSigne() { genererPDFBail(); await sauvegarderBail('actif'); }
+  if (y > 210) { doc.addPage(); y = 20; }
+  saut(5); titre('SIGNATURES');
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text(`Fait en deux exemplaires originaux, le ${new Date().toLocaleDateString('fr-FR')}`, margin, y); y += 12;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Le Bailleur', margin, y); doc.text('Le Locataire', pageW / 2 + 5, y); y += 4;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.text(`${bail.bailleur_prenom} ${bail.bailleur_nom}`, margin, y);
+  doc.text(`${bail.locataire_prenom} ${bail.locataire_nom}`, pageW / 2 + 5, y); y += 2;
+  doc.text('(Précédé de la mention "Lu et approuvé")', margin, y);
+  doc.text('(Précédé de la mention "Lu et approuvé")', pageW / 2 + 5, y); y += 4;
+  doc.setDrawColor(180, 180, 180);
+  doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38);
+  if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 1, 78, 36);
+  if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36);
+  y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+  doc.text('Document généré par GestionLocative — Conforme loi n°89-462 du 6 juillet 1989 et loi ALUR du 24 mars 2014', pageW / 2, y, { align: 'center' });
+
+  return doc;
+}
+
+async function finaliserBailSigne() {
+  setLoading(true);
+  try {
+    const doc = await genererPDFBail();
+    const nomFichier = `Bail_${bail.locataire_nom}_${bail.bailleur_nom}_${bail.date_debut || 'date'}.pdf`;
+
+    // Téléchargement local
+    doc.save(nomFichier);
+
+    // Upload dans Supabase Storage
+    const pdfBlob = doc.output('blob');
+    const cheminStorage = `baux/${user.id}/${Date.now()}_${nomFichier}`;
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(cheminStorage, pdfBlob, { contentType: 'application/pdf' });
+
+    if (uploadError) { alert('Erreur upload PDF : ' + uploadError.message); setLoading(false); return; }
+
+    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage);
+    const bailPdfUrl = urlData.publicUrl;
+
+    // Insérer dans la table Documents pour le coffre-fort
+    await supabase.from('Documents').insert({
+      user_id: user.id,
+      bien_id: parseInt(bail.bien_id),
+      nom_fichier: nomFichier,
+      categorie: 'Bail',
+      url: bailPdfUrl,
+      storage_path: cheminStorage,
+      annee: bail.date_debut ? new Date(bail.date_debut).getFullYear() : new Date().getFullYear(),
+    });
+
+    // Sauvegarder le bail avec l'URL du PDF
+    await sauvegarderBail('actif', bailPdfUrl);
+
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    setLoading(false);
+  }
+}
 
   function initCanvas(canvas) {
     if (!canvas) return;

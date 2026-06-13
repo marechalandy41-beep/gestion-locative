@@ -10,6 +10,8 @@ export default function DetailBail() {
 const [editContact, setEditContact] = useState(false);
 const [newEmail, setNewEmail] = useState('');
 const [newTel, setNewTel] = useState('');
+const [sending, setSending] = useState(false);
+const [emailToast, setEmailToast] = useState(null);
 
   useEffect(() => {
     chargerBail();
@@ -31,6 +33,42 @@ const [newTel, setNewTel] = useState('');
     setBien(data.Biens);
     setLoading(false);
   }
+
+  async function envoyerBail() {
+  if (!bail.bail_pdf_url) { alert('Aucun PDF de bail disponible.'); return; }
+  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+  if (!confirm(`Envoyer le bail par email à ${bail.locataire_email} ?`)) return;
+
+  setSending(true);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch('/api/send-bail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bailPdfUrl: bail.bail_pdf_url,
+        locataireEmail: bail.locataire_email,
+        locataireNom: bail.locataire_nom,
+        locatairePrenom: bail.locataire_prenom,
+        proprietaireEmail: user.email,
+        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+        bienNom: bien?.nom || '',
+        loyer: (bail.loyer_hc || 0) + (bail.charges || 0),
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setEmailToast({ msg: '✅ Bail envoyé au locataire et à vous-même !', succes: true });
+    } else {
+      setEmailToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+    }
+  } catch (err) {
+    setEmailToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+  } finally {
+    setSending(false);
+    setTimeout(() => setEmailToast(null), 4000);
+  }
+}
 
   async function cloturerBail() {
     if (!confirm('Confirmer la clôture de ce bail ? Il passera en statut "Terminé".')) return;
@@ -64,6 +102,7 @@ const [newTel, setNewTel] = useState('');
   ) : null;
 
   return (
+   
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -82,6 +121,18 @@ const [newTel, setNewTel] = useState('');
           </div>
         </div>
       </nav>
+      {emailToast && (
+  <div style={{
+    position: 'fixed', top: 24, right: 24, zIndex: 9999,
+    background: emailToast.succes ? '#dcfce7' : '#fef2f2',
+    color: emailToast.succes ? '#15803d' : '#dc2626',
+    border: `1px solid ${emailToast.succes ? '#86efac' : '#fca5a5'}`,
+    borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  }}>
+    {emailToast.msg}
+  </div>
+)}
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
 
@@ -204,6 +255,12 @@ const [newTel, setNewTel] = useState('');
       style={{ flex: 1, background: '#2563eb', color: 'white', padding: 14, borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
       📄 Télécharger le PDF du bail
     </a>
+  )}
+  {bail.statut === 'actif' && bail.bail_pdf_url && bail.locataire_email && (
+    <button onClick={envoyerBail} disabled={sending}
+      style={{ flex: 1, background: sending ? '#86efac' : '#16a34a', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sending ? 'not-allowed' : 'pointer' }}>
+      {sending ? '⏳ Envoi...' : '📧 Envoyer au locataire'}
+    </button>
   )}
   {bail.statut !== 'termine' && (
     <button onClick={cloturerBail}
