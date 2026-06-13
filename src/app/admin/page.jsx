@@ -187,31 +187,53 @@ export default function Admin() {
 
         {/* UTILISATEURS */}
         {onglet === 'users' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>Utilisateurs ({users.length})</h2>
-            <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
-                {['Email', 'Plan', 'Baux actifs', 'Inscrit le'].map(h => (
-                  <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
-                ))}
-              </div>
-              {users.map((u, i) => (
-                <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
-                  <span style={{ color: 'white', fontSize: 14 }}>{u.email}</span>
-                  <span style={{
-                    background: u.plan === 'auto' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
-                    color: u.plan === 'auto' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
-                    padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600, display: 'inline-block'
-                  }}>
-                    {u.plan || 'gratuit'}
-                  </span>
-                  <span style={{ color: '#9ca3af', fontSize: 14 }}>{u.nbBaux}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{new Date(u.created_at).toLocaleDateString('fr-FR')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+  <div>
+    <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>Utilisateurs ({users.length})</h2>
+    <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
+        {['Email', 'Plan', 'Baux actifs', 'Inscrit le', 'Action'].map(h => (
+          <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
+        ))}
+      </div>
+      {users.map((u, i) => (
+        <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontSize: 14 }}>{u.email}</span>
+          <span style={{
+            background: u.plan === 'auto' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
+            color: u.plan === 'auto' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
+            padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600, display: 'inline-block'
+          }}>
+            {u.plan || 'gratuit'}
+          </span>
+          <span style={{ color: '#9ca3af', fontSize: 14 }}>{u.nbBaux}</span>
+          <span style={{ color: '#9ca3af', fontSize: 13 }}>{new Date(u.created_at).toLocaleDateString('fr-FR')}</span>
+          <select
+            value={u.plan || 'gratuit'}
+            onChange={async (e) => {
+              const nouveauPlan = e.target.value;
+              const res = await fetch('/api/admin/update-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: u.id, plan: nouveauPlan }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                setUsers(prev => prev.map(user => user.id === u.id ? { ...user, plan: nouveauPlan } : user));
+              } else {
+                alert('Erreur : ' + data.error);
+              }
+            }}
+            style={{ background: '#374151', color: 'white', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}
+          >
+            <option value="gratuit">Gratuit</option>
+            <option value="manuel">Manuel</option>
+            <option value="auto">Automatique</option>
+          </select>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* ABONNEMENTS */}
         {onglet === 'abonnements' && (
