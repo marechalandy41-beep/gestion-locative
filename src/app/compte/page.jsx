@@ -21,6 +21,7 @@ export default function Compte() {
   const [codeActuel, setCodeActuel] = useState(null)
   const [reductionActuelle, setReductionActuelle] = useState(0)
   const [codeExpire, setCodeExpire] = useState(false)
+  const [codeParrainage, setCodeParrainage] = useState('')
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -31,10 +32,10 @@ export default function Compte() {
         setTelephone(data.user.user_metadata?.telephone || '');
 
         const { data: customerData } = await supabase
-          .from('customers')
-          .select('code_promo, reduction')
-          .eq('user_id', data.user.id)
-          .single();
+  .from('customers')
+  .select('code_promo, reduction, code_parrainage')
+  .eq('user_id', data.user.id)
+  .single();
 
         if (customerData?.code_promo) {
   const { data: codeData } = await supabase
@@ -62,6 +63,9 @@ export default function Compte() {
         .eq('user_id', data.user.id)
     }
   }
+}
+if (customerData?.code_parrainage) {
+  setCodeParrainage(customerData.code_parrainage)
 }
       } else {
         window.location.href = '/auth';
@@ -222,6 +226,26 @@ export default function Compte() {
                 Voir les plans →
               </a>
             </div>
+            {/* Code parrainage */}
+<div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+  <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🤝 Parrainez un proche</h3>
+  <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
+    Partagez votre code et obtenez <strong>-5%</strong> sur votre abonnement pour chaque filleul qui s'abonne !
+  </p>
+  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div>
+      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Votre code parrainage</p>
+      <p style={{ fontSize: 22, fontWeight: 800, color: '#2563eb', letterSpacing: 2, margin: 0 }}>{codeParrainage || '—'}</p>
+    </div>
+    <button onClick={() => {
+      navigator.clipboard.writeText(codeParrainage)
+      alert('Code copié !')
+    }}
+      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+      📋 Copier
+    </button>
+  </div>
+</div>
 
             {/* Code expiré */}
             {codeExpire && (
