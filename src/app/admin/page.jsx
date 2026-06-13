@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
 
 export default function Admin() {
+    const [codes, setCodes] = useState([])
+const [nouveauCode, setNouveauCode] = useState({ code: '', reduction: 10, type: 'promo', usage_max: '',expire_le: '' })
+const [showFormCode, setShowFormCode] = useState(false)
   const [settings, setSettings] = useState({})
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsToast, setSettingsToast] = useState(false)
@@ -59,6 +62,9 @@ export default function Admin() {
     } catch (err) {
       console.error(err)
     }
+    const resCodes = await fetch('/api/admin/codes-promo')
+const dataCodes = await resCodes.json()
+if (dataCodes.codes) setCodes(dataCodes.codes)
     setLoading(false)
   }
 
@@ -107,6 +113,7 @@ export default function Admin() {
     { id: 'users', label: '👥 Utilisateurs' },
     { id: 'abonnements', label: '💳 Abonnements' },
     { id: 'parametres', label: '⚙️ Paramètres' },
+    { id: 'codes', label: '🎟️ Codes promo' },
   ]
 
   return (
@@ -283,6 +290,129 @@ export default function Admin() {
             </div>
           </div>
         )}
+
+{onglet === 'codes' && (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', margin: 0 }}>🎟️ Codes promo</h2>
+      <button onClick={() => setShowFormCode(!showFormCode)}
+        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+        + Créer un code
+      </button>
+    </div>
+
+    {showFormCode && (
+      <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+        <h3 style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: '0 0 16px' }}>Nouveau code promo</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Code</label>
+            <input placeholder="NOT-12345" value={nouveauCode.code}
+              onChange={e => setNouveauCode(prev => ({ ...prev, code: e.target.value }))}
+              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Réduction (%)</label>
+            <input type="number" min="1" placeholder="Illimité" value={nouveauCode.usage_max}
+  onChange={e => setNouveauCode(prev => ({ ...prev, usage_max: e.target.value }))}
+  style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
+            <select value={nouveauCode.type}
+              onChange={e => setNouveauCode(prev => ({ ...prev, type: e.target.value }))}
+              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+              <option value="promo">Promo</option>
+              <option value="notaire">Notaire</option>
+              <option value="agence">Agence</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Utilisations max</label>
+            <input type="number" min="1" value={nouveauCode.usage_max}
+              onChange={e => setNouveauCode(prev => ({ ...prev, usage_max: parseInt(e.target.value) }))}
+              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Expire le</label>
+            <input type="date" value={nouveauCode.expire_le}
+              onChange={e => setNouveauCode(prev => ({ ...prev, expire_le: e.target.value }))}
+              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={async () => {
+            if (!nouveauCode.code) { alert('Code obligatoire'); return }
+            const res = await fetch('/api/admin/codes-promo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'create', ...nouveauCode }),
+            })
+            const data = await res.json()
+            if (data.success) {
+              const resCodes = await fetch('/api/admin/codes-promo')
+              const dataCodes = await resCodes.json()
+              setCodes(dataCodes.codes || [])
+              setShowFormCode(false)
+              setNouveauCode({ code: '', reduction: 10, type: 'promo', usage_max: 1, expire_le: '' })
+            }
+          }}
+            style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+            ✅ Créer
+          </button>
+          <button onClick={() => setShowFormCode(false)}
+            style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    )}
+
+    <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
+        {['Code', 'Réduction', 'Type', 'Utilisations', 'Expire le', 'Actions'].map(h => (
+          <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
+        ))}
+      </div>
+      {codes.length === 0 ? (
+        <p style={{ color: '#9ca3af', padding: 20, fontSize: 14 }}>Aucun code promo créé.</p>
+      ) : codes.map((c, i) => (
+        <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < codes.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontWeight: 700, fontSize: 14, fontFamily: 'monospace' }}>{c.code}</span>
+          <span style={{ color: '#4ade80', fontWeight: 700 }}>-{c.reduction}%</span>
+          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.type}</span>
+          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.usage_count}/{c.usage_max}</span>
+          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.expire_le ? new Date(c.expire_le).toLocaleDateString('fr-FR') : '—'}</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={async () => {
+              await fetch('/api/admin/codes-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle', id: c.id }),
+              })
+              setCodes(prev => prev.map(code => code.id === c.id ? { ...code, actif: !code.actif } : code))
+            }}
+              style={{ background: c.actif ? '#14532d' : '#374151', color: c.actif ? '#4ade80' : '#9ca3af', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+              {c.actif ? '✓ Actif' : '✗ Inactif'}
+            </button>
+            <button onClick={async () => {
+              if (!confirm('Supprimer ce code ?')) return
+              await fetch('/api/admin/codes-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: c.id }),
+              })
+              setCodes(prev => prev.filter(code => code.id !== c.id))
+            }}
+              style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+              🗑
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* PARAMÈTRES */}
         {onglet === 'parametres' && (
