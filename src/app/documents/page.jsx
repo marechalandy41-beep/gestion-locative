@@ -1,26 +1,56 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
+import Nav from '../components/nav'
 
 export default function Documents() {
+  const [plan, setPlan] = useState('gratuit')
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data?.user) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('plan')
+          .eq('user_id', data.user.id)
+          .single()
+        if (customerData?.plan) setPlan(customerData.plan)
+      }
+    })
+  }, [])
+
+  const estPayant = plan !== 'gratuit'
+
+  const cartePayante = (onClick, emoji, titre, description) => (
+    <div
+      onClick={estPayant ? onClick : undefined}
+      style={{
+        background: estPayant ? 'white' : '#f9fafb',
+        borderRadius: 16, padding: 28,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        cursor: estPayant ? 'pointer' : 'not-allowed',
+        border: '2px solid transparent',
+        opacity: estPayant ? 1 : 0.6,
+      }}
+      onMouseEnter={e => { if (estPayant) e.currentTarget.style.border = '2px solid #2563eb' }}
+      onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>{emoji}</div>
+        {!estPayant ? (
+          <span style={{ background: '#fef2f2', color: '#dc2626', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>🔒 Plan payant</span>
+        ) : (
+          <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Plan payant</span>
+        )}
+      </div>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>{titre}</h3>
+      <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>{description}</p>
+    </div>
+  )
+
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
-
-      <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/dashboard" style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }}>GestionLocative</a>
-          <div style={{ display: 'flex', gap: 24, fontSize: 14, fontWeight: 500, alignItems: 'center' }}>
-            <a href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>Baux actifs</a>
-            <a href="/baux" style={{ color: '#6b7280', textDecoration: 'none' }}>Mes Baux</a>
-            <a href="/biens" style={{ color: '#6b7280', textDecoration: 'none' }}>Mes Biens</a>
-            <a href="/compte" style={{ color: '#6b7280', textDecoration: 'none' }}>Mon Compte</a>
-            <a href="/documents" style={{ color: '#2563eb', borderBottom: '2px solid #2563eb', paddingBottom: 4, textDecoration: 'none' }}>Documents</a>
-            <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth'; }}
-              style={{ background: '#fef2f2', color: '#dc2626', padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Nav pageCourante="documents" />
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px' }}>
         <div style={{ marginBottom: 32 }}>
@@ -30,7 +60,7 @@ export default function Documents() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
-          {/* Quittance */}
+          {/* Quittance — accessible à tous */}
           <div onClick={() => window.location.href = '/documents/quittance'}
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
@@ -40,54 +70,37 @@ export default function Documents() {
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Générez une quittance PDF pour un locataire et une période donnée.</p>
           </div>
 
-         {/* État des lieux */}
-<div onClick={() => window.location.href = '/etats-des-lieux'}
-  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
-  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-    <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-    <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Plan payant</span>
-  </div>
-  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>État des lieux</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Créez un état des lieux d'entrée ou de sortie avec photos.</p>
-</div>
+          {/* Coffre-fort — accessible à tous */}
+          <div onClick={() => window.location.href = '/coffre-fort'}
+            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Coffre-fort numérique</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Tous vos documents immobiliers organisés par bien.</p>
+          </div>
 
-{/* Récap fiscal */}
-<div onClick={() => window.location.href = '/documents/recap-fiscal'}
-  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
-  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-    <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
-    <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Plan payant</span>
-  </div>
-  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Récapitulatif fiscal</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Générez votre récap annuel pour la déclaration de revenus fonciers.</p>
-</div>
+          {/* État des lieux — payant */}
+          {cartePayante(
+            () => window.location.href = '/etats-des-lieux',
+            '📋', 'État des lieux',
+            "Créez un état des lieux d'entrée ou de sortie avec photos."
+          )}
 
-         {/* Bail */}
-<div onClick={() => window.location.href = '/baux/nouveau'}
-  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
-  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-    <div style={{ fontSize: 40, marginBottom: 12 }}>✍️</div>
-    <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Plan payant</span>
-  </div>
-  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Créer un bail</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Rédigez un bail officiel conforme loi ALUR avec signature.</p>
-</div>
+          {/* Récap fiscal — payant */}
+          {cartePayante(
+            () => window.location.href = '/documents/recap-fiscal',
+            '📊', 'Récapitulatif fiscal',
+            'Générez votre récap annuel pour la déclaration de revenus fonciers.'
+          )}
 
-{/* Coffre-fort */}
-<div onClick={() => window.location.href = '/coffre-fort'}
-  style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
-  onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-  <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Coffre-fort numérique</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Tous vos documents immobiliers organisés par bien.</p>
-</div>
+          {/* Bail — payant */}
+          {cartePayante(
+            () => window.location.href = '/baux/nouveau',
+            '✍️', 'Créer un bail',
+            'Rédigez un bail officiel conforme loi ALUR avec signature.'
+          )}
+
         </div>
       </div>
     </main>

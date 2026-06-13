@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
+import Nav from '../components/nav'
 
 const moisLabels = {
   1: 'Janvier', 2: 'Février', 3: 'Mars', 4: 'Avril',
@@ -276,14 +277,7 @@ export default function ConnexionBancaire() {
   }
 
   const nav = (
-    <nav style={{ background: '#1e3a5f', padding: '0 32px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <span onClick={() => router.push('/dashboard')} style={{ color: 'white', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>GestionLocative</span>
-      <div style={{ display: 'flex', gap: 24 }}>
-        {[['Baux actifs', '/dashboard'], ['Mes Baux', '/baux'], ['Mes Biens', '/biens'], ['Mon Compte', '/compte'], ['Documents', '/documents']].map(([label, href]) => (
-          <span key={href} onClick={() => router.push(href)} style={{ color: '#93c5fd', cursor: 'pointer', fontSize: 14 }}>{label}</span>
-        ))}
-      </div>
-    </nav>
+   <Nav pageCourante="" />
   );
 
   return (

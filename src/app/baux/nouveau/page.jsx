@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import jsPDF from 'jspdf';
+import Nav from '../../components/nav'
 
 export default function NouveauBail() {
   const [user, setUser] = useState(null);

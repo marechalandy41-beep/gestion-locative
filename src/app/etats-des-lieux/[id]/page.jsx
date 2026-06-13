@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
+import Nav from '../../components/nav'
 
 export default function DetailEDL() {
   const router = useRouter();
@@ -248,14 +249,7 @@ export default function DetailEDL() {
   }
 
   const nav = (
-    <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-      <div style={{maxWidth:1280, margin:'0 auto', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-        <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
-        <button onClick={() => router.push('/etats-des-lieux')} style={{background:'white', color:'#6b7280', padding:'6px 16px', borderRadius:8, border:'1px solid #e5e7eb', cursor:'pointer', fontSize:14}}>
-          ← Retour
-        </button>
-      </div>
-    </nav>
+    <Nav pageCourante="documents" />
   );
 
   if (loading) return <main style={{minHeight:'100vh', background:'#f9fafb'}}>{nav}<p style={{textAlign:'center', padding:60, color:'#6b7280'}}>Chargement...</p></main>;
