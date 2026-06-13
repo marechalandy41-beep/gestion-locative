@@ -9,6 +9,8 @@ export default function DetailEDL() {
   const [edl, setEdl] = useState(null);
   const [edlComparaison, setEdlComparaison] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
 
   useEffect(() => {
     const id = window.location.pathname.split('/').pop();
@@ -18,7 +20,7 @@ export default function DetailEDL() {
   async function chargerEDL(id) {
     const { data, error } = await supabase
       .from('EtatsDesLieux')
-      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(nom, adresse))')
+      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(id, nom, adresse))')
       .eq('id', id)
       .single();
 
@@ -39,6 +41,11 @@ export default function DetailEDL() {
     setLoading(false);
   }
 
+  function afficherToast(msg, succes = true) {
+    setToastMsg({ msg, succes });
+    setTimeout(() => setToastMsg(null), 4000);
+  }
+
   function couleurEtat(etat) {
     if (etat === 'Très bon état') return { color: '#15803d', bg: '#dcfce7' };
     if (etat === 'Bon état') return { color: '#1d4ed8', bg: '#dbeafe' };
@@ -46,12 +53,11 @@ export default function DetailEDL() {
     return { color: '#dc2626', bg: '#fef2f2' };
   }
 
-  function genererPDF() {
+  function construirePDF() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    // En-tête bleu
     doc.setFillColor(37, 99, 235);
     doc.rect(0, 0, pageWidth, 35, 'F');
     doc.setTextColor(255, 255, 255);
@@ -64,7 +70,6 @@ export default function DetailEDL() {
     y = 50;
     doc.setTextColor(0, 0, 0);
 
-    // Infos générales
     doc.setFillColor(243, 244, 246);
     doc.rect(14, y - 6, pageWidth - 28, 28, 'F');
     doc.setFontSize(11);
@@ -84,7 +89,6 @@ export default function DetailEDL() {
     doc.text(new Date(edl.date_edl).toLocaleDateString('fr-FR'), 45, y);
     y += 18;
 
-    // Pièces
     const pieces = Array.isArray(edl.pieces) ? edl.pieces : [];
     if (pieces.length > 0) {
       doc.setFont('helvetica', 'bold');
@@ -93,7 +97,6 @@ export default function DetailEDL() {
       doc.text('ÉTAT DES PIÈCES', 14, y);
       y += 8;
 
-      // En-tête tableau
       doc.setFillColor(37, 99, 235);
       doc.rect(14, y - 5, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -127,7 +130,6 @@ export default function DetailEDL() {
       y += 6;
     }
 
-    // Compteurs
     const compteurEntries = Object.entries(edl.compteurs || {}).filter(([, v]) => v);
     if (compteurEntries.length > 0) {
       if (y > 240) { doc.addPage(); y = 20; }
@@ -149,7 +151,6 @@ export default function DetailEDL() {
       y += 6;
     }
 
-    // Observations
     if (edl.observations) {
       if (y > 240) { doc.addPage(); y = 20; }
       doc.setFont('helvetica', 'bold');
@@ -165,7 +166,6 @@ export default function DetailEDL() {
       y += lines.length * 6 + 6;
     }
 
-    // Signatures
     if (y > 230) { doc.addPage(); y = 20; }
     y += 15;
     doc.setDrawColor(200, 200, 200);
@@ -176,12 +176,75 @@ export default function DetailEDL() {
     doc.text('Signature du propriétaire', 14, y + 5);
     doc.text('Signature du locataire', 120, y + 5);
 
-    // Pied de page
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 290, { align: 'center' });
 
-    doc.save(`EDL_${edl.type}_${edl.bail?.Biens?.nom}_${edl.date_edl}.pdf`);
+    return doc;
+  }
+
+  async function telechargerEtSauvegarder() {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const doc = construirePDF();
+      const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom}_${edl.date_edl}.pdf`;
+
+      // Téléchargement local
+      doc.save(nomFichier);
+
+      // Upload dans le coffre-fort
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non connecté');
+
+      const bienId = edl.bail?.Biens?.id;
+      if (!bienId) throw new Error('Bien introuvable');
+
+      const pdfBlob = doc.output('blob');
+      const cheminStorage = `${user.id}/${bienId}/Etat des lieux/${nomFichier}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(cheminStorage, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(cheminStorage);
+
+      const { error: insertError } = await supabase
+  .from('Documents')
+  .insert({
+    user_id: user.id,
+    bien_id: bienId,
+    nom_fichier: nomFichier,
+    categorie: edl.type === 'entree' ? 'État des lieux entrée' : 'État des lieux sortie',
+    url: urlData.publicUrl,
+    storage_path: cheminStorage,
+    annee: new Date(edl.date_edl).getFullYear(),
+  });
+
+      if (insertError) throw insertError;
+
+      afficherToast('✅ PDF téléchargé et sauvegardé dans le coffre-fort !', true);
+
+    } catch (err) {
+  console.error('ERREUR COMPLETE:', JSON.stringify(err));
+  afficherToast('❌ Erreur lors de la sauvegarde : ' + (err?.message || JSON.stringify(err)), false);
+} finally {
+      setSaving(false);
+    }
+  }
+
+  function telechargerSeulement() {
+    const doc = construirePDF();
+    const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom}_${edl.date_edl}.pdf`;
+    doc.save(nomFichier);
   }
 
   const nav = (
@@ -200,10 +263,26 @@ export default function DetailEDL() {
 
   const pieces = Array.isArray(edl.pieces) ? edl.pieces : [];
   const piecesComp = edlComparaison && Array.isArray(edlComparaison.pieces) ? edlComparaison.pieces : [];
+  const estFinalise = edl.statut === 'finalise';
 
   return (
     <main style={{minHeight:'100vh', background:'#f9fafb'}}>
       {nav}
+
+      {/* Toast */}
+      {toastMsg && (
+        <div style={{
+          position:'fixed', top:24, right:24, zIndex:9999,
+          background: toastMsg.succes ? '#dcfce7' : '#fef2f2',
+          color: toastMsg.succes ? '#15803d' : '#dc2626',
+          border: `1px solid ${toastMsg.succes ? '#86efac' : '#fca5a5'}`,
+          borderRadius:12, padding:'14px 20px', fontWeight:600, fontSize:14,
+          boxShadow:'0 4px 12px rgba(0,0,0,0.1)',
+        }}>
+          {toastMsg.msg}
+        </div>
+      )}
+
       <div style={{maxWidth:1000, margin:'0 auto', padding:'32px 24px'}}>
 
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:32}}>
@@ -212,8 +291,8 @@ export default function DetailEDL() {
               <span style={{background: edl.type === 'entree' ? '#dbeafe' : '#fce7f3', color: edl.type === 'entree' ? '#1d4ed8' : '#be185d', fontSize:13, fontWeight:700, padding:'4px 12px', borderRadius:999}}>
                 {edl.type === 'entree' ? '🔑 État des lieux d\'entrée' : '🚪 État des lieux de sortie'}
               </span>
-              <span style={{background: edl.statut === 'finalise' ? '#dcfce7' : '#fef9c3', color: edl.statut === 'finalise' ? '#15803d' : '#854d0e', fontSize:12, fontWeight:600, padding:'4px 10px', borderRadius:999}}>
-                {edl.statut === 'finalise' ? '✅ Finalisé' : '📝 Brouillon'}
+              <span style={{background: estFinalise ? '#dcfce7' : '#fef9c3', color: estFinalise ? '#15803d' : '#854d0e', fontSize:12, fontWeight:600, padding:'4px 10px', borderRadius:999}}>
+                {estFinalise ? '✅ Finalisé' : '📝 Brouillon'}
               </span>
             </div>
             <h1 style={{fontSize:22, fontWeight:700, color:'#111827'}}>{edl.bail?.Biens?.nom}</h1>
@@ -221,12 +300,28 @@ export default function DetailEDL() {
               {edl.bail?.locataire_prenom} {edl.bail?.locataire_nom} — {new Date(edl.date_edl).toLocaleDateString('fr-FR')}
             </p>
           </div>
-          <button
-            onClick={genererPDF}
-            style={{background:'#2563eb', color:'white', padding:'10px 20px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', gap:8}}
-          >
-            📄 Télécharger PDF
-          </button>
+
+          <div style={{display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end'}}>
+            {estFinalise ? (
+              <button
+                onClick={telechargerEtSauvegarder}
+                disabled={saving}
+                style={{background: saving ? '#93c5fd' : '#2563eb', color:'white', padding:'10px 20px', borderRadius:10, border:'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', gap:8}}
+              >
+                {saving ? '⏳ Sauvegarde...' : '📄 Télécharger & Sauvegarder'}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={telechargerSeulement}
+                  style={{background:'white', color:'#2563eb', padding:'10px 20px', borderRadius:10, border:'1px solid #2563eb', cursor:'pointer', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', gap:8}}
+                >
+                  📄 Télécharger PDF
+                </button>
+                <p style={{fontSize:12, color:'#9ca3af', textAlign:'right'}}>Finalisez l'EDL pour le sauvegarder dans le coffre-fort</p>
+              </>
+            )}
+          </div>
         </div>
 
         {edlComparaison && (
