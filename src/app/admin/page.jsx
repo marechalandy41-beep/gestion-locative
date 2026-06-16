@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
 
 export default function Admin() {
-    const [codes, setCodes] = useState([])
-const [nouveauCode, setNouveauCode] = useState({ code: '', reduction: 10, type: 'promo', usage_max: '',expire_le: '' })
-const [showFormCode, setShowFormCode] = useState(false)
+  const [codes, setCodes] = useState([])
+  const [nouveauCode, setNouveauCode] = useState({ code: '', reduction: 10, type: 'promo', usage_max: '', expire_le: '' })
+  const [showFormCode, setShowFormCode] = useState(false)
   const [settings, setSettings] = useState({})
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsToast, setSettingsToast] = useState(false)
@@ -17,7 +17,7 @@ const [showFormCode, setShowFormCode] = useState(false)
   const [users, setUsers] = useState([])
   const [onglet, setOnglet] = useState('dashboard')
 
-useEffect(() => {
+  useEffect(() => {
     const adminOk = sessionStorage.getItem('admin_ok')
     if (adminOk === 'true') {
       setAccesOk(true)
@@ -50,7 +50,6 @@ useEffect(() => {
       const data = await res.json()
       setStats(data.stats)
       setUsers(data.users)
-
       const resSettings = await fetch('/api/admin/settings')
       const dataSettings = await resSettings.json()
       if (dataSettings.settings) setSettings(dataSettings.settings)
@@ -58,8 +57,8 @@ useEffect(() => {
       console.error(err)
     }
     const resCodes = await fetch('/api/admin/codes-promo')
-const dataCodes = await resCodes.json()
-if (dataCodes.codes) setCodes(dataCodes.codes)
+    const dataCodes = await resCodes.json()
+    if (dataCodes.codes) setCodes(dataCodes.codes)
     setLoading(false)
   }
 
@@ -109,6 +108,7 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
     { id: 'abonnements', label: '💳 Abonnements' },
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
+    { id: 'liens', label: '🔗 Liens rapides' },
   ]
 
   return (
@@ -219,45 +219,47 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
                   </span>
                   <span style={{ color: '#9ca3af', fontSize: 14 }}>{u.nbBaux}</span>
                   <span style={{ color: '#9ca3af', fontSize: 13 }}>{new Date(u.created_at).toLocaleDateString('fr-FR')}</span>
-                 <select value={u.plan || 'gratuit'}
-  onChange={async (e) => {
-    const nouveauPlan = e.target.value
-    const res = await fetch('/api/admin/update-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: u.id, plan: nouveauPlan }),
-    })
-    const data = await res.json()
-    if (data.success) {
-      setUsers(prev => prev.map(user => user.id === u.id ? { ...user, plan: nouveauPlan } : user))
-    } else {
-      alert('Erreur : ' + data.error)
-    }
-  }}
-  style={{ background: '#374151', color: 'white', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}>
-  <option value="gratuit">Gratuit</option>
-  <option value="manuel">Manuel</option>
-  <option value="auto">Automatique</option>
-</select>
-<button
-  onClick={async () => {
-    if (!confirm(`Exporter les données RGPD de ${u.email} ?`)) return
-    const res = await fetch('/api/admin/export-rgpd', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: u.id, userEmail: u.email }),
-    })
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `RGPD_${u.email}_${new Date().toISOString().split('T')[0]}.zip`
-    a.click()
-    URL.revokeObjectURL(url)
-  }}
-  style={{ background: '#374151', color: '#9ca3af', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer', marginLeft: 6 }}>
-  📦 RGPD
-</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <select value={u.plan || 'gratuit'}
+                      onChange={async (e) => {
+                        const nouveauPlan = e.target.value
+                        const res = await fetch('/api/admin/update-plan', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userId: u.id, plan: nouveauPlan }),
+                        })
+                        const data = await res.json()
+                        if (data.success) {
+                          setUsers(prev => prev.map(user => user.id === u.id ? { ...user, plan: nouveauPlan } : user))
+                        } else {
+                          alert('Erreur : ' + data.error)
+                        }
+                      }}
+                      style={{ background: '#374151', color: 'white', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}>
+                      <option value="gratuit">Gratuit</option>
+                      <option value="manuel">Manuel</option>
+                      <option value="auto">Automatique</option>
+                    </select>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Exporter les données RGPD de ${u.email} ?`)) return
+                        const res = await fetch('/api/admin/export-rgpd', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userId: u.id, userEmail: u.email }),
+                        })
+                        const blob = await res.blob()
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `RGPD_${u.email}_${new Date().toISOString().split('T')[0]}.zip`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      }}
+                      style={{ background: '#374151', color: '#9ca3af', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>
+                      📦 RGPD
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -286,141 +288,206 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
           </div>
         )}
 
-{onglet === 'codes' && (
-  <div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', margin: 0 }}>🎟️ Codes promo</h2>
-      <button onClick={() => setShowFormCode(!showFormCode)}
-        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-        + Créer un code
-      </button>
-    </div>
+        {/* CODES PROMO */}
+        {onglet === 'codes' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', margin: 0 }}>🎟️ Codes promo</h2>
+              <button onClick={() => setShowFormCode(!showFormCode)}
+                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                + Créer un code
+              </button>
+            </div>
 
-    {showFormCode && (
-      <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
-        <h3 style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: '0 0 16px' }}>Nouveau code promo</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div>
-            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Code</label>
-            <input placeholder="NOT-12345" value={nouveauCode.code}
-              onChange={e => setNouveauCode(prev => ({ ...prev, code: e.target.value }))}
-              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Réduction (%)</label>
-            <input type="number" min="1" placeholder="Illimité" value={nouveauCode.usage_max}
-  onChange={e => setNouveauCode(prev => ({ ...prev, usage_max: e.target.value }))}
-  style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
-            <select value={nouveauCode.type}
-              onChange={e => setNouveauCode(prev => ({ ...prev, type: e.target.value }))}
-              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
-              <option value="promo">Promo</option>
-              <option value="notaire">Notaire</option>
-              <option value="agence">Agence</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Utilisations max</label>
-            <input type="number" min="1" value={nouveauCode.usage_max}
-              onChange={e => setNouveauCode(prev => ({ ...prev, usage_max: parseInt(e.target.value) }))}
-              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Expire le</label>
-            <input type="date" value={nouveauCode.expire_le}
-              onChange={e => setNouveauCode(prev => ({ ...prev, expire_le: e.target.value }))}
-              style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={async () => {
-            if (!nouveauCode.code) { alert('Code obligatoire'); return }
-            const res = await fetch('/api/admin/codes-promo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'create', ...nouveauCode }),
-            })
-            const data = await res.json()
-            if (data.success) {
-              const resCodes = await fetch('/api/admin/codes-promo')
-              const dataCodes = await resCodes.json()
-              setCodes(dataCodes.codes || [])
-              setShowFormCode(false)
-              setNouveauCode({ code: '', reduction: 10, type: 'promo', usage_max: 1, expire_le: '' })
-            }
-          }}
-            style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-            ✅ Créer
-          </button>
-          <button onClick={() => setShowFormCode(false)}
-            style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
-            Annuler
-          </button>
-        </div>
-      </div>
-    )}
+            {showFormCode && (
+              <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+                <h3 style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: '0 0 16px' }}>Nouveau code promo</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Code</label>
+                    <input placeholder="NOT-12345" value={nouveauCode.code}
+                      onChange={e => setNouveauCode(prev => ({ ...prev, code: e.target.value }))}
+                      style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Réduction (%)</label>
+                    <input type="number" min="1" value={nouveauCode.reduction}
+                      onChange={e => setNouveauCode(prev => ({ ...prev, reduction: e.target.value }))}
+                      style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type</label>
+                    <select value={nouveauCode.type}
+                      onChange={e => setNouveauCode(prev => ({ ...prev, type: e.target.value }))}
+                      style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+                      <option value="promo">Promo</option>
+                      <option value="notaire">Notaire</option>
+                      <option value="agence">Agence</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Utilisations max</label>
+                    <input type="number" min="1" placeholder="Illimité" value={nouveauCode.usage_max}
+                      onChange={e => setNouveauCode(prev => ({ ...prev, usage_max: e.target.value }))}
+                      style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Expire le</label>
+                    <input type="date" value={nouveauCode.expire_le}
+                      onChange={e => setNouveauCode(prev => ({ ...prev, expire_le: e.target.value }))}
+                      style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={async () => {
+                    if (!nouveauCode.code) { alert('Code obligatoire'); return }
+                    const res = await fetch('/api/admin/codes-promo', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'create', ...nouveauCode }),
+                    })
+                    const data = await res.json()
+                    if (data.success) {
+                      const resCodes = await fetch('/api/admin/codes-promo')
+                      const dataCodes = await resCodes.json()
+                      setCodes(dataCodes.codes || [])
+                      setShowFormCode(false)
+                      setNouveauCode({ code: '', reduction: 10, type: 'promo', usage_max: '', expire_le: '' })
+                    }
+                  }}
+                    style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                    ✅ Créer
+                  </button>
+                  <button onClick={() => setShowFormCode(false)}
+                    style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
 
-    <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
-        {['Code', 'Réduction', 'Type', 'Utilisations', 'Expire le', 'Actions'].map(h => (
-          <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
-        ))}
-      </div>
-      {codes.length === 0 ? (
-        <p style={{ color: '#9ca3af', padding: 20, fontSize: 14 }}>Aucun code promo créé.</p>
-      ) : codes.map((c, i) => (
-        <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < codes.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
-          <span style={{ color: 'white', fontWeight: 700, fontSize: 14, fontFamily: 'monospace' }}>{c.code}</span>
-          <span style={{ color: '#4ade80', fontWeight: 700 }}>-{c.reduction}%</span>
-          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.type}</span>
-          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.usage_count}/{c.usage_max}</span>
-          <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.expire_le ? new Date(c.expire_le).toLocaleDateString('fr-FR') : '—'}</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={async () => {
-              await fetch('/api/admin/codes-promo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'toggle', id: c.id }),
-              })
-              setCodes(prev => prev.map(code => code.id === c.id ? { ...code, actif: !code.actif } : code))
-            }}
-              style={{ background: c.actif ? '#14532d' : '#374151', color: c.actif ? '#4ade80' : '#9ca3af', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
-              {c.actif ? '✓ Actif' : '✗ Inactif'}
-            </button>
-            <button onClick={async () => {
-              if (!confirm('Supprimer ce code ?')) return
-              await fetch('/api/admin/codes-promo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', id: c.id }),
-              })
-              setCodes(prev => prev.filter(code => code.id !== c.id))
-            }}
-              style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
-              🗑
-            </button>
+            <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
+                {['Code', 'Réduction', 'Type', 'Utilisations', 'Expire le', 'Actions'].map(h => (
+                  <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
+                ))}
+              </div>
+              {codes.length === 0 ? (
+                <p style={{ color: '#9ca3af', padding: 20, fontSize: 14 }}>Aucun code promo créé.</p>
+              ) : codes.map((c, i) => (
+                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < codes.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
+                  <span style={{ color: 'white', fontWeight: 700, fontSize: 14, fontFamily: 'monospace' }}>{c.code}</span>
+                  <span style={{ color: '#4ade80', fontWeight: 700 }}>-{c.reduction}%</span>
+                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.type}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.usage_count}/{c.usage_max || '∞'}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.expire_le ? new Date(c.expire_le).toLocaleDateString('fr-FR') : '—'}</span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={async () => {
+                      await fetch('/api/admin/codes-promo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'toggle', id: c.id }),
+                      })
+                      setCodes(prev => prev.map(code => code.id === c.id ? { ...code, actif: !code.actif } : code))
+                    }}
+                      style={{ background: c.actif ? '#14532d' : '#374151', color: c.actif ? '#4ade80' : '#9ca3af', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+                      {c.actif ? '✓ Actif' : '✗ Inactif'}
+                    </button>
+                    <button onClick={async () => {
+                      if (!confirm('Supprimer ce code ?')) return
+                      await fetch('/api/admin/codes-promo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'delete', id: c.id }),
+                      })
+                      setCodes(prev => prev.filter(code => code.id !== c.id))
+                    }}
+                      style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* PARRAINAGE — dans l'onglet codes */}
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginTop: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>🤝 Paramètres parrainage</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
+                  <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>👤 Filleul (nouveau client)</p>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
+                    <select value={settings.parrainage_type_filleul || 'reduction'}
+                      onChange={e => {
+                        setSettings(prev => ({ ...prev, parrainage_type_filleul: e.target.value }))
+                        sauvegarderSetting('parrainage_type_filleul', e.target.value)
+                      }}
+                      style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+                      <option value="reduction">Réduction (%)</option>
+                      <option value="mois_gratuit">Mois gratuit(s)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {settings.parrainage_type_filleul === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input type="number" min="1"
+                        value={settings.parrainage_reduction_filleul || ''}
+                        onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_filleul: e.target.value }))}
+                        style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+                      <button onClick={() => sauvegarderSetting('parrainage_reduction_filleul', settings.parrainage_reduction_filleul)}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        ✓
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
+                  <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>🎁 Parrain (client existant)</p>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
+                    <select value={settings.parrainage_type_parrain || 'reduction'}
+                      onChange={e => {
+                        setSettings(prev => ({ ...prev, parrainage_type_parrain: e.target.value }))
+                        sauvegarderSetting('parrainage_type_parrain', e.target.value)
+                      }}
+                      style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
+                      <option value="reduction">Réduction (%)</option>
+                      <option value="mois_gratuit">Mois gratuit(s)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {settings.parrainage_type_parrain === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input type="number" min="1"
+                        value={settings.parrainage_reduction_parrain || ''}
+                        onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_parrain: e.target.value }))}
+                        style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+                      <button onClick={() => sauvegarderSetting('parrainage_reduction_parrain', settings.parrainage_reduction_parrain)}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        ✓
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+        )}
 
         {/* PARAMÈTRES */}
         {onglet === 'parametres' && (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>⚙️ Paramètres</h2>
-
             {settingsToast && (
               <div style={{ background: '#14532d', color: '#4ade80', borderRadius: 10, padding: '10px 16px', marginBottom: 16, fontSize: 13, fontWeight: 600 }}>
                 ✅ Sauvegardé !
               </div>
             )}
-
-            {/* PRIX */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>💰 Prix des plans</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -445,8 +512,6 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
                 ))}
               </div>
             </div>
-
-            {/* TEXTES LANDING */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>📝 Textes landing page</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -473,8 +538,6 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
                 ))}
               </div>
             </div>
-
-            {/* TABLEAU COMPARATIF */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📊 Tableau comparatif</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Cochez les fonctionnalités disponibles par plan</p>
@@ -520,78 +583,35 @@ if (dataCodes.codes) setCodes(dataCodes.codes)
           </div>
         )}
 
-      </div>
-      {/* PARRAINAGE */}
-<div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginTop: 20 }}>
-  <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>🤝 Paramètres parrainage</h3>
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        {/* LIENS RAPIDES */}
+        {onglet === 'liens' && (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 8 }}>🔗 Liens rapides</h2>
+            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 24 }}>Accès direct aux outils du projet</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {[
+                { emoji: '🗄️', label: 'Supabase', desc: 'Base de données & Storage', url: 'https://supabase.com/dashboard', couleur: '#16a34a' },
+                { emoji: '▲', label: 'Vercel', desc: 'Hébergement & déploiements', url: 'https://vercel.com/dashboard', couleur: '#ffffff' },
+                { emoji: '💳', label: 'Stripe', desc: 'Paiements & abonnements', url: 'https://dashboard.stripe.com', couleur: '#6366f1' },
+                { emoji: '📧', label: 'Resend', desc: 'Emails transactionnels', url: 'https://resend.com/emails', couleur: '#2563eb' },
+                { emoji: '🏦', label: 'Bridge API', desc: 'Connexion bancaire', url: 'https://dashboard.bridgeapi.io', couleur: '#f59e0b' },
+                { emoji: '🐙', label: 'GitHub', desc: 'Code source du projet', url: 'https://github.com/marechalandy41-beep/gestion-locative', couleur: '#9ca3af' },
+              ].map((lien, i) => (
+                <a key={i} href={lien.url} target="_blank" rel="noopener noreferrer"
+                  style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', textDecoration: 'none', display: 'block' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = lien.couleur}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = '#374151'}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>{lien.emoji}</div>
+                  <p style={{ color: 'white', fontWeight: 700, fontSize: 16, margin: '0 0 4px' }}>{lien.label}</p>
+                  <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>{lien.desc}</p>
+                  <p style={{ color: lien.couleur, fontSize: 12, margin: '8px 0 0', fontWeight: 600 }}>Ouvrir →</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
-    {/* Filleul */}
-    <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
-      <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>👤 Filleul (nouveau client)</p>
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
-        <select value={settings.parrainage_type_filleul || 'reduction'}
-          onChange={e => {
-            setSettings(prev => ({ ...prev, parrainage_type_filleul: e.target.value }))
-            sauvegarderSetting('parrainage_type_filleul', e.target.value)
-          }}
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
-          <option value="reduction">Réduction (%)</option>
-          <option value="mois_gratuit">Mois gratuit(s)</option>
-        </select>
       </div>
-      <div>
-        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
-          {settings.parrainage_type_filleul === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
-        </label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input type="number" min="1"
-            value={settings.parrainage_reduction_filleul || ''}
-            onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_filleul: e.target.value }))}
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
-          <button onClick={() => sauvegarderSetting('parrainage_reduction_filleul', settings.parrainage_reduction_filleul)}
-            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            ✓
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {/* Parrain */}
-    <div style={{ background: '#374151', borderRadius: 10, padding: 16 }}>
-      <p style={{ color: '#9ca3af', fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>🎁 Parrain (client existant)</p>
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
-        <select value={settings.parrainage_type_parrain || 'reduction'}
-          onChange={e => {
-            setSettings(prev => ({ ...prev, parrainage_type_parrain: e.target.value }))
-            sauvegarderSetting('parrainage_type_parrain', e.target.value)
-          }}
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
-          <option value="reduction">Réduction (%)</option>
-          <option value="mois_gratuit">Mois gratuit(s)</option>
-        </select>
-      </div>
-      <div>
-        <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>
-          {settings.parrainage_type_parrain === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
-        </label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input type="number" min="1"
-            value={settings.parrainage_reduction_parrain || ''}
-            onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_parrain: e.target.value }))}
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
-          <button onClick={() => sauvegarderSetting('parrainage_reduction_parrain', settings.parrainage_reduction_parrain)}
-            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            ✓
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
     </main>
   )
 }
