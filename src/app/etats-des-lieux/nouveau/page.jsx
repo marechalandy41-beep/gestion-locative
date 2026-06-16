@@ -32,16 +32,28 @@ export default function NouvelEDL() {
   });
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push('/auth'); return; }
-      setUser(data.user);
-      supabase.from('Baux')
-        .select('id, locataire_prenom, locataire_nom, Biens(nom)')
-        .eq('user_id', data.user.id)
-        .in('statut', ['actif', 'brouillon'])
-        .then(({ data: bauxData }) => setBaux(bauxData || []));
-    });
-  }, []);
+  supabase.auth.getUser().then(async ({ data }) => {
+    if (!data.user) { router.push('/auth'); return; }
+
+    // Vérification plan
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('plan')
+      .eq('user_id', data.user.id)
+      .single();
+    if (!customer || customer.plan === 'gratuit') {
+      router.push('/biens?plan=gratuit');
+      return;
+    }
+
+    setUser(data.user);
+    supabase.from('Baux')
+      .select('id, locataire_prenom, locataire_nom, Biens(nom)')
+      .eq('user_id', data.user.id)
+      .in('statut', ['actif', 'brouillon'])
+      .then(({ data: bauxData }) => setBaux(bauxData || []));
+  });
+}, []);
 
   async function uploadPhoto(pieceIndex, file) {
     const ext = file.name.split('.').pop();

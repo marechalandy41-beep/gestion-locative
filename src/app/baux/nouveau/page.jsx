@@ -33,57 +33,67 @@ export default function NouveauBail() {
 relance_auto_jours: 5,
   });
 
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data?.user) {
-        setUser(data.user);
-        chargerBiens(data.user.id);
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get('id');
-        if (id) {
-          const { data: bailData } = await supabase.from('Baux').select('*').eq('id', id).single();
-          if (bailData) {
-            setBail({
-              bailleur_prenom: bailData.bailleur_prenom || '',
-              bailleur_nom: bailData.bailleur_nom || '',
-              bailleur_adresse: bailData.bailleur_adresse || '',
-              bailleur_naissance: bailData.bailleur_naissance || '',
-              bailleur_lieu_naissance: bailData.bailleur_lieu_naissance || '',
-              bailleur_nationalite: bailData.bailleur_nationalite || 'Française',
-              locataire_prenom: bailData.locataire_prenom || '',
-              locataire_nom: bailData.locataire_nom || '',
-              locataire_email: bailData.locataire_email || '',
-              locataire_telephone: bailData.locataire_telephone || '',
-              locataire_naissance: bailData.locataire_naissance || '',
-              locataire_adresse: bailData.locataire_adresse || '',
-              locataire_nationalite: bailData.locataire_nationalite || 'Française',
-              locataire_profession: bailData.locataire_profession || '',
-              bien_id: bailData.bien_id?.toString() || '',
-              type_bail: bailData.type_bail || 'Non meublé',
-              loyer_hc: bailData.loyer_hc?.toString() || '',
-              charges: bailData.charges?.toString() || '',
-              type_charges: bailData.type_charges || 'Forfaitaires',
-              depot_garantie: bailData.depot_garantie?.toString() || '',
-              surface_habitable: bailData.surface_habitable?.toString() || '',
-              nombre_pieces: bailData.nombre_pieces?.toString() || '',
-              etage: bailData.etage || '',
-              equipements: bailData.equipements || '',
-              classe_dpe: bailData.classe_dpe || 'D',
-              numero_lot: bailData.numero_lot || '',
-              modalite_paiement: bailData.modalite_paiement || 'Virement bancaire',
-              date_exigibilite: bailData.date_exigibilite?.toString() || '1',
-              revision_irl: bailData.revision_irl ?? true,
-              date_debut: bailData.date_debut || '',
-              date_fin: bailData.date_fin || '',
-              clauses: bailData.clauses || '',
-            });
-            setBailId(id);
-            setEcran('signature');
-          }
+ useEffect(() => {
+  supabase.auth.getUser().then(async ({ data }) => {
+    if (data?.user) {
+      // Vérification plan
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('plan')
+        .eq('user_id', data.user.id)
+        .single();
+      if (!customer || customer.plan === 'gratuit') {
+        window.location.href = '/biens?plan=gratuit';
+        return;
+      }
+      setUser(data.user);
+      chargerBiens(data.user.id);
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (id) {
+        const { data: bailData } = await supabase.from('Baux').select('*').eq('id', id).single();
+        if (bailData) {
+          setBail({
+            bailleur_prenom: bailData.bailleur_prenom || '',
+            bailleur_nom: bailData.bailleur_nom || '',
+            bailleur_adresse: bailData.bailleur_adresse || '',
+            bailleur_naissance: bailData.bailleur_naissance || '',
+            bailleur_lieu_naissance: bailData.bailleur_lieu_naissance || '',
+            bailleur_nationalite: bailData.bailleur_nationalite || 'Française',
+            locataire_prenom: bailData.locataire_prenom || '',
+            locataire_nom: bailData.locataire_nom || '',
+            locataire_email: bailData.locataire_email || '',
+            locataire_telephone: bailData.locataire_telephone || '',
+            locataire_naissance: bailData.locataire_naissance || '',
+            locataire_adresse: bailData.locataire_adresse || '',
+            locataire_nationalite: bailData.locataire_nationalite || 'Française',
+            locataire_profession: bailData.locataire_profession || '',
+            bien_id: bailData.bien_id?.toString() || '',
+            type_bail: bailData.type_bail || 'Non meublé',
+            loyer_hc: bailData.loyer_hc?.toString() || '',
+            charges: bailData.charges?.toString() || '',
+            type_charges: bailData.type_charges || 'Forfaitaires',
+            depot_garantie: bailData.depot_garantie?.toString() || '',
+            surface_habitable: bailData.surface_habitable?.toString() || '',
+            nombre_pieces: bailData.nombre_pieces?.toString() || '',
+            etage: bailData.etage || '',
+            equipements: bailData.equipements || '',
+            classe_dpe: bailData.classe_dpe || 'D',
+            numero_lot: bailData.numero_lot || '',
+            modalite_paiement: bailData.modalite_paiement || 'Virement bancaire',
+            date_exigibilite: bailData.date_exigibilite?.toString() || '1',
+            revision_irl: bailData.revision_irl ?? true,
+            date_debut: bailData.date_debut || '',
+            date_fin: bailData.date_fin || '',
+            clauses: bailData.clauses || '',
+          });
+          setBailId(id);
+          setEcran('signature');
         }
-      } else { window.location.href = '/auth'; }
-    });
-  }, []);
+      }
+    } else { window.location.href = '/auth'; }
+  });
+}, []);
 
   async function chargerBiens(userId) {
     const { data } = await supabase.from('Biens').select('*').eq('user_id', userId);

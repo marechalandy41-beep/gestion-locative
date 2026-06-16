@@ -17,7 +17,7 @@ const [showFormCode, setShowFormCode] = useState(false)
   const [users, setUsers] = useState([])
   const [onglet, setOnglet] = useState('dashboard')
 
-  useEffect(() => {
+useEffect(() => {
     const adminOk = sessionStorage.getItem('admin_ok')
     if (adminOk === 'true') {
       setAccesOk(true)
@@ -25,11 +25,6 @@ const [showFormCode, setShowFormCode] = useState(false)
     } else {
       setLoading(false)
     }
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data?.user || data.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-        window.location.href = '/auth'
-      }
-    })
   }, [])
 
   async function verifierMotDePasse() {
