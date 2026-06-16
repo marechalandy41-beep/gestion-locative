@@ -410,7 +410,7 @@ export default function Admin() {
               ))}
             </div>
 
-            {/* PARRAINAGE — dans l'onglet codes */}
+            {/* PARRAINAGE */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginTop: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>🤝 Paramètres parrainage</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -419,10 +419,7 @@ export default function Admin() {
                   <div style={{ marginBottom: 10 }}>
                     <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
                     <select value={settings.parrainage_type_filleul || 'reduction'}
-                      onChange={e => {
-                        setSettings(prev => ({ ...prev, parrainage_type_filleul: e.target.value }))
-                        sauvegarderSetting('parrainage_type_filleul', e.target.value)
-                      }}
+                      onChange={e => { setSettings(prev => ({ ...prev, parrainage_type_filleul: e.target.value })); sauvegarderSetting('parrainage_type_filleul', e.target.value) }}
                       style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
                       <option value="reduction">Réduction (%)</option>
                       <option value="mois_gratuit">Mois gratuit(s)</option>
@@ -433,14 +430,11 @@ export default function Admin() {
                       {settings.parrainage_type_filleul === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
                     </label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input type="number" min="1"
-                        value={settings.parrainage_reduction_filleul || ''}
+                      <input type="number" min="1" value={settings.parrainage_reduction_filleul || ''}
                         onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_filleul: e.target.value }))}
                         style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
                       <button onClick={() => sauvegarderSetting('parrainage_reduction_filleul', settings.parrainage_reduction_filleul)}
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                        ✓
-                      </button>
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
                     </div>
                   </div>
                 </div>
@@ -449,10 +443,7 @@ export default function Admin() {
                   <div style={{ marginBottom: 10 }}>
                     <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Type de récompense</label>
                     <select value={settings.parrainage_type_parrain || 'reduction'}
-                      onChange={e => {
-                        setSettings(prev => ({ ...prev, parrainage_type_parrain: e.target.value }))
-                        sauvegarderSetting('parrainage_type_parrain', e.target.value)
-                      }}
+                      onChange={e => { setSettings(prev => ({ ...prev, parrainage_type_parrain: e.target.value })); sauvegarderSetting('parrainage_type_parrain', e.target.value) }}
                       style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }}>
                       <option value="reduction">Réduction (%)</option>
                       <option value="mois_gratuit">Mois gratuit(s)</option>
@@ -463,14 +454,11 @@ export default function Admin() {
                       {settings.parrainage_type_parrain === 'mois_gratuit' ? 'Nombre de mois' : 'Réduction (%)'}
                     </label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input type="number" min="1"
-                        value={settings.parrainage_reduction_parrain || ''}
+                      <input type="number" min="1" value={settings.parrainage_reduction_parrain || ''}
                         onChange={e => setSettings(prev => ({ ...prev, parrainage_reduction_parrain: e.target.value }))}
                         style={{ flex: 1, background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
                       <button onClick={() => sauvegarderSetting('parrainage_reduction_parrain', settings.parrainage_reduction_parrain)}
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                        ✓
-                      </button>
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
                     </div>
                   </div>
                 </div>
@@ -483,11 +471,14 @@ export default function Admin() {
         {onglet === 'parametres' && (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>⚙️ Paramètres</h2>
+
             {settingsToast && (
               <div style={{ background: '#14532d', color: '#4ade80', borderRadius: 10, padding: '10px 16px', marginBottom: 16, fontSize: 13, fontWeight: 600 }}>
                 ✅ Sauvegardé !
               </div>
             )}
+
+            {/* PRIX */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>💰 Prix des plans</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -498,20 +489,18 @@ export default function Admin() {
                   <div key={cle}>
                     <label style={{ color: '#9ca3af', fontSize: 13, display: 'block', marginBottom: 6 }}>{label}</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input type="number"
-                        value={settings[cle] || ''}
+                      <input type="number" value={settings[cle] || ''}
                         onChange={e => setSettings(prev => ({ ...prev, [cle]: e.target.value }))}
-                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: 'white', outline: 'none' }}
-                      />
+                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: 'white', outline: 'none' }} />
                       <button onClick={() => sauvegarderSetting(cle, settings[cle])}
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                        ✓
-                      </button>
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* TEXTES LANDING */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>📝 Textes landing page</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -524,21 +513,18 @@ export default function Admin() {
                   <div key={cle}>
                     <label style={{ color: '#9ca3af', fontSize: 13, display: 'block', marginBottom: 6 }}>{label}</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <textarea value={settings[cle] || ''}
-                        onChange={e => setSettings(prev => ({ ...prev, [cle]: e.target.value }))}
-                        rows={2}
-                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', resize: 'vertical' }}
-                      />
+                      <textarea value={settings[cle] || ''} onChange={e => setSettings(prev => ({ ...prev, [cle]: e.target.value }))} rows={2}
+                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', resize: 'vertical' }} />
                       <button onClick={() => sauvegarderSetting(cle, settings[cle])}
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600, alignSelf: 'flex-start' }}>
-                        ✓
-                      </button>
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600, alignSelf: 'flex-start' }}>✓</button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
+
+            {/* TABLEAU COMPARATIF */}
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📊 Tableau comparatif</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Cochez les fonctionnalités disponibles par plan</p>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#374151', padding: '10px 0', borderRadius: '8px 8px 0 0', marginBottom: 2 }}>
@@ -565,20 +551,53 @@ export default function Admin() {
                     <span style={{ color: 'white', fontSize: 14, padding: '0 12px' }}>{label}</span>
                     {['gratuit', 'manuel', 'auto'].map(plan => (
                       <div key={plan} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <input type="checkbox"
-                          checked={val[plan] || false}
+                        <input type="checkbox" checked={val[plan] || false}
                           onChange={async e => {
                             const newVal = { ...val, [plan]: e.target.checked }
                             setSettings(prev => ({ ...prev, [cle]: JSON.stringify(newVal) }))
                             await sauvegarderSetting(cle, JSON.stringify(newVal))
                           }}
-                          style={{ width: 16, height: 16, cursor: 'pointer' }}
-                        />
+                          style={{ width: 16, height: 16, cursor: 'pointer' }} />
                       </div>
                     ))}
                   </div>
                 )
               })}
+            </div>
+
+            {/* CGU */}
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📋 CGU & Mentions légales</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 20px' }}>Ces infos apparaissent sur la page /cgu</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { cle: 'cgu_nom', label: 'Nom / Raison sociale' },
+                  { cle: 'cgu_adresse', label: 'Adresse' },
+                  { cle: 'cgu_email', label: 'Email de contact' },
+                  { cle: 'cgu_site', label: 'URL du site' },
+                  { cle: 'cgu_date_maj', label: 'Date de mise à jour' },
+                ].map(({ cle, label }) => (
+                  <div key={cle}>
+                    <label style={{ color: '#9ca3af', fontSize: 13, display: 'block', marginBottom: 6 }}>{label}</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input value={settings[cle] || ''} onChange={e => setSettings(prev => ({ ...prev, [cle]: e.target.value }))}
+                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+                      <button onClick={() => sauvegarderSetting(cle, settings[cle])}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <label style={{ color: '#9ca3af', fontSize: 13, display: 'block', marginBottom: 6 }}>Contenu complet des CGU (HTML autorisé)</label>
+                  <textarea value={settings.cgu_contenu || ''} onChange={e => setSettings(prev => ({ ...prev, cgu_contenu: e.target.value }))}
+                    rows={20}
+                    style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '12px', fontSize: 13, color: 'white', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                  <button onClick={() => sauvegarderSetting('cgu_contenu', settings.cgu_contenu)}
+                    style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginTop: 8 }}>
+                    💾 Sauvegarder le contenu
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
