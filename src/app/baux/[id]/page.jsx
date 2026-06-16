@@ -15,10 +15,45 @@ const [sending, setSending] = useState(false);
 const [emailToast, setEmailToast] = useState(null);
 const [sendingRelance, setSendingRelance] = useState(false);
 const [relanceToast, setRelanceToast] = useState(null);
+const [sendingInvitation, setSendingInvitation] = useState(false)
+const [invitationToast, setInvitationToast] = useState(null)
 
   useEffect(() => {
     chargerBail();
   }, []);
+
+async function envoyerInvitation() {
+  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+  if (!confirm(`Envoyer l'invitation au portail locataire à ${bail.locataire_email} ?`)) return;
+  setSendingInvitation(true);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch('/api/send-invitation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bailId: bail.id,
+        userId: user.id,
+        locataireEmail: bail.locataire_email,
+        locatairePrenom: bail.locataire_prenom,
+        locataireNom: bail.locataire_nom,
+        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+        bienNom: bien?.nom || '',
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setInvitationToast({ msg: '✅ Invitation envoyée au locataire !', succes: true });
+    } else {
+      setInvitationToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+    }
+  } catch (err) {
+    setInvitationToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+  } finally {
+    setSendingInvitation(false);
+    setTimeout(() => setInvitationToast(null), 4000);
+  }
+}
 
   async function chargerBail() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -308,6 +343,20 @@ async function envoyerRelance() {
     {sendingRelance ? '⏳ Envoi...' : '⚠️ Relancer le locataire'}
   </button>
 )}
+
+{invitationToast && (
+  <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: invitationToast.succes ? '#dcfce7' : '#fef2f2', color: invitationToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${invitationToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+    {invitationToast.msg}
+  </div>
+)}
+
+{bail.statut === 'actif' && bail.locataire_email && (
+  <button onClick={envoyerInvitation} disabled={sendingInvitation}
+    style={{ flex: 1, background: sendingInvitation ? '#a5b4fc' : '#6366f1', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingInvitation ? 'not-allowed' : 'pointer' }}>
+    {sendingInvitation ? '⏳ Envoi...' : '🔗 Portail locataire'}
+  </button>
+)}
+
   {bail.statut !== 'termine' && (
     <button onClick={cloturerBail}
       style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
