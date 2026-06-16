@@ -22,6 +22,7 @@ export default function Compte() {
   const [reductionActuelle, setReductionActuelle] = useState(0)
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
+  const [mesMessages, setMesMessages] = useState([])
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -32,41 +33,49 @@ export default function Compte() {
         setTelephone(data.user.user_metadata?.telephone || '');
 
         const { data: customerData } = await supabase
-  .from('customers')
-  .select('code_promo, reduction, code_parrainage')
-  .eq('user_id', data.user.id)
-  .single();
+          .from('customers')
+          .select('code_promo, reduction, code_parrainage')
+          .eq('user_id', data.user.id)
+          .single();
 
         if (customerData?.code_promo) {
-  const { data: codeData } = await supabase
-    .from('codes_promo')
-    .select('expire_le, actif')
-    .eq('code', customerData.code_promo)
-    .single()
+          const { data: codeData } = await supabase
+            .from('codes_promo')
+            .select('expire_le, actif')
+            .eq('code', customerData.code_promo)
+            .single()
 
-  // Si le code n'existe plus dans la table, on garde quand même la réduction
-  if (!codeData) {
-    setCodeActuel(customerData.code_promo)
-    setReductionActuelle(customerData.reduction)
-  } else {
-    const codeValide = codeData.actif &&
-      (!codeData.expire_le || new Date(codeData.expire_le) >= new Date())
+          if (!codeData) {
+            setCodeActuel(customerData.code_promo)
+            setReductionActuelle(customerData.reduction)
+          } else {
+            const codeValide = codeData.actif &&
+              (!codeData.expire_le || new Date(codeData.expire_le) >= new Date())
 
-    if (codeValide) {
-      setCodeActuel(customerData.code_promo)
-      setReductionActuelle(customerData.reduction)
-    } else {
-      setCodeExpire(true)
-      await supabase
-        .from('customers')
-        .update({ code_promo: null, reduction: 0 })
-        .eq('user_id', data.user.id)
-    }
-  }
-}
-if (customerData?.code_parrainage) {
-  setCodeParrainage(customerData.code_parrainage)
-}
+            if (codeValide) {
+              setCodeActuel(customerData.code_promo)
+              setReductionActuelle(customerData.reduction)
+            } else {
+              setCodeExpire(true)
+              await supabase
+                .from('customers')
+                .update({ code_promo: null, reduction: 0 })
+                .eq('user_id', data.user.id)
+            }
+          }
+        }
+        if (customerData?.code_parrainage) {
+          setCodeParrainage(customerData.code_parrainage)
+        }
+
+        // Charger les messages de contact
+        const { data: msgs } = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .order('created_at', { ascending: false })
+        setMesMessages(msgs || [])
+
       } else {
         window.location.href = '/auth';
       }
@@ -156,6 +165,7 @@ if (customerData?.code_parrainage) {
             { id: 'profil', label: '👤 Profil' },
             { id: 'securite', label: '🔒 Sécurité' },
             { id: 'abonnement', label: '💳 Abonnement' },
+            { id: 'messages', label: `📬 Mes demandes${mesMessages.length > 0 ? ` (${mesMessages.length})` : ''}` },
           ].map(o => (
             <button key={o.id} onClick={() => setOnglet(o.id)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
@@ -218,7 +228,6 @@ if (customerData?.code_parrainage) {
         {onglet === 'abonnement' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Souscrire */}
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Passer au plan payant</h3>
               <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Accédez à toutes les fonctionnalités — baux, états des lieux, connexion bancaire et plus.</p>
@@ -226,28 +235,27 @@ if (customerData?.code_parrainage) {
                 Voir les plans →
               </a>
             </div>
-            {/* Code parrainage */}
-<div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-  <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🤝 Parrainez un proche</h3>
-  <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
-    Partagez votre code et obtenez <strong>-5%</strong> sur votre abonnement pour chaque filleul qui s'abonne !
-  </p>
-  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    <div>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Votre code parrainage</p>
-      <p style={{ fontSize: 22, fontWeight: 800, color: '#2563eb', letterSpacing: 2, margin: 0 }}>{codeParrainage || '—'}</p>
-    </div>
-    <button onClick={() => {
-      navigator.clipboard.writeText(codeParrainage)
-      alert('Code copié !')
-    }}
-      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-      📋 Copier
-    </button>
-  </div>
-</div>
 
-            {/* Code expiré */}
+            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🤝 Parrainez un proche</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
+                Partagez votre code et obtenez <strong>-5%</strong> sur votre abonnement pour chaque filleul qui s'abonne !
+              </p>
+              <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Votre code parrainage</p>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: '#2563eb', letterSpacing: 2, margin: 0 }}>{codeParrainage || '—'}</p>
+                </div>
+                <button onClick={() => {
+                  navigator.clipboard.writeText(codeParrainage)
+                  alert('Code copié !')
+                }}
+                  style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                  📋 Copier
+                </button>
+              </div>
+            </div>
+
             {codeExpire && (
               <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 12, padding: 14 }}>
                 <p style={{ fontSize: 13, color: '#854d0e', margin: 0, fontWeight: 500 }}>
@@ -256,7 +264,6 @@ if (customerData?.code_parrainage) {
               </div>
             )}
 
-            {/* Code promo actif */}
             {codeActuel && !codeExpire && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>🎟️ Code promo actif</h3>
@@ -266,7 +273,6 @@ if (customerData?.code_parrainage) {
               </div>
             )}
 
-            {/* Saisie code promo — visible si pas de code actif ou si code expiré */}
             {(!codeActuel || codeExpire) && (
               <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🎟️ Code promo</h3>
@@ -291,7 +297,42 @@ if (customerData?.code_parrainage) {
                 )}
               </div>
             )}
+          </div>
+        )}
 
+        {/* ONGLET MES MESSAGES */}
+        {onglet === 'messages' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>📬 Mes demandes de support</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 24px' }}>Retrouvez ici tous vos messages envoyés au support.</p>
+
+              {mesMessages.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <p style={{ color: '#9ca3af', fontSize: 14 }}>Aucune demande envoyée pour l'instant.</p>
+                  <a href="/contact" style={{ display: 'inline-block', marginTop: 12, background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+                    Contacter le support →
+                  </a>
+                </div>
+              ) : mesMessages.map((m) => (
+                <div key={m.id} style={{ background: '#f9fafb', borderRadius: 12, padding: 20, marginBottom: 12, border: '1px solid #f3f4f6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{
+                      background: m.statut === 'non_lu' ? '#eff6ff' : '#f0fdf4',
+                      color: m.statut === 'non_lu' ? '#2563eb' : '#15803d',
+                      padding: '2px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600
+                    }}>
+                      {m.statut === 'non_lu' ? '⏳ En attente' : m.statut === 'lu' ? '👀 Lu' : '✅ Traité'}
+                    </span>
+                    <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                      {new Date(m.created_at).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  {m.sujet && <p style={{ fontWeight: 600, color: '#111827', fontSize: 14, margin: '0 0 6px' }}>{m.sujet}</p>}
+                  <p style={{ color: '#374151', fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{m.message}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

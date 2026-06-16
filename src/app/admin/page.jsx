@@ -15,6 +15,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
+  const [messages, setMessages] = useState([])
   const [onglet, setOnglet] = useState('dashboard')
 
   useEffect(() => {
@@ -59,6 +60,11 @@ export default function Admin() {
     const resCodes = await fetch('/api/admin/codes-promo')
     const dataCodes = await resCodes.json()
     if (dataCodes.codes) setCodes(dataCodes.codes)
+
+    const resMsgs = await fetch('/api/admin/contacts')
+    const dataMsgs = await resMsgs.json()
+    if (dataMsgs.messages) setMessages(dataMsgs.messages)
+
     setLoading(false)
   }
 
@@ -106,6 +112,7 @@ export default function Admin() {
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'users', label: '👥 Utilisateurs' },
     { id: 'abonnements', label: '💳 Abonnements' },
+    { id: 'messages', label: `📬 Messages${messages.filter(m => m.statut === 'non_lu').length > 0 ? ` (${messages.filter(m => m.statut === 'non_lu').length})` : ''}` },
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
     { id: 'liens', label: '🔗 Liens rapides' },
@@ -285,6 +292,51 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* MESSAGES */}
+        {onglet === 'messages' && (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>📬 Messages de contact ({messages.length})</h2>
+            {messages.length === 0 ? (
+              <div style={{ background: '#1f2937', borderRadius: 14, padding: 40, textAlign: 'center', border: '1px solid #374151' }}>
+                <p style={{ color: '#9ca3af' }}>Aucun message reçu.</p>
+              </div>
+            ) : messages.map((m) => (
+              <div key={m.id} style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: `1px solid ${m.statut === 'non_lu' ? '#2563eb' : '#374151'}`, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <span style={{ background: m.statut === 'non_lu' ? '#1e3a5f' : '#374151', color: m.statut === 'non_lu' ? '#60a5fa' : '#9ca3af', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, marginRight: 8 }}>
+                      {m.statut === 'non_lu' ? '🔵 Non lu' : m.statut === 'lu' ? '✓ Lu' : '✅ Répondu'}
+                    </span>
+                    <span style={{ color: '#9ca3af', fontSize: 12 }}>{new Date(m.created_at).toLocaleDateString('fr-FR')} à {new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {m.statut === 'non_lu' && (
+                      <button onClick={async () => {
+                        await fetch('/api/admin/contacts', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: m.id, statut: 'lu' }),
+                        })
+                        setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, statut: 'lu' } : msg))
+                      }}
+                        style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>
+                        Marquer lu
+                      </button>
+                    )}
+                    <a href={`mailto:${m.email}?subject=Re: ${m.sujet || 'Votre message'}`}
+                      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
+                      📧 Répondre
+                    </a>
+                  </div>
+                </div>
+                <p style={{ color: 'white', fontWeight: 700, fontSize: 15, margin: '0 0 4px' }}>{m.nom} — <span style={{ color: '#60a5fa', fontWeight: 400 }}>{m.email}</span></p>
+                {m.sujet && <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 10px' }}>Sujet : {m.sujet}</p>}
+                <p style={{ color: '#d1d5db', fontSize: 14, margin: 0, whiteSpace: 'pre-wrap', background: '#111827', borderRadius: 8, padding: 12 }}>{m.message}</p>
+              </div>
+            ))}
           </div>
         )}
 
@@ -478,7 +530,6 @@ export default function Admin() {
               </div>
             )}
 
-            {/* PRIX */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>💰 Prix des plans</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -500,7 +551,6 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* TEXTES LANDING */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>📝 Textes landing page</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -523,7 +573,6 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* TABLEAU COMPARATIF */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📊 Tableau comparatif</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Cochez les fonctionnalités disponibles par plan</p>
@@ -565,7 +614,6 @@ export default function Admin() {
               })}
             </div>
 
-            {/* CGU */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📋 CGU & Mentions légales</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 20px' }}>Ces infos apparaissent sur la page /cgu</p>
