@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
+import Footer from './footer'
 
 export default function Nav({ pageCourante = '' }) {
   const [plan, setPlan] = useState('gratuit')

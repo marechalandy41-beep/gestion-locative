@@ -219,11 +219,15 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: '#111827', padding: '32px 24px', textAlign: 'center' }}>
-        <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>
-          © 2026 GestionLocative — Conforme loi ALUR — Fait avec ❤️ en France
-        </p>
-      </footer>
+<footer style={{ background: '#111827', padding: '32px 24px', textAlign: 'center' }}>
+  <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 12 }}>
+    <a href="/cgu" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>CGU & Mentions légales</a>
+    <a href="/contact" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>Contact</a>
+  </div>
+  <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>
+    © 2026 GestionLocative — Conforme loi ALUR — Fait avec ❤️ en France
+  </p>
+</footer>
 
     </main>
   )
