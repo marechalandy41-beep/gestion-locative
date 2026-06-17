@@ -113,8 +113,7 @@ export default function Biens() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
-      {/* NAV */}
-     <Nav pageCourante="biens" />
+      <Nav pageCourante="biens" />
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
 
@@ -140,7 +139,6 @@ export default function Biens() {
               <span style={{ fontSize: 13, color: '#6b7280' }}>Étape {etapeForm}/2</span>
             </div>
 
-            {/* ÉTAPE 1 */}
             {etapeForm === 1 && (
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
@@ -192,13 +190,11 @@ export default function Biens() {
               </div>
             )}
 
-            {/* ÉTAPE 2 */}
             {etapeForm === 2 && (
               <div>
                 <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>
                   {typesConfig[newBien.type].icone} <strong>{newBien.type}</strong> — Renseignez les caractéristiques du bien
                 </p>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <div>
                     <label style={labelStyle}>Surface (m²)</label>
@@ -213,7 +209,6 @@ export default function Biens() {
                     <input value={newBien.etage || ''} onChange={e => setNewBien({...newBien, etage: e.target.value})} placeholder="Ex: 2ème / Bât. A" style={inputStyle} />
                   </div>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <div>
                     <label style={labelStyle}>Classe DPE</label>
@@ -226,12 +221,10 @@ export default function Biens() {
                     <input value={newBien.numero_lot || ''} onChange={e => setNewBien({...newBien, numero_lot: e.target.value})} placeholder="Ex: Lot 12 (copropriété)" style={inputStyle} />
                   </div>
                 </div>
-
                 <div style={{ marginBottom: 20 }}>
                   <label style={labelStyle}>Équipements inclus</label>
                   <input value={newBien.equipements || ''} onChange={e => setNewBien({...newBien, equipements: e.target.value})} placeholder="Cuisine équipée, chaudière gaz, interphone..." style={inputStyle} />
                 </div>
-
                 {typesConfig[newBien.type].champsSpecifiques.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     {typesConfig[newBien.type].champsSpecifiques.map(champ => (
@@ -242,7 +235,6 @@ export default function Biens() {
                     ))}
                   </div>
                 )}
-
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={ajouterBien}
                     style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
@@ -298,25 +290,33 @@ export default function Biens() {
                         </div>
                       ))
                     )}
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12}}>
-  <button style={{background:'#f3f4f6', color:'#374151', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>+ Lot</button>
-  <button onClick={e => { e.stopPropagation(); window.location.href = '/coffre-fort?bien=' + bien.id; }} style={{flex:1, background:'#eff6ff', color:'#2563eb', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>📁 Coffre-fort</button>
-  <button style={{background:'#fef2f2', color:'#dc2626', padding:'8px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500}}>🏷️ Vendre</button>
-  <button
-    onClick={async e => {
-      e.stopPropagation();
-      const c1 = confirm('Supprimer définitivement ce bien ?');
-      if (!c1) return;
-      const c2 = confirm('Cette action est irréversible. Confirmer ?');
-      if (!c2) return;
-      const { error } = await supabase.from('Biens').delete().eq('id', bien.id);
-      if (!error) { chargerBiens(user.id); setSelectionne(null); }
-      else { alert('Erreur : ' + error.message); }
-    }}
-    style={{flex:1, background:'white', color:'#6b7280', padding:'8px', borderRadius:8, border:'1px solid #d1d5db', cursor:'pointer', fontSize:12, fontWeight:500}}>
-    🗑 Supprimer
-  </button>
-</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
+                      <button style={{ background: '#f3f4f6', color: '#374151', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+                        + Lot
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); window.location.href = '/coffre-fort?bien=' + bien.id; }}
+                        style={{ background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+                        📁 Coffre-fort
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); window.location.href = '/biens/' + bien.id + '/vendre'; }}
+                        style={{ background: '#fef2f2', color: '#dc2626', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+                        🏷️ Vendre
+                      </button>
+                      <button
+                        onClick={async e => {
+                          e.stopPropagation();
+                          const c1 = confirm('Supprimer définitivement ce bien ?');
+                          if (!c1) return;
+                          const c2 = confirm('Cette action est irréversible. Confirmer ?');
+                          if (!c2) return;
+                          const { error } = await supabase.from('Biens').delete().eq('id', bien.id);
+                          if (!error) { chargerBiens(user.id); setSelectionne(null); }
+                          else { alert('Erreur : ' + error.message); }
+                        }}
+                        style={{ background: 'white', color: '#6b7280', padding: '8px', borderRadius: 8, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+                        🗑 Supprimer
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
