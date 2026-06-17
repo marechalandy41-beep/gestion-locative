@@ -89,6 +89,35 @@ if (!customerData?.plan || customerData.plan === 'gratuit') {
     return { couleur: '#dc2626', bg: '#fef2f2', texte: '❌ Impayé' };
   }
 
+async function togglePaiement(bail) {
+  const moisActuel = new Date().getMonth() + 1
+  const anneeActuelle = new Date().getFullYear()
+  const dejaPaye = paiementsMois.some(p => p.bail_id === bail.id)
+
+  if (dejaPaye) {
+    await supabase.from('paiements')
+      .delete()
+      .eq('bail_id', bail.id)
+      .eq('mois', moisActuel)
+      .eq('annee', anneeActuelle)
+      .eq('user_id', user.id)
+    setPaiementsMois(prev => prev.filter(p => p.bail_id !== bail.id))
+  } else {
+    const { data } = await supabase.from('paiements').insert({
+      bail_id: bail.id,
+      user_id: user.id,
+      montant: (bail.loyer_hc || 0) + (bail.charges || 0),
+      mois: moisActuel,
+      annee: anneeActuelle,
+      date_paiement: new Date().toISOString().split('T')[0],
+      source: 'manuel',
+      statut: 'valide',
+      libelle_virement: 'Paiement manuel',
+    }).select().single()
+    if (data) setPaiementsMois(prev => [...prev, { bail_id: bail.id }])
+  }
+}
+
   const lienNav = (href, label, actif = false) => (
     <a href={href} style={{ color: actif ? '#2563eb' : '#6b7280', borderBottom: actif ? '2px solid #2563eb' : 'none', paddingBottom: actif ? 4 : 0, textDecoration: 'none', fontWeight: 500 }}>
       {label}
@@ -209,11 +238,16 @@ if (!customerData?.plan || customerData.plan === 'gratuit') {
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                     <a href={`/baux/${bail.id}`} style={{ flex: 1, background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-                      Voir le bail
-                    </a>
-                    <a href="/documents/quittance" style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-                      Quittance
-                    </a>
+  Voir le bail
+</a>
+<a href="/documents/quittance" style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
+  Quittance
+</a>
+<button onClick={() => togglePaiement(bail)}
+  style={{ flex: 1, background: paiementsMois.some(p => p.bail_id === bail.id) ? '#fef2f2' : '#f0fdf4', color: paiementsMois.some(p => p.bail_id === bail.id) ? '#dc2626' : '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+  {paiementsMois.some(p => p.bail_id === bail.id) ? '❌ Annuler' : '✅ Marquer payé'}
+</button>
+                  
                   </div>
                 </div>
               );
