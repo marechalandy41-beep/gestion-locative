@@ -380,7 +380,7 @@ async function finaliserBailSigne() {
   setLoading(true);
   try {
     const doc = await genererPDFBail();
-    const nomFichier = `Bail_${bail.locataire_nom}_${bail.bailleur_nom}_${bail.date_debut || 'date'}.pdf`;
+    const nomFichier = `Bail_${sanitizerNomFichier(bail.locataire_nom)}_${sanitizerNomFichier(bail.bailleur_nom)}_${bail.date_debut || 'date'}.pdf`;
 
     // Téléchargement local
     doc.save(nomFichier);
@@ -416,6 +416,13 @@ async function finaliserBailSigne() {
     setLoading(false);
   }
 }
+
+function sanitizerNomFichier(nom) {
+    return (nom || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .replace(/_+/g, '_');
+  }
 
   function initCanvas(canvas) {
     if (!canvas) return;
@@ -536,7 +543,7 @@ async function finaliserBailSigne() {
               if (fichier.size > 10 * 1024 * 1024) { alert('Fichier trop lourd — maximum 10 Mo.'); return; }
               setLoading(true);
               try {
-                const nomFichier = `baux/${user.id}/${Date.now()}_${fichier.name}`;
+                const nomFichier = `baux/${user.id}/${Date.now()}_${sanitizerNomFichier(fichier.name)}`;
                 const { error: uploadError } = await supabase.storage.from('documents').upload(nomFichier, fichier, { contentType: 'application/pdf' });
                 if (uploadError) { alert('Erreur upload : ' + uploadError.message); setLoading(false); return; }
                 const { data: urlData } = supabase.storage.from('documents').getPublicUrl(nomFichier);

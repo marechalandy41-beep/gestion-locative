@@ -23,14 +23,21 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as any
     const customerId = session.customer
-    const customerEmail = session.customer_email || session.customer_details?.email
 
-    await supabaseAdmin
-      .from('customers')
-      .upsert({
-        stripe_customer_id: customerId,
-        plan: 'auto',
-      }, { onConflict: 'stripe_customer_id' })
+    // Récupère le user_id depuis les metadata du client Stripe
+    const customer = await stripe.customers.retrieve(customerId) as any
+    const userId = customer.metadata?.user_id
+
+    if (userId) {
+      const { error } = await supabaseAdmin
+        .from('customers')
+        .update({ stripe_customer_id: customerId, plan: 'auto' })
+        .eq('user_id', userId)
+
+      if (error) console.error('Erreur webhook update plan:', error.message)
+    } else {
+      console.error('Pas de user_id trouvé dans les metadata Stripe pour', customerId)
+    }
   }
 
   if (event.type === 'customer.subscription.deleted') {

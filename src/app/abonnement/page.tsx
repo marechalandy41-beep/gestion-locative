@@ -14,10 +14,13 @@ export default function Abonnement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: user.email,
-          name: (user.user_metadata?.prenom || '') + ' ' + (user.user_metadata?.nom || '')
+          name: (user.user_metadata?.prenom || '') + ' ' + (user.user_metadata?.nom || ''),
+          userId: user.id
         }),
       })
-      const { customerId } = await res.json()
+      const data1 = await res.json()
+      console.log('create-customer →', data1)
+      const { customerId } = data1
 
       const res2 = await fetch('/api/create-subscription', {
         method: 'POST',
@@ -27,7 +30,11 @@ export default function Abonnement() {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID,
         }),
       })
-      const { url } = await res2.json()
+      const data2 = await res2.json()
+      console.log('create-subscription →', data2)
+      const { url } = data2
+
+      if (!url) { alert('Pas d\'URL reçue. Voir la console (F12).'); return }
       window.location.href = url
     }
     redirect()

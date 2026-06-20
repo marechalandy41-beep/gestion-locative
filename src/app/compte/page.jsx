@@ -23,6 +23,7 @@ export default function Compte() {
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
   const [mesMessages, setMesMessages] = useState([])
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -135,6 +136,27 @@ export default function Compte() {
     window.location.href = '/auth';
   }
 
+  async function gererAbonnement() {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Erreur : ' + (data.error || 'Impossible d\'ouvrir le portail de gestion.'))
+        setPortalLoading(false)
+      }
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+      setPortalLoading(false)
+    }
+  }
+
   const inputStyle = {
     width: '100%', border: '1px solid #e5e7eb', borderRadius: 8,
     padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box'
@@ -229,11 +251,17 @@ export default function Compte() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Passer au plan payant</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Accédez à toutes les fonctionnalités — baux, états des lieux, connexion bancaire et plus.</p>
-              <a href="/abonnement" style={{ display: 'inline-block', background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
-                Voir les plans →
-              </a>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Mon abonnement</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Gérez votre abonnement — facture, moyen de paiement, résiliation.</p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button onClick={gererAbonnement} disabled={portalLoading}
+                  style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
+                  {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
+                </button>
+                <a href="/abonnement" style={{ display: 'inline-block', background: '#f3f4f6', color: '#374151', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+                  Voir les plans →
+                </a>
+              </div>
             </div>
 
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
