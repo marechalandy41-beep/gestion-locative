@@ -15,7 +15,11 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
-  const [messages, setMessages] = useState([])
+  const [conversations, setConversations] = useState([])
+  const [conversationActive, setConversationActive] = useState(null)
+  const [messagesConversation, setMessagesConversation] = useState([])
+  const [nouveauMessageAdmin, setNouveauMessageAdmin] = useState('')
+  const [envoiAdminLoading, setEnvoiAdminLoading] = useState(false)
   const [onglet, setOnglet] = useState('dashboard')
 
   useEffect(() => {
@@ -27,6 +31,23 @@ export default function Admin() {
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // Rafraîchit la liste des conversations (pour la surbrillance des nouvelles)
+      const res = await fetch('/api/admin/conversations')
+      const data = await res.json()
+      if (data.conversations) setConversations(data.conversations)
+
+      // Si une conversation est ouverte, rafraîchit aussi ses messages
+      if (conversationActive) {
+        const res2 = await fetch(`/api/admin/conversation-messages?conversationId=${conversationActive.id}`)
+        const data2 = await res2.json()
+        if (data2.messages) setMessagesConversation(data2.messages)
+      }
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [conversationActive])
 
   async function verifierMotDePasse() {
     const res = await fetch('/api/admin/auth', {
@@ -61,9 +82,9 @@ export default function Admin() {
     const dataCodes = await resCodes.json()
     if (dataCodes.codes) setCodes(dataCodes.codes)
 
-    const resMsgs = await fetch('/api/admin/contacts')
-    const dataMsgs = await resMsgs.json()
-    if (dataMsgs.messages) setMessages(dataMsgs.messages)
+    const resConvs = await fetch('/api/admin/conversations')
+    const dataConvs = await resConvs.json()
+    if (dataConvs.conversations) setConversations(dataConvs.conversations)
 
     setLoading(false)
   }
@@ -78,6 +99,39 @@ export default function Admin() {
     setSavingSettings(false)
     setSettingsToast(true)
     setTimeout(() => setSettingsToast(false), 2000)
+  }
+
+async function ouvrirConversationAdmin(conv) {
+    setConversationActive(conv)
+    const res = await fetch(`/api/admin/conversation-messages?conversationId=${conv.id}`)
+    const data = await res.json()
+    setMessagesConversation(data.messages || [])
+  }
+
+  async function envoyerMessageAdmin() {
+    if (!nouveauMessageAdmin.trim() || !conversationActive) return
+    setEnvoiAdminLoading(true)
+    try {
+      const res = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: conversationActive.id,
+          expediteur: 'admin',
+          contenu: nouveauMessageAdmin.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNouveauMessageAdmin('')
+        ouvrirConversationAdmin(conversationActive)
+      } else {
+        alert('Erreur : ' + data.error)
+      }
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setEnvoiAdminLoading(false)
   }
 
   if (!accesOk) return (
@@ -112,7 +166,7 @@ export default function Admin() {
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'users', label: '👥 Utilisateurs' },
     { id: 'abonnements', label: '💳 Abonnements' },
-    { id: 'messages', label: `📬 Messages${messages.filter(m => m.statut === 'non_lu').length > 0 ? ` (${messages.filter(m => m.statut === 'non_lu').length})` : ''}` },
+    { id: 'messages', label: `📬 Messages${conversations.filter(c => c.statut === 'ouvert').length > 0 ? ` (${conversations.filter(c => c.statut === 'ouvert').length})` : ''}` },
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
     { id: 'liens', label: '🔗 Liens rapides' },
@@ -298,45 +352,91 @@ export default function Admin() {
         {/* MESSAGES */}
         {onglet === 'messages' && (
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>📬 Messages de contact ({messages.length})</h2>
-            {messages.length === 0 ? (
-              <div style={{ background: '#1f2937', borderRadius: 14, padding: 40, textAlign: 'center', border: '1px solid #374151' }}>
-                <p style={{ color: '#9ca3af' }}>Aucun message reçu.</p>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>📬 Messages ({conversations.length})</h2>
+            <div style={{ display: 'flex', gap: 16, height: 600 }}>
+
+              {/* LISTE DES CONVERSATIONS */}
+              <div style={{ width: 320, background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {conversations.length === 0 ? (
+                    <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: 20 }}>Aucune conversation.</p>
+                  ) : conversations.map(c => (
+                    <div key={c.id} onClick={() => ouvrirConversationAdmin(c)}
+                      style={{ padding: 14, borderBottom: '1px solid #374151', cursor: 'pointer', background: conversationActive?.id === c.id ? '#374151' : c.a_non_lu ? '#1e3a5f' : 'transparent' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: 13 }}>{c.user_email}</span>
+                        <span style={{
+                          background: c.statut === 'ferme' ? '#374151' : '#1e3a5f',
+                          color: c.statut === 'ferme' ? '#9ca3af' : '#60a5fa',
+                          padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 600
+                        }}>
+                          {c.statut === 'ferme' ? 'Fermé' : 'Ouvert'}
+                        </span>
+                      </div>
+                      <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 4px' }}>{c.sujet || 'Sans sujet'}</p>
+                      <p style={{ color: '#6b7280', fontSize: 11, margin: 0 }}>{new Date(c.derniere_activite).toLocaleDateString('fr-FR')} à {new Date(c.derniere_activite).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : messages.map((m) => (
-              <div key={m.id} style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: `1px solid ${m.statut === 'non_lu' ? '#2563eb' : '#374151'}`, marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
-                    <span style={{ background: m.statut === 'non_lu' ? '#1e3a5f' : '#374151', color: m.statut === 'non_lu' ? '#60a5fa' : '#9ca3af', padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, marginRight: 8 }}>
-                      {m.statut === 'non_lu' ? '🔵 Non lu' : m.statut === 'lu' ? '✓ Lu' : '✅ Répondu'}
-                    </span>
-                    <span style={{ color: '#9ca3af', fontSize: 12 }}>{new Date(m.created_at).toLocaleDateString('fr-FR')} à {new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+
+              {/* ZONE DE CHAT */}
+              <div style={{ flex: 1, background: '#1f2937', borderRadius: 14, border: '1px solid #374151', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {!conversationActive ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p style={{ color: '#9ca3af', fontSize: 14 }}>Sélectionnez une conversation</p>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {m.statut === 'non_lu' && (
+                ) : (
+                  <>
+                    <div style={{ padding: 16, borderBottom: '1px solid #374151', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>{conversationActive.user_email}</p>
+                        <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0' }}>{conversationActive.sujet}</p>
+                      </div>
                       <button onClick={async () => {
-                        await fetch('/api/admin/contacts', {
+                        const nouveauStatut = conversationActive.statut === 'ferme' ? 'ouvert' : 'ferme'
+                        await fetch('/api/admin/conversations', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ id: m.id, statut: 'lu' }),
+                          body: JSON.stringify({ id: conversationActive.id, statut: nouveauStatut }),
                         })
-                        setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, statut: 'lu' } : msg))
+                        setConversationActive(prev => ({ ...prev, statut: nouveauStatut }))
+                        setConversations(prev => prev.map(c => c.id === conversationActive.id ? { ...c, statut: nouveauStatut } : c))
                       }}
-                        style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>
-                        Marquer lu
+                        style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                        {conversationActive.statut === 'ferme' ? '🔓 Rouvrir' : '✅ Marquer résolu'}
                       </button>
-                    )}
-                    <a href={`mailto:${m.email}?subject=Re: ${m.sujet || 'Votre message'}`}
-                      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
-                      📧 Répondre
-                    </a>
-                  </div>
-                </div>
-                <p style={{ color: 'white', fontWeight: 700, fontSize: 15, margin: '0 0 4px' }}>{m.nom} — <span style={{ color: '#60a5fa', fontWeight: 400 }}>{m.email}</span></p>
-                {m.sujet && <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 10px' }}>Sujet : {m.sujet}</p>}
-                <p style={{ color: '#d1d5db', fontSize: 14, margin: 0, whiteSpace: 'pre-wrap', background: '#111827', borderRadius: 8, padding: 12 }}>{m.message}</p>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {messagesConversation.map(m => (
+                        <div key={m.id} style={{
+                          alignSelf: m.expediteur === 'admin' ? 'flex-end' : 'flex-start',
+                          maxWidth: '70%',
+                          background: m.expediteur === 'admin' ? '#2563eb' : '#374151',
+                          color: 'white',
+                          borderRadius: 14, padding: '10px 14px', fontSize: 13
+                        }}>
+                          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.contenu}</p>
+                          <p style={{ margin: '4px 0 0', fontSize: 10, opacity: 0.7 }}>
+                            {new Date(m.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding: 16, borderTop: '1px solid #374151', display: 'flex', gap: 8 }}>
+                      <input value={nouveauMessageAdmin} onChange={e => setNouveauMessageAdmin(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && envoyerMessageAdmin()}
+                        placeholder="Votre réponse..."
+                        style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+                      <button onClick={envoyerMessageAdmin} disabled={envoiAdminLoading || !nouveauMessageAdmin.trim()}
+                        style={{ background: '#2563eb', color: 'white', padding: '10px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                        →
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         )}
 
@@ -530,7 +630,7 @@ export default function Admin() {
               </div>
             )}
 
-            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+           <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>💰 Prix des plans</h3>
               <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 20px' }}>⚠️ Modifier un prix crée un nouveau tarif sur Stripe. Les abonnés existants ne sont pas affectés rétroactivement.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -570,6 +670,50 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>🏷️ Catégories du support</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Liste des catégories proposées aux clients dans le formulaire de demande.</p>
+              {(() => {
+                let cats = []
+                try { cats = settings.categories_support ? JSON.parse(settings.categories_support) : [] } catch { cats = [] }
+                return (
+                  <div>
+                    {cats.map((cat, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                        <input value={cat} onChange={e => {
+                          const newCats = [...cats]
+                          newCats[i] = e.target.value
+                          setSettings(prev => ({ ...prev, categories_support: JSON.stringify(newCats) }))
+                        }}
+                          style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none' }} />
+                        <button onClick={() => {
+                          const newCats = cats.filter((_, idx) => idx !== i)
+                          setSettings(prev => ({ ...prev, categories_support: JSON.stringify(newCats) }))
+                          sauvegarderSetting('categories_support', JSON.stringify(newCats))
+                        }}
+                          style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}>
+                          🗑
+                        </button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button onClick={() => {
+                        const newCats = [...cats, 'Nouvelle catégorie']
+                        setSettings(prev => ({ ...prev, categories_support: JSON.stringify(newCats) }))
+                      }}
+                        style={{ background: '#374151', color: '#9ca3af', border: '1px dashed #4b5563', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
+                        + Ajouter une catégorie
+                      </button>
+                      <button onClick={() => sauvegarderSetting('categories_support', settings.categories_support)}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        💾 Sauvegarder
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>

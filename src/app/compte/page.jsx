@@ -22,7 +22,15 @@ export default function Compte() {
   const [reductionActuelle, setReductionActuelle] = useState(0)
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
-  const [mesMessages, setMesMessages] = useState([])
+ const [conversations, setConversations] = useState([])
+  const [conversationActive, setConversationActive] = useState(null)
+  const [messagesConversation, setMessagesConversation] = useState([])
+  const [nouveauMessage, setNouveauMessage] = useState('')
+  const [envoiMessageLoading, setEnvoiMessageLoading] = useState(false)
+ const [nouveauSujet, setNouveauSujet] = useState('')
+  const [messagesNonLus, setMessagesNonLus] = useState(0)
+  const [conversationsNonLues, setConversationsNonLues] = useState([])
+  const [categoriesSupport, setCategoriesSupport] = useState(['Problème technique', 'Facturation / Abonnement', 'Suggestion d\'amélioration', 'Question sur mon compte', 'Autre'])
   const [portalLoading, setPortalLoading] = useState(false)
   const [planActuel, setPlanActuel] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
@@ -54,7 +62,7 @@ export default function Compte() {
         const { data: settingsData } = await supabase
           .from('settings')
           .select('cle, valeur')
-          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto'])
+          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support'])
 
         if (settingsData) {
           const prixManuelSetting = settingsData.find(s => s.cle === 'prix_manuel')
@@ -66,6 +74,11 @@ export default function Compte() {
           if (priceIdManuelSetting) setPriceIdManuel(priceIdManuelSetting.valeur)
           if (priceIdAutoSetting) setPriceIdAutomatique(priceIdAutoSetting.valeur)
         }
+
+        const categoriesSetting = settingsData.find(s => s.cle === 'categories_support')
+          if (categoriesSetting) {
+            try { setCategoriesSupport(JSON.parse(categoriesSetting.valeur)) } catch {}
+          }
 
         if (customerData?.code_promo) {
           const { data: codeData } = await supabase
@@ -97,13 +110,26 @@ export default function Compte() {
           setCodeParrainage(customerData.code_parrainage)
         }
 
-        // Charger les messages de contact
-        const { data: msgs } = await supabase
-          .from('contacts')
+        // Charger les conversations
+        const { data: convs } = await supabase
+          .from('conversations')
           .select('*')
           .eq('user_id', data.user.id)
-          .order('created_at', { ascending: false })
-        setMesMessages(msgs || [])
+          .order('derniere_activite', { ascending: false })
+        setConversations(convs || [])
+
+        // Compte les messages admin non lus par le client
+        if (convs && convs.length > 0) {
+          const { data: nonLus } = await supabase
+            .from('messages')
+            .select('conversation_id')
+            .eq('expediteur', 'admin')
+            .eq('lu_par_client', false)
+            .in('conversation_id', convs.map(c => c.id))
+          const idsNonLus = [...new Set((nonLus || []).map(m => m.conversation_id))]
+          setConversationsNonLues(idsNonLus)
+          setMessagesNonLus(idsNonLus.length)
+        }
 
       } else {
         window.location.href = '/auth';
@@ -112,6 +138,18 @@ export default function Compte() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!conversationActive) return
+    const channel = supabase
+      .channel(`conversation-${conversationActive.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationActive.id}` },
+        (payload) => {
+          setMessagesConversation(prev => [...prev, payload.new])
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [conversationActive])
+  
   async function sauvegarderProfil() {
     const { error } = await supabase.auth.updateUser({
       data: { prenom, nom, telephone }
@@ -183,6 +221,66 @@ export default function Compte() {
       alert('Erreur : ' + err.message)
       setPortalLoading(false)
     }
+  }
+
+async function ouvrirConversation(conv) {
+    setConversationActive(conv)
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conv.id)
+      .order('created_at', { ascending: true })
+    setMessagesConversation(data || [])
+
+    // Marque les messages admin comme lus par le client
+    await supabase
+      .from('messages')
+      .update({ lu_par_client: true })
+      .eq('conversation_id', conv.id)
+      .eq('expediteur', 'admin')
+
+    // Retire cette conversation de la liste des non lues
+    setConversationsNonLues(prev => prev.filter(id => id !== conv.id))
+  }
+
+  async function envoyerMessage() {
+    if (!nouveauMessage.trim()) return
+    setEnvoiMessageLoading(true)
+    try {
+      const res = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: conversationActive?.id || null,
+          userId: user.id,
+          expediteur: 'client',
+          contenu: nouveauMessage.trim(),
+          sujet: nouveauSujet || 'Nouvelle demande',
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNouveauMessage('')
+        if (!conversationActive) {
+          // Nouvelle conversation créée, recharge la liste
+          const { data: convs } = await supabase
+            .from('conversations')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('derniere_activite', { ascending: false })
+          setConversations(convs || [])
+          const nouvConv = convs.find(c => c.id === data.conversationId)
+          if (nouvConv) ouvrirConversation(nouvConv)
+        } else {
+          ouvrirConversation(conversationActive)
+        }
+      } else {
+        alert('Erreur : ' + data.error)
+      }
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setEnvoiMessageLoading(false)
   }
 
   const PLANS = [
@@ -293,7 +391,7 @@ export default function Compte() {
             { id: 'profil', label: '👤 Profil' },
             { id: 'securite', label: '🔒 Sécurité' },
             { id: 'abonnement', label: '💳 Abonnement' },
-            { id: 'messages', label: `📬 Mes demandes${mesMessages.length > 0 ? ` (${mesMessages.length})` : ''}` },
+            { id: 'messages', label: `📬 Mes demandes${conversationsNonLues.length > 0 ? ` (${conversationsNonLues.length})` : ''}` },
           ].map(o => (
             <button key={o.id} onClick={() => setOnglet(o.id)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
@@ -465,36 +563,87 @@ export default function Compte() {
 
         {/* ONGLET MES MESSAGES */}
         {onglet === 'messages' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>📬 Mes demandes de support</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 24px' }}>Retrouvez ici tous vos messages envoyés au support.</p>
+          <div style={{ display: 'flex', gap: 16, height: 560 }}>
 
-              {mesMessages.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <p style={{ color: '#9ca3af', fontSize: 14 }}>Aucune demande envoyée pour l'instant.</p>
-                  <a href="/contact" style={{ display: 'inline-block', marginTop: 12, background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
-                    Contacter le support →
-                  </a>
+            {/* LISTE DES CONVERSATIONS */}
+            <div style={{ width: 280, background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
+                <button onClick={() => { setConversationActive(null); setMessagesConversation([]); setNouveauSujet('') }}
+                  style={{ width: '100%', background: '#2563eb', color: 'white', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                  + Nouvelle demande
+                </button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {conversations.length === 0 ? (
+                  <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: 20 }}>Aucune conversation.</p>
+                ) : conversations.map(c => {
+                  const estNonLue = conversationsNonLues.includes(c.id)
+                  return (
+                    <div key={c.id} onClick={() => ouvrirConversation(c)}
+                      style={{ padding: 14, borderBottom: '1px solid #f9fafb', cursor: 'pointer', background: conversationActive?.id === c.id ? '#eff6ff' : estNonLue ? '#fffbeb' : 'white', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      {estNonLue && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', marginTop: 5, flexShrink: 0 }} />}
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: estNonLue ? 700 : 600, color: '#111827', margin: '0 0 4px' }}>{c.sujet || 'Sans sujet'}</p>
+                        <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>
+                          {c.statut === 'ferme' ? '✅ Fermé' : '🟢 Ouvert'} — {new Date(c.derniere_activite).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ZONE DE CHAT */}
+            <div style={{ flex: 1, background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+              {!conversationActive ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 24 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 12 }}>Nouvelle demande au support</p>
+                  <select value={nouveauSujet} onChange={e => setNouveauSujet(e.target.value)}
+                    style={{ ...inputStyle, marginBottom: 12 }}>
+                    <option value="">— Choisir une catégorie —</option>
+                    {categoriesSupport.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                  <textarea value={nouveauMessage} onChange={e => setNouveauMessage(e.target.value)} placeholder="Décrivez votre demande..." rows={5}
+                    style={{ ...inputStyle, resize: 'vertical', marginBottom: 12 }} />
+                  <button onClick={envoyerMessage} disabled={envoiMessageLoading || !nouveauMessage.trim()}
+                    style={{ background: envoiMessageLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, alignSelf: 'flex-start' }}>
+                    {envoiMessageLoading ? 'Envoi...' : 'Envoyer →'}
+                  </button>
                 </div>
-              ) : mesMessages.map((m) => (
-                <div key={m.id} style={{ background: '#f9fafb', borderRadius: 12, padding: 20, marginBottom: 12, border: '1px solid #f3f4f6' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{
-                      background: m.statut === 'non_lu' ? '#eff6ff' : '#f0fdf4',
-                      color: m.statut === 'non_lu' ? '#2563eb' : '#15803d',
-                      padding: '2px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600
-                    }}>
-                      {m.statut === 'non_lu' ? '⏳ En attente' : m.statut === 'lu' ? '👀 Lu' : '✅ Traité'}
-                    </span>
-                    <span style={{ color: '#9ca3af', fontSize: 12 }}>
-                      {new Date(m.created_at).toLocaleDateString('fr-FR')}
-                    </span>
+              ) : (
+                <>
+                  <div style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: '#111827', margin: 0 }}>{conversationActive.sujet}</p>
                   </div>
-                  {m.sujet && <p style={{ fontWeight: 600, color: '#111827', fontSize: 14, margin: '0 0 6px' }}>{m.sujet}</p>}
-                  <p style={{ color: '#374151', fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{m.message}</p>
-                </div>
-              ))}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {messagesConversation.map(m => (
+                      <div key={m.id} style={{
+                        alignSelf: m.expediteur === 'client' ? 'flex-end' : 'flex-start',
+                        maxWidth: '75%',
+                        background: m.expediteur === 'client' ? '#2563eb' : '#f3f4f6',
+                        color: m.expediteur === 'client' ? 'white' : '#111827',
+                        borderRadius: 14, padding: '10px 14px', fontSize: 13
+                      }}>
+                        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.contenu}</p>
+                        <p style={{ margin: '4px 0 0', fontSize: 10, opacity: 0.7 }}>
+                          {new Date(m.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: 16, borderTop: '1px solid #f3f4f6', display: 'flex', gap: 8 }}>
+                    <input value={nouveauMessage} onChange={e => setNouveauMessage(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && envoyerMessage()}
+                      placeholder="Votre message..." style={{ ...inputStyle, flex: 1 }} />
+                    <button onClick={envoyerMessage} disabled={envoiMessageLoading || !nouveauMessage.trim()}
+                      style={{ background: '#2563eb', color: 'white', padding: '10px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                      →
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
