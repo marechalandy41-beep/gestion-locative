@@ -24,6 +24,9 @@ export default function Compte() {
   const [codeParrainage, setCodeParrainage] = useState('')
   const [mesMessages, setMesMessages] = useState([])
   const [portalLoading, setPortalLoading] = useState(false)
+  const [planActuel, setPlanActuel] = useState('gratuit')
+  const [planSelectionne, setPlanSelectionne] = useState(null)
+  const [changementLoading, setChangementLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -35,9 +38,13 @@ export default function Compte() {
 
         const { data: customerData } = await supabase
           .from('customers')
-          .select('code_promo, reduction, code_parrainage')
+          .select('code_promo, reduction, code_parrainage, plan')
           .eq('user_id', data.user.id)
           .single();
+
+        if (customerData?.plan) {
+          setPlanActuel(customerData.plan)
+        }
 
         if (customerData?.code_promo) {
           const { data: codeData } = await supabase
@@ -157,6 +164,84 @@ export default function Compte() {
     }
   }
 
+  const PLANS = [
+    { id: 'gratuit', nom: 'Gratuit', prix: '0€', description: 'Quittances manuelles, 50 Mo de stockage', priceId: null },
+    { id: 'manuel', nom: 'Manuel', prix: '4€', description: 'Baux, états des lieux, coffre-fort complet', priceId: 'price_1TkNf95LCX9emtMyBEftu67t' },
+    { id: 'automatique', nom: 'Automatique', prix: '6€', description: 'Connexion bancaire, quittances et relances automatiques', priceId: 'price_1TkNdU5LCX9emtMyGZ3X1hwy' },
+  ]
+
+  async function confirmerChangementPlan() {
+    if (!planSelectionne || planSelectionne === planActuel) return
+    setChangementLoading(true)
+
+    const planChoisi = PLANS.find(p => p.id === planSelectionne)
+    const aUnAbonnementPayantActif = planActuel === 'manuel' || planActuel === 'automatique'
+
+    try {
+      if (planChoisi.id === 'gratuit') {
+        // Downgrade vers gratuit → annulation complète
+        const res = await fetch('/api/cancel-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setPlanActuel('gratuit')
+          setPlanSelectionne(null)
+          setMessage('Vous êtes repassé en plan Gratuit.')
+          setTimeout(() => setMessage(''), 4000)
+        } else {
+          alert('Erreur : ' + (data.error || 'Impossible de changer de plan.'))
+        }
+      } else if (aUnAbonnementPayantActif) {
+        // Changement entre 2 plans payants → modification directe de l'abonnement existant
+        const res = await fetch('/api/update-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, newPriceId: planChoisi.priceId }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setPlanActuel(planChoisi.id)
+          setPlanSelectionne(null)
+          setMessage(`Vous êtes passé au plan ${planChoisi.nom}.`)
+          setTimeout(() => setMessage(''), 4000)
+        } else {
+          alert('Erreur : ' + (data.error || 'Impossible de changer de plan.'))
+        }
+      } else {
+        // Upgrade depuis Gratuit → paiement Stripe classique
+        const res = await fetch('/api/create-customer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            name: prenom + ' ' + nom,
+            userId: user.id,
+          }),
+        })
+        const data1 = await res.json()
+        const { customerId } = data1
+
+        const res2 = await fetch('/api/create-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId, priceId: planChoisi.priceId }),
+        })
+        const data2 = await res2.json()
+        if (data2.url) {
+          window.location.href = data2.url
+        } else {
+          alert('Erreur : ' + (data2.error || 'Impossible de lancer le paiement.'))
+        }
+      }
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setChangementLoading(false)
+  }
+
   const inputStyle = {
     width: '100%', border: '1px solid #e5e7eb', borderRadius: 8,
     padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box'
@@ -253,15 +338,44 @@ export default function Compte() {
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Mon abonnement</h3>
               <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Gérez votre abonnement — facture, moyen de paiement, résiliation.</p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={gererAbonnement} disabled={portalLoading}
-                  style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
-                  {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
-                </button>
-                <a href="/abonnement" style={{ display: 'inline-block', background: '#f3f4f6', color: '#374151', padding: '10px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
-                  Voir les plans →
-                </a>
+              <button onClick={gererAbonnement} disabled={portalLoading}
+                style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, marginBottom: 28 }}>
+                {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
+              </button>
+
+              <h4 style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 14 }}>Changer de plan</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+                {PLANS.map(p => {
+                  const estActuel = p.id === planActuel
+                  const estSelectionne = p.id === planSelectionne
+                  return (
+                    <div key={p.id} onClick={() => setPlanSelectionne(p.id)}
+                      style={{
+                        position: 'relative',
+                        border: estSelectionne ? '2px solid #2563eb' : '2px solid #e5e7eb',
+                        borderRadius: 14, padding: 18, cursor: 'pointer',
+                        background: estSelectionne ? '#eff6ff' : 'white',
+                        transition: 'all 0.15s'
+                      }}>
+                      {estActuel && (
+                        <span style={{ position: 'absolute', top: -10, right: 12, background: '#16a34a', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>
+                          Plan actuel
+                        </span>
+                      )}
+                      <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>{p.nom}</p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: '#2563eb', margin: '0 0 8px' }}>{p.prix}<span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>{p.id !== 'gratuit' ? '/bail' : ''}</span></p>
+                      <p style={{ fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>{p.description}</p>
+                    </div>
+                  )
+                })}
               </div>
+
+              {planSelectionne && planSelectionne !== planActuel && (
+                <button onClick={confirmerChangementPlan} disabled={changementLoading}
+                  style={{ background: changementLoading ? '#93c5fd' : '#16a34a', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: changementLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
+                  {changementLoading ? 'Traitement...' : `✅ Confirmer le passage au plan ${PLANS.find(p => p.id === planSelectionne)?.nom}`}
+                </button>
+              )}
             </div>
 
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
