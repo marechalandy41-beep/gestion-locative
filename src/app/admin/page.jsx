@@ -531,19 +531,40 @@ export default function Admin() {
             )}
 
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 20px' }}>💰 Prix des plans</h3>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>💰 Prix des plans</h3>
+              <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 20px' }}>⚠️ Modifier un prix crée un nouveau tarif sur Stripe. Les abonnés existants ne sont pas affectés rétroactivement.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {[
-                  { cle: 'prix_manuel', label: 'Plan Manuel (€/bail/mois)' },
-                  { cle: 'prix_auto', label: 'Plan Automatique (€/bail/mois)' },
-                ].map(({ cle, label }) => (
+                  { cle: 'prix_manuel', plan: 'manuel', label: 'Plan Manuel (€/bail/mois)' },
+                  { cle: 'prix_auto', plan: 'automatique', label: 'Plan Automatique (€/bail/mois)' },
+                ].map(({ cle, plan, label }) => (
                   <div key={cle}>
                     <label style={{ color: '#9ca3af', fontSize: 13, display: 'block', marginBottom: 6 }}>{label}</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input type="number" value={settings[cle] || ''}
                         onChange={e => setSettings(prev => ({ ...prev, [cle]: e.target.value }))}
                         style={{ flex: 1, background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: 'white', outline: 'none' }} />
-                      <button onClick={() => sauvegarderSetting(cle, settings[cle])}
+                      <button onClick={async () => {
+                        if (!confirm(`Créer un nouveau tarif Stripe à ${settings[cle]}€/mois pour le plan ${label} ?`)) return
+                        setSavingSettings(true)
+                        try {
+                          const res = await fetch('/api/admin/update-price', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ plan, nouveauPrix: settings[cle] }),
+                          })
+                          const data = await res.json()
+                          if (data.success) {
+                            setSettingsToast(true)
+                            setTimeout(() => setSettingsToast(false), 2000)
+                          } else {
+                            alert('Erreur : ' + data.error)
+                          }
+                        } catch (err) {
+                          alert('Erreur : ' + err.message)
+                        }
+                        setSavingSettings(false)
+                      }}
                         style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
                     </div>
                   </div>

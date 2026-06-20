@@ -7,8 +7,16 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const PRICE_MANUEL = 'price_1TkNf95LCX9emtMyBEftu67t'
-const PRICE_AUTOMATIQUE = 'price_1TkNdU5LCX9emtMyGZ3X1hwy'
+async function getPriceIds() {
+  const { data } = await supabaseAdmin
+    .from('settings')
+    .select('cle, valeur')
+    .in('cle', ['price_id_manuel', 'price_id_auto'])
+
+  const manuel = data?.find(s => s.cle === 'price_id_manuel')?.valeur
+  const automatique = data?.find(s => s.cle === 'price_id_auto')?.valeur
+  return { manuel, automatique }
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -34,6 +42,7 @@ export async function POST(req: NextRequest) {
     // Récupère le price_id réellement acheté pour déterminer le plan
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
     const priceId = lineItems.data[0]?.price?.id
+    const { manuel: PRICE_MANUEL, automatique: PRICE_AUTOMATIQUE } = await getPriceIds()
 
     let plan = 'automatique' // valeur par défaut de sécurité
     if (priceId === PRICE_MANUEL) plan = 'manuel'
@@ -65,10 +74,11 @@ export async function POST(req: NextRequest) {
     const subscription = event.data.object as any
     const customerId = subscription.customer
     const priceId = subscription.items.data[0]?.price?.id
+    const { manuel: PRICE_MANUEL_U, automatique: PRICE_AUTOMATIQUE_U } = await getPriceIds()
 
     let plan = 'automatique'
-    if (priceId === PRICE_MANUEL) plan = 'manuel'
-    else if (priceId === PRICE_AUTOMATIQUE) plan = 'automatique'
+    if (priceId === PRICE_MANUEL_U) plan = 'manuel'
+    else if (priceId === PRICE_AUTOMATIQUE_U) plan = 'automatique'
 
     await supabaseAdmin
       .from('customers')

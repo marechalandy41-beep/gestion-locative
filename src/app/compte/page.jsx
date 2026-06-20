@@ -27,6 +27,10 @@ export default function Compte() {
   const [planActuel, setPlanActuel] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
   const [changementLoading, setChangementLoading] = useState(false)
+  const [prixManuel, setPrixManuel] = useState('4')
+  const [prixAutomatique, setPrixAutomatique] = useState('6')
+  const [priceIdManuel, setPriceIdManuel] = useState('price_1TkNf95LCX9emtMyBEftu67t')
+  const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -44,6 +48,23 @@ export default function Compte() {
 
         if (customerData?.plan) {
           setPlanActuel(customerData.plan)
+        }
+
+        // Charge les prix et price_id dynamiques depuis settings
+        const { data: settingsData } = await supabase
+          .from('settings')
+          .select('cle, valeur')
+          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto'])
+
+        if (settingsData) {
+          const prixManuelSetting = settingsData.find(s => s.cle === 'prix_manuel')
+          const prixAutoSetting = settingsData.find(s => s.cle === 'prix_auto')
+          const priceIdManuelSetting = settingsData.find(s => s.cle === 'price_id_manuel')
+          const priceIdAutoSetting = settingsData.find(s => s.cle === 'price_id_auto')
+          if (prixManuelSetting) setPrixManuel(prixManuelSetting.valeur)
+          if (prixAutoSetting) setPrixAutomatique(prixAutoSetting.valeur)
+          if (priceIdManuelSetting) setPriceIdManuel(priceIdManuelSetting.valeur)
+          if (priceIdAutoSetting) setPriceIdAutomatique(priceIdAutoSetting.valeur)
         }
 
         if (customerData?.code_promo) {
@@ -166,8 +187,8 @@ export default function Compte() {
 
   const PLANS = [
     { id: 'gratuit', nom: 'Gratuit', prix: '0€', description: 'Quittances manuelles, 50 Mo de stockage', priceId: null },
-    { id: 'manuel', nom: 'Manuel', prix: '4€', description: 'Baux, états des lieux, coffre-fort complet', priceId: 'price_1TkNf95LCX9emtMyBEftu67t' },
-    { id: 'automatique', nom: 'Automatique', prix: '6€', description: 'Connexion bancaire, quittances et relances automatiques', priceId: 'price_1TkNdU5LCX9emtMyGZ3X1hwy' },
+    { id: 'manuel', nom: 'Manuel', prix: `${prixManuel}€`, description: 'Baux, états des lieux, coffre-fort complet', priceId: priceIdManuel },
+    { id: 'automatique', nom: 'Automatique', prix: `${prixAutomatique}€`, description: 'Connexion bancaire, quittances et relances automatiques', priceId: priceIdAutomatique },
   ]
 
   async function confirmerChangementPlan() {
