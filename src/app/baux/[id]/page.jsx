@@ -110,7 +110,14 @@ async function envoyerInvitation() {
 
   async function cloturerBail() {
     if (!confirm('Confirmer la clôture de ce bail ? Il passera en statut "Terminé".')) return;
+    const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('Baux').update({ statut: 'termine' }).eq('id', bail.id);
+    // Synchronise la quantité de l'abonnement Stripe
+    fetch('/api/sync-quantity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    }).catch(err => console.error('Erreur sync quantity:', err));
     window.location.href = '/baux';
   }
 
@@ -368,8 +375,19 @@ async function envoyerRelance() {
     if (!confirm1) return;
     const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
     if (!confirm2) return;
+    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('Baux').delete().eq('id', bail.id);
-    if (!error) { window.location.href = '/baux'; }
+    if (!error) {
+      // Synchronise la quantité de l'abonnement Stripe (seulement si le bail supprimé était actif)
+      if (bail.statut === 'actif') {
+        fetch('/api/sync-quantity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+        }).catch(err => console.error('Erreur sync quantity:', err));
+      }
+      window.location.href = '/baux';
+    }
     else { alert('Erreur : ' + error.message); }
   }}
     style={{ flex: 1, background: 'white', color: '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>

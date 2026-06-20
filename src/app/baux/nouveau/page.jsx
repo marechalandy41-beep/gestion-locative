@@ -254,7 +254,17 @@ relance_auto_jours: bail.relance_auto_jours || 5,
     ({ error } = await supabase.from('Baux').insert([{ ...payload, user_id: user.id }]));
   }
   setLoading(false);
-  if (!error) { window.location.href = '/baux'; }
+  if (!error) {
+    // Synchronise la quantité de l'abonnement Stripe si le bail est actif
+    if (statut === 'actif') {
+      fetch('/api/sync-quantity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      }).catch(err => console.error('Erreur sync quantity:', err));
+    }
+    window.location.href = '/baux';
+  }
   else { alert('Erreur : ' + error.message); }
 }
 
