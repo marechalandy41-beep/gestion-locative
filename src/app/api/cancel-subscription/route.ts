@@ -9,39 +9,35 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, name, userId } = await req.json()
+    const { userId } = await req.json()
 
-    // Vérifie si un client Stripe existe déjà pour cet utilisateur
-    const { data: existing } = await supabaseAdmin
+    const { data: customerData, error } = await supabaseAdmin
       .from('customers')
       .select('stripe_customer_id')
       .eq('user_id', userId)
       .single()
 
-    if (existing?.stripe_customer_id && existing.stripe_customer_id !== 'none' && existing.stripe_customer_id !== 'test') {
-      // Vérifie que ce client existe vraiment côté Stripe (pas supprimé)
-      try {
-        const customer = await stripe.customers.retrieve(existing.stripe_customer_id)
-        if (!(customer as any).deleted) {
-          return NextResponse.json({ customerId: existing.stripe_customer_id })
-        }
-      } catch {
-        // Le client n'existe plus côté Stripe, on en recrée un en dessous
-      }
+    if (error || !customerData?.stripe_customer_id || customerData.stripe_customer_id === 'none') {
+      // Pas d'abonnement Stripe actif, on repasse juste en gratuit côté Supabase
+      await supabaseAdmin.from('customers').update({ plan: 'gratuit' }).eq('user_id', userId)
+      return NextResponse.json({ success: true })
     }
 
-    // Aucun client valide trouvé, on en crée un nouveau
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      metadata: { source: 'gestion-locative', user_id: userId },
+    // Cherche les abonnements actifs de ce client
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerData.stripe_customer_id,
+      status: 'active',
     })
 
-    await supabaseAdmin
-      .from('customers')
-      .upsert({ user_id: userId, stripe_customer_id: customer.id }, { onConflict: 'user_id' })
+    // Annule chaque abonnement actif
+    for (const sub of subscriptions.data) {
+      await stripe.subscriptions.cancel(sub.id)
+    }
 
-    return NextResponse.json({ customerId: customer.id })
+    // Filet de sécurité immédiat (le webhook le fera aussi)
+    await supabaseAdmin.from('customers').update({ plan: 'gratuit' }).eq('user_id', userId)
+
+    return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
