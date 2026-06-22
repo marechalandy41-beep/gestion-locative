@@ -123,7 +123,85 @@ export async function GET(request) {
       envoyes++
     }
 
-    return NextResponse.json({ success: true, envoyes, ignores })
+// ===== RECONDUCTION TACITE =====
+    const aujourd_hui = new Date()
+    aujourd_hui.setHours(0, 0, 0, 0)
+
+    const dans30jours = new Date(aujourd_hui)
+    dans30jours.setDate(dans30jours.getDate() + 30)
+
+    const dans60jours = new Date(aujourd_hui)
+    dans60jours.setDate(dans60jours.getDate() + 60)
+
+    // Récupère tous les baux actifs avec une date de fin définie + email proprio
+    const { data: bauxAvecFin } = await supabase
+      .from('Baux')
+      .select('*, Biens(nom)')
+      .eq('statut', 'actif')
+      .not('date_fin', 'is', null)
+
+    // Récupère les emails des propriétaires (via auth)
+    const { data: { users: allUsers } } = await supabase.auth.admin.listUsers()
+    const emailsParUserId = {}
+    allUsers.forEach(u => { emailsParUserId[u.id] = u.email })
+
+    let reconductions = 0
+
+    for (const bail of (bauxAvecFin || [])) {
+      const dateFin = new Date(bail.date_fin)
+      dateFin.setHours(0, 0, 0, 0)
+      const proprietaireEmail = emailsParUserId[bail.user_id]
+      if (!proprietaireEmail) continue
+
+      const dateFinFormatee = dateFin.toLocaleDateString('fr-FR')
+      const payload = {
+        proprietaireEmail,
+        proprietaireNom: `${bail.bailleur_prenom || ''} ${bail.bailleur_nom || ''}`.trim(),
+        locataireNom: `${bail.locataire_prenom || ''} ${bail.locataire_nom || ''}`.trim(),
+        bienNom: bail.Biens?.nom || '',
+        dateFin: dateFinFormatee,
+      }
+
+      // J-60 : envoi le jour exact où on est à 60 jours de la date de fin
+      if (dateFin.getTime() === dans60jours.getTime()) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-reconduction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, type: 'j60' }),
+        })
+        reconductions++
+      }
+
+      // J-30 : envoi le jour exact où on est à 30 jours de la date de fin
+      else if (dateFin.getTime() === dans30jours.getTime()) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-reconduction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, type: 'j30' }),
+        })
+        reconductions++
+      }
+
+      // Bail reconduit tacitement : date de fin dépassée, bail toujours actif
+      else if (dateFin < aujourd_hui) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-reconduction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, type: 'reconduit' }),
+        })
+        // Met à jour la date de fin selon le type de bail (1 an meublé, 3 ans non meublé)
+        const anneesReconduction = bail.type_bail === 'Meublé' ? 1 : 3
+        const nouvelleDateFin = new Date(dateFin)
+        nouvelleDateFin.setFullYear(nouvelleDateFin.getFullYear() + anneesReconduction)
+        await supabase.from('Baux').update({
+          date_fin: nouvelleDateFin.toISOString().split('T')[0]
+        }).eq('id', bail.id)
+        reconductions++
+      }
+    }
+    // ===== FIN RECONDUCTION TACITE =====
+
+    return NextResponse.json({ success: true, envoyes, ignores, reconductions })
 
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
