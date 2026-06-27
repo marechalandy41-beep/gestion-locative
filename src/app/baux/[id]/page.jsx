@@ -23,17 +23,23 @@ export default function DetailBail() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [ongletBail, setOngletBail] = useState('details');
 
+
   useEffect(() => {
     chargerBail();
   }, []);
 
   // Polling messages toutes les 5 secondes
   useEffect(() => {
-    if (!bail) return;
-    chargerMessages();
-    const interval = setInterval(chargerMessages, 5000);
-    return () => clearInterval(interval);
-  }, [bail]);
+  if (!bail) return;
+  chargerMessages();
+}, [bail]);
+
+useEffect(() => {
+  if (!bail) return;
+  if (ongletBail !== 'messages') return;
+  const interval = setInterval(chargerMessages, 5000);
+  return () => clearInterval(interval);
+}, [bail, ongletBail]);
 
   // ===== CHARGER MESSAGES =====
   async function chargerMessages() {
@@ -43,7 +49,9 @@ export default function DetailBail() {
       .eq('bail_id', parseInt(id))
       .order('created_at', { ascending: true });
     setMessages(data || []);
-    // Marquer les messages locataire comme lus
+  }
+
+  async function marquerLus() {
     await supabase
       .from('messages_locataires')
       .update({ lu: true })
@@ -277,7 +285,7 @@ export default function DetailBail() {
             { id: 'details', label: '📄 Détails' },
             { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴 ${nbNonLus}` : '💬 Messages' },
           ].map(o => (
-            <button key={o.id} onClick={() => setOngletBail(o.id)}
+            <button key={o.id} onClick={() => { setOngletBail(o.id); if (o.id === 'messages') marquerLus(); }}
               style={{ background: ongletBail === o.id ? '#2563eb' : 'white', color: ongletBail === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               {o.label}
             </button>

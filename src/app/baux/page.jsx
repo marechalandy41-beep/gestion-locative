@@ -6,6 +6,8 @@ import Nav from '../components/nav'
 export default function BauxPage() {
   const [baux, setBaux] = useState([])
   const [loading, setLoading] = useState(true)
+  // ===== MESSAGES NON LUS =====
+  const [nonLusParBail, setNonLusParBail] = useState({})
 
   useEffect(() => { chargerBaux() }, [])
 
@@ -16,8 +18,30 @@ export default function BauxPage() {
       .from('Baux').select('*, Biens(*)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-    if (data) setBaux(data)
+    if (data) {
+      setBaux(data)
+      // Charger les messages non lus
+      if (data.length > 0) {
+        chargerNonLus(data.map(b => b.id))
+      }
+    }
     setLoading(false)
+  }
+
+  // ===== CHARGER MESSAGES NON LUS PAR BAIL =====
+  async function chargerNonLus(bailIds) {
+    const { data } = await supabase
+      .from('messages_locataires')
+      .select('bail_id')
+      .in('bail_id', bailIds)
+      .eq('expediteur', 'locataire')
+      .eq('lu', false)
+    if (!data) return
+    const compteur = {}
+    data.forEach(m => {
+      compteur[m.bail_id] = (compteur[m.bail_id] || 0) + 1
+    })
+    setNonLusParBail(compteur)
   }
 
   const statutStyle = (s) => ({
@@ -35,7 +59,7 @@ export default function BauxPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
-     <Nav pageCourante="baux" />
+      <Nav pageCourante="baux" />
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
 
@@ -61,10 +85,18 @@ export default function BauxPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
             {baux.map(bail => {
               const s = statutStyle(bail.statut)
+              const nbNonLus = nonLusParBail[bail.id] || 0
               return (
                 <div key={bail.id}
                   onClick={() => window.location.href = '/baux/' + bail.id}
-                  style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24, cursor: 'pointer' }}>
+                  style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24, cursor: 'pointer', position: 'relative' }}>
+
+                  {/* Badge messages non lus sur la carte */}
+                  {nbNonLus > 0 && (
+                    <div style={{ position: 'absolute', top: 12, right: 12, background: '#dc2626', color: 'white', borderRadius: 99, padding: '2px 8px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      💬 {nbNonLus}
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>

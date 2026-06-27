@@ -14,12 +14,13 @@ export default function PortailLocataire() {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [sendingMsg, setSendingMsg] = useState(false)
+  const [vuMessages, setVuMessages] = useState(false)
 
   useEffect(() => {
     if (token) charger()
   }, [])
 
-  // Polling messages toutes les 5 secondes (démarre après chargement)
+  // Polling messages toutes les 5 secondes
   useEffect(() => {
     if (!data) return
     chargerMessages()
@@ -77,13 +78,6 @@ export default function PortailLocataire() {
       .eq('bail_id', data.bail_id)
       .order('created_at', { ascending: true })
     setMessages(msgs || [])
-    // Marquer les messages proprio comme lus
-    await supabase
-      .from('messages_locataires')
-      .update({ lu: true })
-      .eq('bail_id', data.bail_id)
-      .eq('expediteur', 'proprio')
-      .eq('lu', false)
   }
 
   // ===== ENVOYER MESSAGE =====
@@ -118,7 +112,10 @@ export default function PortailLocataire() {
 
   const bail = data.Baux
   const bien = bail?.Biens
-  const nbNonLus = messages.filter(m => !m.lu && m.expediteur === 'proprio').length
+
+  // Badge en mémoire uniquement — s'éteint au clic sur Messages, se rallume à chaque nouvelle session si messages non lus
+  const aDesMessages = messages.some(m => m.expediteur === 'proprio')
+  const nbNonLus = !vuMessages && aDesMessages ? 1 : 0
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -166,9 +163,9 @@ export default function PortailLocataire() {
             { id: 'quittances', label: '🧾 Quittances' },
             { id: 'bail', label: '📄 Mon bail' },
             { id: 'edl', label: '🔑 États des lieux' },
-            { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴 ${nbNonLus}` : '💬 Messages' },
+            { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴` : '💬 Messages' },
           ].map(o => (
-            <button key={o.id} onClick={() => setOnglet(o.id)}
+            <button key={o.id} onClick={() => { setOnglet(o.id); if (o.id === 'messages') setVuMessages(true); }}
               style={{ background: onglet === o.id ? '#2563eb' : 'white', color: onglet === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 18px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
               {o.label}
             </button>

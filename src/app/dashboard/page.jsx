@@ -11,6 +11,8 @@ export default function Dashboard() {
   const [paiementsMois, setPaiementsMois] = useState([]);
   const [joursRestants, setJoursRestants] = useState(null);
   const [plan, setPlan] = useState('gratuit');
+  // ===== MESSAGES NON LUS =====
+  const [nonLusParBail, setNonLusParBail] = useState({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -22,7 +24,6 @@ export default function Dashboard() {
       }
     });
   }, []);
- 
 
   useEffect(() => {
     const bridgeConnectedAt = localStorage.getItem('bridge_connected_at');
@@ -41,10 +42,10 @@ export default function Dashboard() {
       .eq('user_id', userId)
       .single();
     if (customerData?.plan) setPlan(customerData.plan);
-if (!customerData?.plan || customerData.plan === 'gratuit') {
-  window.location.href = '/biens';
-  return;
-}
+    if (!customerData?.plan || customerData.plan === 'gratuit') {
+      window.location.href = '/biens';
+      return;
+    }
 
     const { data: biensData } = await supabase
       .from('Biens')
@@ -70,6 +71,29 @@ if (!customerData?.plan || customerData.plan === 'gratuit') {
     setBaux(bauxData || []);
     setPaiementsMois(paiementsData || []);
     setLoading(false);
+
+    // Charger les messages non lus pour chaque bail
+    if (bauxData && bauxData.length > 0) {
+      chargerNonLus(bauxData.map(b => b.id));
+    }
+  }
+
+  // ===== CHARGER MESSAGES NON LUS PAR BAIL =====
+  async function chargerNonLus(bailIds) {
+    const { data } = await supabase
+      .from('messages_locataires')
+      .select('bail_id')
+      .in('bail_id', bailIds)
+      .eq('expediteur', 'locataire')
+      .eq('lu', false);
+
+    if (!data) return;
+    // Compter par bail_id
+    const compteur = {};
+    data.forEach(m => {
+      compteur[m.bail_id] = (compteur[m.bail_id] || 0) + 1;
+    });
+    setNonLusParBail(compteur);
   }
 
   async function deconnexion() {
@@ -89,55 +113,39 @@ if (!customerData?.plan || customerData.plan === 'gratuit') {
     return { couleur: '#dc2626', bg: '#fef2f2', texte: '❌ Impayé' };
   }
 
-async function togglePaiement(bail) {
-  const moisActuel = new Date().getMonth() + 1
-  const anneeActuelle = new Date().getFullYear()
-  const dejaPaye = paiementsMois.some(p => p.bail_id === bail.id)
+  async function togglePaiement(bail) {
+    const moisActuel = new Date().getMonth() + 1;
+    const anneeActuelle = new Date().getFullYear();
+    const dejaPaye = paiementsMois.some(p => p.bail_id === bail.id);
 
-  if (dejaPaye) {
-    await supabase.from('paiements')
-      .delete()
-      .eq('bail_id', bail.id)
-      .eq('mois', moisActuel)
-      .eq('annee', anneeActuelle)
-      .eq('user_id', user.id)
-    setPaiementsMois(prev => prev.filter(p => p.bail_id !== bail.id))
-  } else {
-    const { data } = await supabase.from('paiements').insert({
-      bail_id: bail.id,
-      user_id: user.id,
-      montant: (bail.loyer_hc || 0) + (bail.charges || 0),
-      mois: moisActuel,
-      annee: anneeActuelle,
-      date_paiement: new Date().toISOString().split('T')[0],
-      source: 'manuel',
-      statut: 'valide',
-      libelle_virement: 'Paiement manuel',
-    }).select().single()
-    if (data) setPaiementsMois(prev => [...prev, { bail_id: bail.id }])
+    if (dejaPaye) {
+      await supabase.from('paiements')
+        .delete()
+        .eq('bail_id', bail.id)
+        .eq('mois', moisActuel)
+        .eq('annee', anneeActuelle)
+        .eq('user_id', user.id);
+      setPaiementsMois(prev => prev.filter(p => p.bail_id !== bail.id));
+    } else {
+      const { data } = await supabase.from('paiements').insert({
+        bail_id: bail.id,
+        user_id: user.id,
+        montant: (bail.loyer_hc || 0) + (bail.charges || 0),
+        mois: moisActuel,
+        annee: anneeActuelle,
+        date_paiement: new Date().toISOString().split('T')[0],
+        source: 'manuel',
+        statut: 'valide',
+        libelle_virement: 'Paiement manuel',
+      }).select().single();
+      if (data) setPaiementsMois(prev => [...prev, { bail_id: bail.id }]);
+    }
   }
-}
-
-  const lienNav = (href, label, actif = false) => (
-    <a href={href} style={{ color: actif ? '#2563eb' : '#6b7280', borderBottom: actif ? '2px solid #2563eb' : 'none', paddingBottom: actif ? 4 : 0, textDecoration: 'none', fontWeight: 500 }}>
-      {label}
-    </a>
-  )
-
-  const lienNavLock = (label) => (
-    <span style={{ color: '#d1d5db', fontWeight: 500, cursor: 'default', display: 'flex', alignItems: 'center', gap: 4 }}>
-      🔒 {label}
-    </span>
-  )
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
-      {/* NAVIGATION */}
-     <Nav pageCourante="dashboard" />
-
-      {/* BANDEAU PLAN GRATUIT */}
-    
+      <Nav pageCourante="dashboard" />
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
 
@@ -206,6 +214,7 @@ async function togglePaiement(bail) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
             {baux.map(bail => {
               const statut = statutLoyer(bail);
+              const nbNonLus = nonLusParBail[bail.id] || 0;
               return (
                 <div key={bail.id} style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -222,6 +231,7 @@ async function togglePaiement(bail) {
                       </div>
                     </div>
                   </div>
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: '1px solid #f9fafb', borderBottom: '1px solid #f9fafb', margin: '12px 0' }}>
                     <div>
                       <p style={{ fontSize: 11, color: '#9ca3af' }}>Loyer HC</p>
@@ -236,18 +246,24 @@ async function togglePaiement(bail) {
                       <p style={{ fontSize: 16, fontWeight: 700, color: '#2563eb', marginTop: 2 }}>{(bail.loyer_hc || 0) + (bail.charges || 0)}€</p>
                     </div>
                   </div>
+
                   <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                    <a href={`/baux/${bail.id}`} style={{ flex: 1, background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-  Voir le bail
-</a>
-<a href="/documents/quittance" style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
-  Quittance
-</a>
-<button onClick={() => togglePaiement(bail)}
-  style={{ flex: 1, background: paiementsMois.some(p => p.bail_id === bail.id) ? '#fef2f2' : '#f0fdf4', color: paiementsMois.some(p => p.bail_id === bail.id) ? '#dc2626' : '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
-  {paiementsMois.some(p => p.bail_id === bail.id) ? '❌ Annuler' : '✅ Marquer payé'}
-</button>
-                  
+                    {/* BOUTON VOIR LE BAIL avec badge messages non lus */}
+                    <a href={`/baux/${bail.id}`} style={{ flex: 1, position: 'relative', background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
+                      Voir le bail
+                      {nbNonLus > 0 && (
+                        <span style={{ position: 'absolute', top: -6, right: -6, background: '#dc2626', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {nbNonLus}
+                        </span>
+                      )}
+                    </a>
+                    <a href="/documents/quittance" style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', textAlign: 'center' }}>
+                      Quittance
+                    </a>
+                    <button onClick={() => togglePaiement(bail)}
+                      style={{ flex: 1, background: paiementsMois.some(p => p.bail_id === bail.id) ? '#fef2f2' : '#f0fdf4', color: paiementsMois.some(p => p.bail_id === bail.id) ? '#dc2626' : '#16a34a', padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                      {paiementsMois.some(p => p.bail_id === bail.id) ? '❌ Annuler' : '✅ Marquer payé'}
+                    </button>
                   </div>
                 </div>
               );
