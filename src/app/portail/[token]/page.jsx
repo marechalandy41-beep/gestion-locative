@@ -10,13 +10,24 @@ export default function PortailLocataire() {
   const [loading, setLoading] = useState(true)
   const [erreur, setErreur] = useState(null)
   const [onglet, setOnglet] = useState('quittances')
+  // ===== MESSAGERIE =====
+  const [messages, setMessages] = useState([])
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMsg, setSendingMsg] = useState(false)
 
   useEffect(() => {
     if (token) charger()
   }, [])
 
+  // Polling messages toutes les 5 secondes (démarre après chargement)
+  useEffect(() => {
+    if (!data) return
+    chargerMessages()
+    const interval = setInterval(chargerMessages, 5000)
+    return () => clearInterval(interval)
+  }, [data])
+
   async function charger() {
-    // Vérifier le token
     const { data: invitation, error } = await supabase
       .from('invitations')
       .select('*, Baux(*, Biens(*))')
@@ -44,7 +55,6 @@ export default function PortailLocataire() {
       .eq('bail_id', invitation.bail_id)
       .eq('categorie', 'Quittance')
       .order('created_at', { ascending: false })
-
     setQuittances(docs || [])
 
     // Charger les EDL
@@ -54,9 +64,40 @@ export default function PortailLocataire() {
       .eq('bail_id', invitation.bail_id)
       .eq('statut', 'finalise')
       .order('date_edl', { ascending: false })
-
     setEdls(edlData || [])
     setLoading(false)
+  }
+
+  // ===== CHARGER MESSAGES =====
+  async function chargerMessages() {
+    if (!data) return
+    const { data: msgs } = await supabase
+      .from('messages_locataires')
+      .select('*')
+      .eq('bail_id', data.bail_id)
+      .order('created_at', { ascending: true })
+    setMessages(msgs || [])
+    // Marquer les messages proprio comme lus
+    await supabase
+      .from('messages_locataires')
+      .update({ lu: true })
+      .eq('bail_id', data.bail_id)
+      .eq('expediteur', 'proprio')
+      .eq('lu', false)
+  }
+
+  // ===== ENVOYER MESSAGE =====
+  async function envoyerMessage() {
+    if (!newMessage.trim() || !data) return
+    setSendingMsg(true)
+    await supabase.from('messages_locataires').insert({
+      bail_id: data.bail_id,
+      expediteur: 'locataire',
+      contenu: newMessage.trim(),
+    })
+    setNewMessage('')
+    await chargerMessages()
+    setSendingMsg(false)
   }
 
   if (loading) return (
@@ -77,6 +118,7 @@ export default function PortailLocataire() {
 
   const bail = data.Baux
   const bien = bail?.Biens
+  const nbNonLus = messages.filter(m => !m.lu && m.expediteur === 'proprio').length
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -119,11 +161,12 @@ export default function PortailLocataire() {
         </div>
 
         {/* Onglets */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           {[
             { id: 'quittances', label: '🧾 Quittances' },
             { id: 'bail', label: '📄 Mon bail' },
             { id: 'edl', label: '🔑 États des lieux' },
+            { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴 ${nbNonLus}` : '💬 Messages' },
           ].map(o => (
             <button key={o.id} onClick={() => setOnglet(o.id)}
               style={{ background: onglet === o.id ? '#2563eb' : 'white', color: onglet === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 18px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
@@ -197,6 +240,57 @@ export default function PortailLocataire() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* MESSAGES */}
+        {onglet === 'messages' && (
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginTop: 0, marginBottom: 20 }}>
+              💬 Messages avec votre propriétaire
+            </h3>
+
+            {/* Zone messages */}
+            <div style={{ height: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, padding: 12, background: '#f9fafb', borderRadius: 12 }}>
+              {messages.length === 0 && (
+                <p style={{ color: '#9ca3af', textAlign: 'center', margin: 'auto', fontSize: 14 }}>
+                  Aucun message pour l'instant.<br />
+                  <span style={{ fontSize: 12 }}>Écrivez un message à votre propriétaire.</span>
+                </p>
+              )}
+              {messages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.expediteur === 'locataire' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    maxWidth: '70%', padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.5,
+                    background: msg.expediteur === 'locataire' ? '#2563eb' : 'white',
+                    color: msg.expediteur === 'locataire' ? 'white' : '#111827',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    borderBottomRightRadius: msg.expediteur === 'locataire' ? 4 : 12,
+                    borderBottomLeftRadius: msg.expediteur === 'proprio' ? 4 : 12,
+                  }}>
+                    <p style={{ margin: '0 0 4px' }}>{msg.contenu}</p>
+                    <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>
+                      {msg.expediteur === 'locataire' ? 'Vous' : 'Votre propriétaire'} — {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Zone saisie */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <input
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envoyerMessage(); } }}
+                placeholder="Écrivez un message à votre propriétaire..."
+                style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none' }}
+              />
+              <button onClick={envoyerMessage} disabled={sendingMsg || !newMessage.trim()}
+                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 16, cursor: !newMessage.trim() ? 'not-allowed' : 'pointer', opacity: !newMessage.trim() ? 0.5 : 1 }}>
+                {sendingMsg ? '...' : '→'}
+              </button>
+            </div>
           </div>
         )}
 

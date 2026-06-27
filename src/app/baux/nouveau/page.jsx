@@ -16,6 +16,7 @@ export default function NouveauBail() {
   const [dessin, setDessin] = useState(false);
   const [bailId, setBailId] = useState(null);
   const [bienIdUpload, setBienIdUpload] = useState('');
+  const [plan, setPlan] = useState('');
 
   const [bail, setBail] = useState({
     bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '',
@@ -47,6 +48,7 @@ relance_auto_jours: 5,
         return;
       }
       setUser(data.user);
+      setPlan(customer.plan);
       chargerBiens(data.user.id);
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
@@ -797,26 +799,28 @@ function sanitizerNomFichier(nom) {
                     <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>Vide = reconduction tacite</p>
                   </div>
                 </div>
-                <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-  <p style={{ fontSize: 13, fontWeight: 700, color: '#854d0e', margin: '0 0 12px' }}>📧 Relances automatiques</p>
-  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-    <input type="checkbox" id="relance_auto"
-      checked={bail.relance_auto_active || false}
-      onChange={e => setBail({...bail, relance_auto_active: e.target.checked})}
-      style={{ width: 16, height: 16, cursor: 'pointer' }} />
-    <label htmlFor="relance_auto" style={{ fontSize: 13, color: '#374151', cursor: 'pointer', fontWeight: 500 }}>
-      Activer les relances automatiques (plan Automatique uniquement)
-    </label>
-  </div>
-  {bail.relance_auto_active && (
-    <div>
-      <label style={lbl}>Envoyer la relance après</label>
-      <select style={inp} value={bail.relance_auto_jours || 5} onChange={e => setBail({...bail, relance_auto_jours: parseInt(e.target.value)})}>
-        {[3, 5, 7, 10, 15].map(j => <option key={j} value={j}>⏰ {j} jours sans paiement</option>)}
-      </select>
+                {plan === 'automatique' && (
+  <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+    <p style={{ fontSize: 13, fontWeight: 700, color: '#854d0e', margin: '0 0 12px' }}>📧 Relances automatiques</p>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      <input type="checkbox" id="relance_auto"
+        checked={bail.relance_auto_active || false}
+        onChange={e => setBail({...bail, relance_auto_active: e.target.checked})}
+        style={{ width: 16, height: 16, cursor: 'pointer' }} />
+      <label htmlFor="relance_auto" style={{ fontSize: 13, color: '#374151', cursor: 'pointer', fontWeight: 500 }}>
+        Activer les relances automatiques
+      </label>
     </div>
-  )}
-</div>
+    {bail.relance_auto_active && (
+      <div>
+        <label style={lbl}>Envoyer la relance après</label>
+        <select style={inp} value={bail.relance_auto_jours || 5} onChange={e => setBail({...bail, relance_auto_jours: parseInt(e.target.value)})}>
+          {[3, 5, 7, 10, 15].map(j => <option key={j} value={j}>⏰ {j} jours sans paiement</option>)}
+        </select>
+      </div>
+    )}
+  </div>
+)}
                 <div style={{ marginBottom: 24 }}>
                   <label style={lbl}>Clauses particulières</label>
                   <textarea style={{ ...inp, minHeight: 100, resize: 'vertical' }} value={bail.clauses} onChange={e => setBail({...bail, clauses: e.target.value})} placeholder="Ex : animaux interdits, sous-location interdite..." />

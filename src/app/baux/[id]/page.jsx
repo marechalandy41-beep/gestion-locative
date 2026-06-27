@@ -8,117 +8,199 @@ export default function DetailBail() {
   const [bail, setBail] = useState(null);
   const [bien, setBien] = useState(null);
   const [loading, setLoading] = useState(true);
-const [editContact, setEditContact] = useState(false);
-const [newEmail, setNewEmail] = useState('');
-const [newTel, setNewTel] = useState('');
-const [sending, setSending] = useState(false);
-const [emailToast, setEmailToast] = useState(null);
-const [sendingRelance, setSendingRelance] = useState(false);
-const [relanceToast, setRelanceToast] = useState(null);
-const [sendingInvitation, setSendingInvitation] = useState(false)
-const [invitationToast, setInvitationToast] = useState(null)
+  const [editContact, setEditContact] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newTel, setNewTel] = useState('');
+  const [sending, setSending] = useState(false);
+  const [emailToast, setEmailToast] = useState(null);
+  const [sendingRelance, setSendingRelance] = useState(false);
+  const [relanceToast, setRelanceToast] = useState(null);
+  const [sendingInvitation, setSendingInvitation] = useState(false);
+  const [invitationToast, setInvitationToast] = useState(null);
+  // ===== MESSAGERIE =====
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [ongletBail, setOngletBail] = useState('details');
 
   useEffect(() => {
     chargerBail();
   }, []);
 
-async function envoyerInvitation() {
-  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
-  if (!confirm(`Envoyer l'invitation au portail locataire à ${bail.locataire_email} ?`)) return;
-  setSendingInvitation(true);
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const res = await fetch('/api/send-invitation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bailId: bail.id,
-        userId: user.id,
-        locataireEmail: bail.locataire_email,
-        locatairePrenom: bail.locataire_prenom,
-        locataireNom: bail.locataire_nom,
-        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
-        bienNom: bien?.nom || '',
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setInvitationToast({ msg: '✅ Invitation envoyée au locataire !', succes: true });
-    } else {
-      setInvitationToast({ msg: '❌ Erreur : ' + data.error, succes: false });
-    }
-  } catch (err) {
-    setInvitationToast({ msg: '❌ Erreur : ' + err.message, succes: false });
-  } finally {
-    setSendingInvitation(false);
-    setTimeout(() => setInvitationToast(null), 4000);
-  }
-}
+  // Polling messages toutes les 5 secondes
+  useEffect(() => {
+    if (!bail) return;
+    chargerMessages();
+    const interval = setInterval(chargerMessages, 5000);
+    return () => clearInterval(interval);
+  }, [bail]);
 
+  // ===== CHARGER MESSAGES =====
+  async function chargerMessages() {
+    const { data } = await supabase
+      .from('messages_locataires')
+      .select('*')
+      .eq('bail_id', parseInt(id))
+      .order('created_at', { ascending: true });
+    setMessages(data || []);
+    // Marquer les messages locataire comme lus
+    await supabase
+      .from('messages_locataires')
+      .update({ lu: true })
+      .eq('bail_id', parseInt(id))
+      .eq('expediteur', 'locataire')
+      .eq('lu', false);
+  }
+
+  // ===== ENVOYER MESSAGE =====
+  async function envoyerMessage() {
+    if (!newMessage.trim()) return;
+    setSendingMsg(true);
+    await supabase.from('messages_locataires').insert({
+      bail_id: parseInt(id),
+      expediteur: 'proprio',
+      contenu: newMessage.trim(),
+    });
+    setNewMessage('');
+    await chargerMessages();
+    setSendingMsg(false);
+  }
+
+  // ===== INVITATION PORTAIL =====
+  async function envoyerInvitation() {
+    if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+    if (!confirm(`Envoyer l'invitation au portail locataire à ${bail.locataire_email} ?`)) return;
+    setSendingInvitation(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch('/api/send-invitation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bailId: bail.id,
+          userId: user.id,
+          locataireEmail: bail.locataire_email,
+          locatairePrenom: bail.locataire_prenom,
+          locataireNom: bail.locataire_nom,
+          proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+          bienNom: bien?.nom || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInvitationToast({ msg: '✅ Invitation envoyée au locataire !', succes: true });
+      } else {
+        setInvitationToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+      }
+    } catch (err) {
+      setInvitationToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+    } finally {
+      setSendingInvitation(false);
+      setTimeout(() => setInvitationToast(null), 4000);
+    }
+  }
+
+  // ===== CHARGER BAIL =====
   async function chargerBail() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { window.location.href = '/auth'; return; }
-
     const { data, error } = await supabase
       .from('Baux')
       .select('*, Biens(*)')
       .eq('id', parseInt(id))
       .eq('user_id', user.id)
       .single();
-
     if (error || !data) { window.location.href = '/baux'; return; }
     setBail(data);
     setBien(data.Biens);
     setLoading(false);
   }
 
+  // ===== ENVOYER BAIL PAR EMAIL =====
   async function envoyerBail() {
-  if (!bail.bail_pdf_url) { alert('Aucun PDF de bail disponible.'); return; }
-  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
-  if (!confirm(`Envoyer le bail par email à ${bail.locataire_email} ?`)) return;
-
-  setSending(true);
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const res = await fetch('/api/send-bail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bailPdfUrl: bail.bail_pdf_url,
-        locataireEmail: bail.locataire_email,
-        locataireNom: bail.locataire_nom,
-        locatairePrenom: bail.locataire_prenom,
-        proprietaireEmail: user.email,
-        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
-        bienNom: bien?.nom || '',
-        loyer: (bail.loyer_hc || 0) + (bail.charges || 0),
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setEmailToast({ msg: '✅ Bail envoyé au locataire et à vous-même !', succes: true });
-    } else {
-      setEmailToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+    if (!bail.bail_pdf_url) { alert('Aucun PDF de bail disponible.'); return; }
+    if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+    if (!confirm(`Envoyer le bail par email à ${bail.locataire_email} ?`)) return;
+    setSending(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch('/api/send-bail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bailPdfUrl: bail.bail_pdf_url,
+          locataireEmail: bail.locataire_email,
+          locataireNom: bail.locataire_nom,
+          locatairePrenom: bail.locataire_prenom,
+          proprietaireEmail: user.email,
+          proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+          bienNom: bien?.nom || '',
+          loyer: (bail.loyer_hc || 0) + (bail.charges || 0),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailToast({ msg: '✅ Bail envoyé au locataire et à vous-même !', succes: true });
+      } else {
+        setEmailToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+      }
+    } catch (err) {
+      setEmailToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+    } finally {
+      setSending(false);
+      setTimeout(() => setEmailToast(null), 4000);
     }
-  } catch (err) {
-    setEmailToast({ msg: '❌ Erreur : ' + err.message, succes: false });
-  } finally {
-    setSending(false);
-    setTimeout(() => setEmailToast(null), 4000);
   }
-}
 
+  // ===== CLOTURER BAIL =====
   async function cloturerBail() {
     if (!confirm('Confirmer la clôture de ce bail ? Il passera en statut "Terminé".')) return;
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('Baux').update({ statut: 'termine' }).eq('id', bail.id);
-    // Synchronise la quantité de l'abonnement Stripe
     fetch('/api/sync-quantity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id }),
     }).catch(err => console.error('Erreur sync quantity:', err));
     window.location.href = '/baux';
+  }
+
+  // ===== ENVOYER RELANCE =====
+  async function envoyerRelance() {
+    if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+    if (!confirm(`Envoyer une relance de loyer à ${bail.locataire_email} ?`)) return;
+    setSendingRelance(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const moisLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      const now = new Date();
+      const res = await fetch('/api/send-relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locataireEmail: bail.locataire_email,
+          locatairePrenom: bail.locataire_prenom,
+          locataireNom: bail.locataire_nom,
+          proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
+          bienNom: bien?.nom || '',
+          montant: (bail.loyer_hc || 0) + (bail.charges || 0),
+          dateEcheance: bail.date_exigibilite || 1,
+          mois: moisLabels[now.getMonth()],
+          annee: now.getFullYear(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRelanceToast({ msg: '✅ Relance envoyée au locataire !', succes: true });
+      } else {
+        setRelanceToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+      }
+    } catch (err) {
+      setRelanceToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+    } finally {
+      setSendingRelance(false);
+      setTimeout(() => setRelanceToast(null), 4000);
+    }
   }
 
   if (loading) return (
@@ -146,77 +228,34 @@ async function envoyerInvitation() {
     </div>
   ) : null;
 
-async function envoyerRelance() {
-  if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
-  if (!confirm(`Envoyer une relance de loyer à ${bail.locataire_email} ?`)) return;
-
-  setSendingRelance(true);
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const moisLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const now = new Date();
-    const res = await fetch('/api/send-relance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        locataireEmail: bail.locataire_email,
-        locatairePrenom: bail.locataire_prenom,
-        locataireNom: bail.locataire_nom,
-        proprietaireNom: `${bail.bailleur_prenom} ${bail.bailleur_nom}`,
-        bienNom: bien?.nom || '',
-        montant: (bail.loyer_hc || 0) + (bail.charges || 0),
-        dateEcheance: bail.date_exigibilite || 1,
-        mois: moisLabels[now.getMonth()],
-        annee: now.getFullYear(),
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setRelanceToast({ msg: '✅ Relance envoyée au locataire !', succes: true });
-    } else {
-      setRelanceToast({ msg: '❌ Erreur : ' + data.error, succes: false });
-    }
-  } catch (err) {
-    setRelanceToast({ msg: '❌ Erreur : ' + err.message, succes: false });
-  } finally {
-    setSendingRelance(false);
-    setTimeout(() => setRelanceToast(null), 4000);
-  }
-}
+  // Nombre de messages non lus du locataire
+  const nbNonLus = messages.filter(m => !m.lu && m.expediteur === 'locataire').length;
 
   return (
-   
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <Nav pageCourante="baux" />
 
-     <Nav pageCourante="baux" />
+      {/* ===== TOASTS ===== */}
       {emailToast && (
-  <div style={{
-    position: 'fixed', top: 24, right: 24, zIndex: 9999,
-    background: emailToast.succes ? '#dcfce7' : '#fef2f2',
-    color: emailToast.succes ? '#15803d' : '#dc2626',
-    border: `1px solid ${emailToast.succes ? '#86efac' : '#fca5a5'}`,
-    borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  }}>
-    {emailToast.msg}
-    {relanceToast && (
-  <div style={{
-    position: 'fixed', top: 24, right: 24, zIndex: 9999,
-    background: relanceToast.succes ? '#dcfce7' : '#fef2f2',
-    color: relanceToast.succes ? '#15803d' : '#dc2626',
-    border: `1px solid ${relanceToast.succes ? '#86efac' : '#fca5a5'}`,
-    borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  }}>
-    {relanceToast.msg}
-  </div>
-)}
-  </div>
-)}
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: emailToast.succes ? '#dcfce7' : '#fef2f2', color: emailToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${emailToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {emailToast.msg}
+        </div>
+      )}
+      {relanceToast && (
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: relanceToast.succes ? '#dcfce7' : '#fef2f2', color: relanceToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${relanceToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {relanceToast.msg}
+        </div>
+      )}
+      {invitationToast && (
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: invitationToast.succes ? '#dcfce7' : '#fef2f2', color: invitationToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${invitationToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {invitationToast.msg}
+        </div>
+      )}
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
 
-        <div style={{ marginBottom: 32 }}>
+        {/* ===== HEADER ===== */}
+        <div style={{ marginBottom: 24 }}>
           <button onClick={() => window.location.href = '/baux'}
             style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 16 }}>
             ← Retour aux baux
@@ -232,168 +271,227 @@ async function envoyerRelance() {
           </div>
         </div>
 
-        <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 20 }}>
-
-          {section('🏠 Bailleur')}
-          {info('Nom et prénom', [bail.bailleur_prenom, bail.bailleur_nom].filter(Boolean).join(' ') || null)}
-          {info('Adresse', bail.bailleur_adresse)}
-          {info('Date de naissance', bail.bailleur_naissance ? new Date(bail.bailleur_naissance).toLocaleDateString('fr-FR') : null)}
-          {info('Lieu de naissance', bail.bailleur_lieu_naissance)}
-          {info('Nationalité', bail.bailleur_nationalite)}
-
-          {section('👤 Locataire')}
-          {info('Nom et prénom', [bail.locataire_prenom, bail.locataire_nom].filter(Boolean).join(' ') || null)}
-          {!editContact ? (
-  <div>
-    {info('Email', bail.locataire_email)}
-    {info('Téléphone', bail.locataire_telephone)}
-    <button onClick={() => { setNewEmail(bail.locataire_email || ''); setNewTel(bail.locataire_telephone || ''); setEditContact(true); }}
-      style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
-      ✏️ Modifier les coordonnées
-    </button>
-  </div>
-) : (
-  <div style={{ background: '#f9fafb', borderRadius: 10, padding: 14, marginBottom: 12 }}>
-    <div style={{ marginBottom: 10 }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Email</label>
-      <input value={newEmail} onChange={e => setNewEmail(e.target.value)}
-        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-    </div>
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone</label>
-      <input value={newTel} onChange={e => setNewTel(e.target.value)}
-        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-    </div>
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button onClick={() => setEditContact(false)}
-        style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-        Annuler
-      </button>
-      <button onClick={async () => {
-        const { error } = await supabase.from('Baux').update({ locataire_email: newEmail, locataire_telephone: newTel }).eq('id', bail.id);
-        if (!error) { setBail({ ...bail, locataire_email: newEmail, locataire_telephone: newTel }); setEditContact(false); }
-        else { alert('Erreur : ' + error.message); }
-      }}
-        style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-        ✅ Sauvegarder
-      </button>
-    </div>
-  </div>
-)}
-          {info('Date de naissance', bail.locataire_naissance ? new Date(bail.locataire_naissance).toLocaleDateString('fr-FR') : null)}
-          {info('Nationalité', bail.locataire_nationalite)}
-          {info('Profession', bail.locataire_profession)}
-          {info('Adresse actuelle', bail.locataire_adresse)}
-
-          {section('🏢 Bien loué')}
-          {info('Adresse', bien?.adresse)}
-          {info('Type de bien', bien?.type)}
-          {info('Type de bail', bail.type_bail)}
-          {info('Surface', bail.surface_habitable ? bail.surface_habitable + ' m²' : null)}
-          {info('Nombre de pièces', bail.nombre_pieces)}
-          {info('Étage / Bâtiment', bail.etage)}
-          {info('Classe DPE', bail.classe_dpe)}
-          {info('Numéro de lot', bail.numero_lot)}
-          {info('Équipements', bail.equipements)}
-
-          {section('💰 Conditions financières')}
-          <div style={{ background: '#eff6ff', borderRadius: 12, padding: 16, marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Loyer HC</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>{bail.loyer_hc}€</p>
-            </div>
-            <div style={{ textAlign: 'center', borderLeft: '1px solid #bfdbfe', borderRight: '1px solid #bfdbfe' }}>
-              <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Charges</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>{bail.charges}€</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Total CC</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', margin: 0 }}>{(bail.loyer_hc || 0) + (bail.charges || 0)}€</p>
-            </div>
-          </div>
-          {info('Dépôt de garantie', bail.depot_garantie ? bail.depot_garantie + '€' : null)}
-          {info('Type de charges', bail.type_charges)}
-          {info('Modalité de paiement', bail.modalite_paiement)}
-          {info('Échéance', bail.date_exigibilite ? 'Le ' + bail.date_exigibilite + ' du mois' : null)}
-          {info('Révision IRL', bail.revision_irl === true ? 'Oui' : bail.revision_irl === false ? 'Non' : null)}
-
-          {section('📅 Durée du bail')}
-          {info('Date de début', bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : null)}
-          {info('Date de fin', bail.date_fin ? new Date(bail.date_fin).toLocaleDateString('fr-FR') : 'Reconduction tacite')}
-
-          {bail.clauses && (
-            <>
-              {section('📋 Clauses particulières')}
-              <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{bail.clauses}</p>
-            </>
-          )}
+        {/* ===== ONGLETS ===== */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          {[
+            { id: 'details', label: '📄 Détails' },
+            { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴 ${nbNonLus}` : '💬 Messages' },
+          ].map(o => (
+            <button key={o.id} onClick={() => setOngletBail(o.id)}
+              style={{ background: ongletBail === o.id ? '#2563eb' : 'white', color: ongletBail === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              {o.label}
+            </button>
+          ))}
         </div>
 
-       <div style={{ display: 'flex', gap: 12 }}>
-  {bail.bail_pdf_url && (
-    <a href={bail.bail_pdf_url} target="_blank" rel="noopener noreferrer"
-      style={{ flex: 1, background: '#2563eb', color: 'white', padding: 14, borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
-      📄 Télécharger le PDF du bail
-    </a>
-  )}
-  {bail.statut === 'actif' && bail.bail_pdf_url && bail.locataire_email && (
-    <button onClick={envoyerBail} disabled={sending}
-      style={{ flex: 1, background: sending ? '#86efac' : '#16a34a', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sending ? 'not-allowed' : 'pointer' }}>
-      {sending ? '⏳ Envoi...' : '📧 Envoyer au locataire'}
-    </button>
-  )}
-  {bail.statut === 'actif' && bail.locataire_email && (
-  <button
-    onClick={envoyerRelance}
-    disabled={sendingRelance}
-    style={{ flex: 1, background: sendingRelance ? '#fde68a' : '#f59e0b', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingRelance ? 'not-allowed' : 'pointer' }}>
-    {sendingRelance ? '⏳ Envoi...' : '⚠️ Relancer le locataire'}
-  </button>
-)}
+        {/* ===== ONGLET DÉTAILS ===== */}
+        {ongletBail === 'details' && (
+          <>
+            <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 20 }}>
 
-{invitationToast && (
-  <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: invitationToast.succes ? '#dcfce7' : '#fef2f2', color: invitationToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${invitationToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-    {invitationToast.msg}
-  </div>
-)}
+              {section('🏠 Bailleur')}
+              {info('Nom et prénom', [bail.bailleur_prenom, bail.bailleur_nom].filter(Boolean).join(' ') || null)}
+              {info('Adresse', bail.bailleur_adresse)}
+              {info('Date de naissance', bail.bailleur_naissance ? new Date(bail.bailleur_naissance).toLocaleDateString('fr-FR') : null)}
+              {info('Lieu de naissance', bail.bailleur_lieu_naissance)}
+              {info('Nationalité', bail.bailleur_nationalite)}
 
-{bail.statut === 'actif' && bail.locataire_email && (
-  <button onClick={envoyerInvitation} disabled={sendingInvitation}
-    style={{ flex: 1, background: sendingInvitation ? '#a5b4fc' : '#6366f1', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingInvitation ? 'not-allowed' : 'pointer' }}>
-    {sendingInvitation ? '⏳ Envoi...' : '🔗 Portail locataire'}
-  </button>
-)}
+              {section('👤 Locataire')}
+              {info('Nom et prénom', [bail.locataire_prenom, bail.locataire_nom].filter(Boolean).join(' ') || null)}
+              {!editContact ? (
+                <div>
+                  {info('Email', bail.locataire_email)}
+                  {info('Téléphone', bail.locataire_telephone)}
+                  <button onClick={() => { setNewEmail(bail.locataire_email || ''); setNewTel(bail.locataire_telephone || ''); setEditContact(true); }}
+                    style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
+                    ✏️ Modifier les coordonnées
+                  </button>
+                </div>
+              ) : (
+                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Email</label>
+                    <input value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone</label>
+                    <input value={newTel} onChange={e => setNewTel(e.target.value)}
+                      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => setEditContact(false)}
+                      style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      Annuler
+                    </button>
+                    <button onClick={async () => {
+                      const { error } = await supabase.from('Baux').update({ locataire_email: newEmail, locataire_telephone: newTel }).eq('id', bail.id);
+                      if (!error) { setBail({ ...bail, locataire_email: newEmail, locataire_telephone: newTel }); setEditContact(false); }
+                      else { alert('Erreur : ' + error.message); }
+                    }}
+                      style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      ✅ Sauvegarder
+                    </button>
+                  </div>
+                </div>
+              )}
+              {info('Date de naissance', bail.locataire_naissance ? new Date(bail.locataire_naissance).toLocaleDateString('fr-FR') : null)}
+              {info('Nationalité', bail.locataire_nationalite)}
+              {info('Profession', bail.locataire_profession)}
+              {info('Adresse actuelle', bail.locataire_adresse)}
 
-  {bail.statut !== 'termine' && (
-    <button onClick={cloturerBail}
-      style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-      🔒 Clôturer ce bail
-    </button>
-  )}
-  <button onClick={async () => {
-    const confirm1 = confirm('Supprimer définitivement ce bail ?');
-    if (!confirm1) return;
-    const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
-    if (!confirm2) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('Baux').delete().eq('id', bail.id);
-    if (!error) {
-      // Synchronise la quantité de l'abonnement Stripe (seulement si le bail supprimé était actif)
-      if (bail.statut === 'actif') {
-        fetch('/api/sync-quantity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id }),
-        }).catch(err => console.error('Erreur sync quantity:', err));
-      }
-      window.location.href = '/baux';
-    }
-    else { alert('Erreur : ' + error.message); }
-  }}
-    style={{ flex: 1, background: 'white', color: '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-    🗑 Supprimer
-  </button>
-</div>
+              {section('🏢 Bien loué')}
+              {info('Adresse', bien?.adresse)}
+              {info('Type de bien', bien?.type)}
+              {info('Type de bail', bail.type_bail)}
+              {info('Surface', bail.surface_habitable ? bail.surface_habitable + ' m²' : null)}
+              {info('Nombre de pièces', bail.nombre_pieces)}
+              {info('Étage / Bâtiment', bail.etage)}
+              {info('Classe DPE', bail.classe_dpe)}
+              {info('Numéro de lot', bail.numero_lot)}
+              {info('Équipements', bail.equipements)}
+
+              {section('💰 Conditions financières')}
+              <div style={{ background: '#eff6ff', borderRadius: 12, padding: 16, marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Loyer HC</p>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>{bail.loyer_hc}€</p>
+                </div>
+                <div style={{ textAlign: 'center', borderLeft: '1px solid #bfdbfe', borderRight: '1px solid #bfdbfe' }}>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Charges</p>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>{bail.charges}€</p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>Total CC</p>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', margin: 0 }}>{(bail.loyer_hc || 0) + (bail.charges || 0)}€</p>
+                </div>
+              </div>
+              {info('Dépôt de garantie', bail.depot_garantie ? bail.depot_garantie + '€' : null)}
+              {info('Type de charges', bail.type_charges)}
+              {info('Modalité de paiement', bail.modalite_paiement)}
+              {info('Échéance', bail.date_exigibilite ? 'Le ' + bail.date_exigibilite + ' du mois' : null)}
+              {info('Révision IRL', bail.revision_irl === true ? 'Oui' : bail.revision_irl === false ? 'Non' : null)}
+
+              {section('📅 Durée du bail')}
+              {info('Date de début', bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : null)}
+              {info('Date de fin', bail.date_fin ? new Date(bail.date_fin).toLocaleDateString('fr-FR') : 'Reconduction tacite')}
+
+              {bail.clauses && (
+                <>
+                  {section('📋 Clauses particulières')}
+                  <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{bail.clauses}</p>
+                </>
+              )}
+            </div>
+
+            {/* ===== BOUTONS ACTIONS ===== */}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {bail.bail_pdf_url && (
+                <a href={bail.bail_pdf_url} target="_blank" rel="noopener noreferrer"
+                  style={{ flex: 1, background: '#2563eb', color: 'white', padding: 14, borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
+                  📄 Télécharger le PDF du bail
+                </a>
+              )}
+              {bail.statut === 'actif' && bail.bail_pdf_url && bail.locataire_email && (
+                <button onClick={envoyerBail} disabled={sending}
+                  style={{ flex: 1, background: sending ? '#86efac' : '#16a34a', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sending ? 'not-allowed' : 'pointer' }}>
+                  {sending ? '⏳ Envoi...' : '📧 Envoyer au locataire'}
+                </button>
+              )}
+              {bail.statut === 'actif' && bail.locataire_email && (
+                <button onClick={envoyerRelance} disabled={sendingRelance}
+                  style={{ flex: 1, background: sendingRelance ? '#fde68a' : '#f59e0b', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingRelance ? 'not-allowed' : 'pointer' }}>
+                  {sendingRelance ? '⏳ Envoi...' : '⚠️ Relancer le locataire'}
+                </button>
+              )}
+              {bail.statut === 'actif' && bail.locataire_email && (
+                <button onClick={envoyerInvitation} disabled={sendingInvitation}
+                  style={{ flex: 1, background: sendingInvitation ? '#a5b4fc' : '#6366f1', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingInvitation ? 'not-allowed' : 'pointer' }}>
+                  {sendingInvitation ? '⏳ Envoi...' : '🔗 Portail locataire'}
+                </button>
+              )}
+              {bail.statut !== 'termine' && (
+                <button onClick={cloturerBail}
+                  style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                  🔒 Clôturer ce bail
+                </button>
+              )}
+              <button onClick={async () => {
+                const confirm1 = confirm('Supprimer définitivement ce bail ?');
+                if (!confirm1) return;
+                const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
+                if (!confirm2) return;
+                const { data: { user } } = await supabase.auth.getUser();
+                const { error } = await supabase.from('Baux').delete().eq('id', bail.id);
+                if (!error) {
+                  if (bail.statut === 'actif') {
+                    fetch('/api/sync-quantity', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: user.id }),
+                    }).catch(err => console.error('Erreur sync quantity:', err));
+                  }
+                  window.location.href = '/baux';
+                } else { alert('Erreur : ' + error.message); }
+              }}
+                style={{ flex: 1, background: 'white', color: '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                🗑 Supprimer
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ===== ONGLET MESSAGES ===== */}
+        {ongletBail === 'messages' && (
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginTop: 0, marginBottom: 20 }}>
+              💬 Messages avec {bail.locataire_prenom} {bail.locataire_nom}
+            </h3>
+
+            {/* Zone messages */}
+            <div style={{ height: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, padding: 12, background: '#f9fafb', borderRadius: 12 }}>
+              {messages.length === 0 && (
+                <p style={{ color: '#9ca3af', textAlign: 'center', marginTop: 'auto', marginBottom: 'auto', fontSize: 14 }}>
+                  Aucun message pour l'instant.<br />
+                  <span style={{ fontSize: 12 }}>Le locataire peut vous écrire depuis son portail.</span>
+                </p>
+              )}
+              {messages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.expediteur === 'proprio' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    maxWidth: '70%', padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.5,
+                    background: msg.expediteur === 'proprio' ? '#2563eb' : 'white',
+                    color: msg.expediteur === 'proprio' ? 'white' : '#111827',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    borderBottomRightRadius: msg.expediteur === 'proprio' ? 4 : 12,
+                    borderBottomLeftRadius: msg.expediteur === 'locataire' ? 4 : 12,
+                  }}>
+                    <p style={{ margin: '0 0 4px' }}>{msg.contenu}</p>
+                    <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>
+                      {msg.expediteur === 'proprio' ? 'Vous' : bail.locataire_prenom} — {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Zone saisie */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <input
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envoyerMessage(); } }}
+                placeholder="Écrivez un message..."
+                style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none' }}
+              />
+              <button onClick={envoyerMessage} disabled={sendingMsg || !newMessage.trim()}
+                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 16, cursor: !newMessage.trim() ? 'not-allowed' : 'pointer', opacity: !newMessage.trim() ? 0.5 : 1 }}>
+                {sendingMsg ? '...' : '→'}
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </main>
   );
