@@ -19,15 +19,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+  <html
+    lang="en"
+    className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+  >
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       <link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#2563eb" />
-      <body className="min-h-full flex flex-col">{children}</body>
-    </html>
-  );
+      <meta name="theme-color" content="#2563eb" />
+    </head>
+    <body className="min-h-full flex flex-col">{children}</body>
+  </html>
+);
 }
 export const metadata: Metadata = {
   title: "GestionLocative — Gérez vos biens en toute simplicité",
