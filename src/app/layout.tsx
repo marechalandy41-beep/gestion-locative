@@ -23,6 +23,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#2563eb" />
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
@@ -30,6 +32,7 @@ export default function RootLayout({
 export const metadata: Metadata = {
   title: "GestionLocative — Gérez vos biens en toute simplicité",
   description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
+  manifest: '/manifest.json',
   icons: {
   },
 };
