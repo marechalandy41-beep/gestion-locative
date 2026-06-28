@@ -23,12 +23,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        setUser(data.user);
-        chargerDonnees(data.user.id);
-      } else {
-        window.location.href = '/auth';
-      }
+      if (data?.user) { setUser(data.user); chargerDonnees(data.user.id); }
+      else { window.location.href = '/auth'; }
     });
   }, []);
 
@@ -45,14 +41,11 @@ export default function Dashboard() {
     const { data: customerData } = await supabase.from('customers').select('plan').eq('user_id', userId).single();
     if (customerData?.plan) setPlan(customerData.plan);
     if (!customerData?.plan || customerData.plan === 'gratuit') { window.location.href = '/biens'; return; }
-
     const { data: biensData } = await supabase.from('Biens').select('*').eq('user_id', userId);
     const { data: bauxData } = await supabase.from('Baux').select('*, bien:bien_id(id, nom, adresse, type)').eq('user_id', userId).eq('statut', 'actif');
-
     const moisActuel = new Date().getMonth() + 1;
     const anneeActuelle = new Date().getFullYear();
     const { data: paiementsData } = await supabase.from('paiements').select('bail_id').eq('user_id', userId).eq('mois', moisActuel).eq('annee', anneeActuelle);
-
     setBiens(biensData || []);
     setBaux(bauxData || []);
     setPaiementsMois(paiementsData || []);
@@ -97,6 +90,22 @@ export default function Dashboard() {
     }
   }
 
+  const boutonBanque = estPayant && (
+    joursRestants === null ? (
+      <a href="/connexion-bancaire" style={{ background: '#f0fdf4', color: '#16a34a', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        🏦 Connecter ma banque
+      </a>
+    ) : joursRestants > 10 ? (
+      <a href="/connexion-bancaire" style={{ background: '#f0fdf4', color: '#16a34a', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+        🏦 Banque connectée — {joursRestants}j
+      </a>
+    ) : (
+      <a href="/connexion-bancaire" style={{ background: '#fef9c3', color: '#854d0e', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', border: '1px solid #fde047', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        ⚠️ Reconnexion dans {joursRestants}j
+      </a>
+    )
+  );
+
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <Nav pageCourante="dashboard" />
@@ -104,39 +113,47 @@ export default function Dashboard() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '24px 16px' : '32px 24px' }}>
 
         {/* EN-TÊTE */}
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 12, marginBottom: 24 }}>
-          <div>
-            <h2 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#111827' }}>
-              Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
-            </h2>
-            <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
+        {isMobile ? (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>
+                  Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
+                </h2>
+                <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
+              </div>
+              <a href="/baux/nouveau" style={{ background: estPayant ? '#2563eb' : '#9ca3af', color: 'white', padding: '8px 12px', borderRadius: 10, fontWeight: 600, fontSize: 12, textDecoration: 'none', textAlign: 'center', whiteSpace: 'nowrap' }}
+                onClick={e => { if (!estPayant) e.preventDefault(); }}>
+                + Ajouter
+              </a>
+            </div>
+            {estPayant && <div style={{ width: '100%' }}>{boutonBanque}</div>}
           </div>
-
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, width: isMobile ? '100%' : 'auto' }}>
-            {estPayant && (
-              joursRestants === null ? (
-                <a href="/connexion-bancaire" style={{ background: '#f0fdf4', color: '#16a34a', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 8, textAlign: 'center', justifyContent: 'center' }}>
-                  🏦 Connecter ma banque
-                </a>
-              ) : joursRestants > 10 ? (
-                <a href="/connexion-bancaire" style={{ background: '#f0fdf4', color: '#16a34a', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', justifyContent: 'center' }}>
-                  🏦 Banque connectée — {joursRestants}j
-                </a>
-              ) : (
-                <a href="/connexion-bancaire" style={{ background: '#fef9c3', color: '#854d0e', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', border: '1px solid #fde047', display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                  ⚠️ Reconnexion dans {joursRestants}j
-                </a>
-              )
-            )}
-            <a href="/baux/nouveau" style={{ background: estPayant ? '#2563eb' : '#9ca3af', color: 'white', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', textAlign: 'center' }}
-              onClick={e => { if (!estPayant) e.preventDefault(); }}>
-              + Ajouter un bail
-            </a>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', marginBottom: 24, gap: 16 }}>
+            {/* Gauche - titre */}
+            <div>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>
+                Bonjour {user?.user_metadata?.prenom || user?.email?.split('@')[0]} 👋
+              </h2>
+              <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>{baux.length} bail{baux.length > 1 ? 's' : ''} actif{baux.length > 1 ? 's' : ''}</p>
+            </div>
+            {/* Centre - bouton banque */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              {boutonBanque}
+            </div>
+            {/* Droite - bouton ajouter */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <a href="/baux/nouveau" style={{ background: estPayant ? '#2563eb' : '#9ca3af', color: 'white', padding: '10px 20px', borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}
+                onClick={e => { if (!estPayant) e.preventDefault(); }}>
+                + Ajouter un bail
+              </a>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : '1fr 1fr 1fr', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Loyers du mois</p>
             <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: '#111827', marginTop: 4 }}>{totalLoyers.toLocaleString()}€</p>
