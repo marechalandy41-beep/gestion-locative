@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf'
 
 const PIECES_DEFAUT = [
   'Entrée / Couloir', 'Salon', 'Cuisine', 'Salle de bain', 'WC', 'Chambre 1'
@@ -15,6 +16,7 @@ export default function NouvelEDL() {
   const [baux, setBaux] = useState([]);
   const [loading, setLoading] = useState(false);
   const [etape, setEtape] = useState(1); // 1=infos, 2=pièces, 3=compteurs, 4=recap
+
 
   const [form, setForm] = useState({
     bail_id: '',
@@ -67,22 +69,128 @@ export default function NouvelEDL() {
   }
 
   async function sauvegarder(statut = 'brouillon') {
-    if (!form.bail_id) { alert('Sélectionnez un bail'); return; }
-    setLoading(true);
-    const { data, error } = await supabase.from('EtatsDesLieux').insert({
-      bail_id: parseInt(form.bail_id),
-      user_id: user.id,
-      type: form.type,
-      date_edl: form.date_edl,
-      pieces: pieces,
-      compteurs,
-      observations: form.observations,
-      statut,
-    }).select().single();
-    setLoading(false);
-    if (error) { alert('Erreur : ' + error.message); return; }
-    router.push(`/etats-des-lieux/${data.id}`);
+  if (!form.bail_id) { alert('Sélectionnez un bail'); return; }
+  setLoading(true);
+
+  // Récupérer les infos du bail pour le PDF
+  const { data: bailData } = await supabase
+    .from('Baux')
+    .select('*, Biens(id, nom, adresse)')
+    .eq('id', parseInt(form.bail_id))
+    .single();
+
+  const { data: edl, error } = await supabase.from('EtatsDesLieux').insert({
+    bail_id: parseInt(form.bail_id),
+    user_id: user.id,
+    type: form.type,
+    date_edl: form.date_edl,
+    pieces: pieces,
+    compteurs,
+    observations: form.observations,
+    statut,
+  }).select().single();
+
+  if (error) { alert('Erreur : ' + error.message); setLoading(false); return; }
+
+  // Si finalisé, générer et uploader le PDF
+  if (statut === 'finalise' && bailData) {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let y = 20;
+
+      doc.setFillColor(37, 99, 235);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ÉTAT DES LIEUX', pageWidth / 2, 15, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(form.type === 'entree' ? "D'ENTRÉE" : 'DE SORTIE', pageWidth / 2, 26, { align: 'center' });
+      y = 50;
+      doc.setTextColor(0, 0, 0);
+      doc.setFillColor(243, 244, 246);
+      doc.rect(14, y - 6, pageWidth - 28, 28, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Bien :', 18, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(bailData.Biens?.nom || '', 45, y);
+      y += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Locataire :', 18, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${bailData.locataire_prenom || ''} ${bailData.locataire_nom || ''}`, 45, y);
+      y += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date :', 18, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(form.date_edl).toLocaleDateString('fr-FR'), 45, y);
+      y += 18;
+
+      if (pieces.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(37, 99, 235);
+        doc.text('ÉTAT DES PIÈCES', 14, y);
+        y += 8;
+        pieces.forEach((piece, i) => {
+          if (y > 260) { doc.addPage(); y = 20; }
+          doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 251 : 255);
+          doc.rect(14, y - 5, pageWidth - 28, piece.commentaire ? 14 : 8, 'F');
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          doc.text(piece.nom, 18, y);
+          doc.setFont('helvetica', 'bold');
+          doc.text(piece.etat, 110, y);
+          if (piece.commentaire) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text(piece.commentaire, 18, y + 7);
+            doc.setTextColor(0, 0, 0);
+            y += 14;
+          } else { y += 8; }
+        });
+        y += 6;
+      }
+
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 290, { align: 'center' });
+
+      const nomFichier = `EDL_${form.type}_${bailData.Biens?.nom}_${form.date_edl}.pdf`;
+      const pdfBlob = doc.output('blob');
+      const bienId = bailData.Biens?.id;
+      const cheminStorage = `${user.id}/${bienId}/Etat des lieux/${nomFichier}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(cheminStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage);
+        await supabase.from('Documents').insert({
+          user_id: user.id,
+          bien_id: bienId,
+          nom_fichier: nomFichier,
+          categorie: form.type === 'entree' ? 'État des lieux entrée' : 'État des lieux sortie',
+          url: urlData.publicUrl,
+          storage_path: cheminStorage,
+          annee: new Date(form.date_edl).getFullYear(),
+        });
+        // Téléchargement local aussi
+        doc.save(nomFichier);
+      }
+    } catch (err) {
+      console.error('Erreur PDF EDL:', err);
+    }
   }
+
+  setLoading(false);
+  router.push(`/etats-des-lieux/${edl.id}`);
+}
 
   const nav = (
     <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
