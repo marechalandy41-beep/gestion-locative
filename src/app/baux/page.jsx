@@ -145,7 +145,7 @@ useEffect(() => {
 
                   {bail.statut === 'brouillon' && (
                     <button
-                      onClick={e => { e.stopPropagation(); window.location.href = '/baux/nouveau?id=' + bail.id; }}
+                      onClick={e => { e.stopPropagation(); window.location.href = '/baux/' + bail.id; }}
                       style={{ width: '100%', marginTop: 8, background: '#fef9c3', color: '#ca8a04', border: '1px solid #fde68a', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       ✍️ Finaliser et signer
                     </button>

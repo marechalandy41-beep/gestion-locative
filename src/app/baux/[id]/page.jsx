@@ -418,6 +418,13 @@ useEffect(() => {
                   {sendingInvitation ? '⏳ Envoi...' : '🔗 Portail locataire'}
                 </button>
               )}
+
+              {bail.statut === 'brouillon' && (
+  <button onClick={() => window.location.href = `/baux/nouveau/non-meuble?id=${bail.id}&sign=true`}
+    style={{ flex: 1, background: '#16a34a', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+    ✍️ Signer le bail
+  </button>
+)}
               {bail.statut !== 'termine' && (
                 <button onClick={cloturerBail}
                   style={{ flex: 1, background: '#fef2f2', color: '#dc2626', padding: 14, borderRadius: 12, border: '1px solid #fecaca', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
