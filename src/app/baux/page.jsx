@@ -8,6 +8,14 @@ export default function BauxPage() {
   const [loading, setLoading] = useState(true)
   // ===== MESSAGES NON LUS =====
   const [nonLusParBail, setNonLusParBail] = useState({})
+  const [isMobile, setIsMobile] = useState(false)
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768)
+  check()
+  window.addEventListener('resize', check)
+  return () => window.removeEventListener('resize', check)
+}, [])
 
   useEffect(() => { chargerBaux() }, [])
 
@@ -61,7 +69,7 @@ export default function BauxPage() {
 
       <Nav pageCourante="baux" />
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '16px' : '32px 24px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
@@ -82,7 +90,7 @@ export default function BauxPage() {
             </a>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: isMobile ? 16 : 24 }}>
             {baux.map(bail => {
               const s = statutStyle(bail.statut)
               const nbNonLus = nonLusParBail[bail.id] || 0
