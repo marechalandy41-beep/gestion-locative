@@ -53,6 +53,14 @@ export default function Biens() {
   const [newBien, setNewBien] = useState(formVide);
   const [etapeForm, setEtapeForm] = useState(1);
   const [user, setUser] = useState(null);
+  const [isMobile, setIsMobile] = useState(false)
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768)
+  check()
+  window.addEventListener('resize', check)
+  return () => window.removeEventListener('resize', check)
+}, [])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -115,7 +123,7 @@ export default function Biens() {
 
       <Nav pageCourante="biens" />
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '16px' : '32px 24px' }}>
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
@@ -260,7 +268,7 @@ export default function Biens() {
             <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Cliquez sur "Ajouter un bien" pour commencer</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: isMobile ? 16 : 24 }}>
             {biens.map(bien => (
               <div key={bien.id} onClick={() => handleSelect(bien)}
                 style={{ background: 'white', borderRadius: 20, border: selectionne === bien.id ? '2px solid #2563eb' : '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24, cursor: 'pointer' }}>
