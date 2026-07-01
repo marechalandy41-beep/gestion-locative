@@ -481,7 +481,7 @@ function sanitizerNomFichier(nom) {
         <p style={{ color: '#6b7280', fontSize: 15, marginBottom: 28 }}>Vous avez déjà un bail ou vous souhaitez en créer un ?</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* BAIL EXISTANT */}
+
           {/* BAIL EXISTANT */}
 <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '2px solid transparent' }}
   onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
@@ -629,6 +629,18 @@ function sanitizerNomFichier(nom) {
       </div>
     </main>
   );
+
+{/* COLOCATION */}
+<div onClick={() => window.location.href = '/baux/nouveau-colocation'}
+  style={{ background: '#f0fdf4', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }}
+  onMouseEnter={e => e.currentTarget.style.border = '2px solid #16a34a'}
+  onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+  <div style={{ fontSize: 36 }}>🏠👥</div>
+  <div>
+    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>Colocation</h3>
+    <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Plusieurs locataires — 1 seul bail — quittances séparées par colocataire.</p>
+  </div>
+</div>
 
   // ===== FORMULAIRE =====
   if (ecran === 'formulaire') {
