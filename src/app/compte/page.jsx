@@ -39,6 +39,14 @@ export default function Compte() {
   const [prixAutomatique, setPrixAutomatique] = useState('6')
   const [priceIdManuel, setPriceIdManuel] = useState('price_1TkNf95LCX9emtMyBEftu67t')
   const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener('resize', check);
+  return () => window.removeEventListener('resize', check);
+}, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -57,6 +65,7 @@ export default function Compte() {
         if (customerData?.plan) {
           setPlanActuel(customerData.plan)
         }
+
 
         // Charge les prix et price_id dynamiques depuis settings
         const { data: settingsData } = await supabase
@@ -386,7 +395,7 @@ async function ouvrirConversation(conv) {
         )}
 
         {/* ONGLETS */}
-        <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 12, padding: 4, marginBottom: 32, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 12, padding: 4, marginBottom: 32, width: '100%', overflowX: 'auto', flexWrap: 'nowrap' }}>
           {[
             { id: 'profil', label: '👤 Profil' },
             { id: 'securite', label: '🔒 Sécurité' },
@@ -563,10 +572,10 @@ async function ouvrirConversation(conv) {
 
         {/* ONGLET MES MESSAGES */}
         {onglet === 'messages' && (
-          <div style={{ display: 'flex', gap: 16, height: 560 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, height: isMobile ? 'auto' : 560}}>
 
             {/* LISTE DES CONVERSATIONS */}
-            <div style={{ width: 280, background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ width: isMobile ? '100%' : 280, background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
                 <button onClick={() => { setConversationActive(null); setMessagesConversation([]); setNouveauSujet('') }}
                   style={{ width: '100%', background: '#2563eb', color: 'white', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
