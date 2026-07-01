@@ -626,7 +626,7 @@ async function ouvrirConversation(conv) {
                   <div style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
                     <p style={{ fontWeight: 600, fontSize: 14, color: '#111827', margin: 0 }}>{conversationActive.sujet}</p>
                   </div>
-                  <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minHeight: isMobile ? 300 : 'auto' }}>
                     {messagesConversation.map(m => (
                       <div key={m.id} style={{
                         alignSelf: m.expediteur === 'client' ? 'flex-end' : 'flex-start',
