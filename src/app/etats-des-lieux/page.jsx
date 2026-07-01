@@ -10,6 +10,14 @@ export default function etatsdeslieux() {
   const [edls, setEdls] = useState([]);
   const [baux, setBaux] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false)
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768)
+  check()
+  window.addEventListener('resize', check)
+  return () => window.removeEventListener('resize', check)
+}, [])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -65,7 +73,7 @@ export default function etatsdeslieux() {
   return (
     <main style={{minHeight:'100vh', background:'#f9fafb'}}>
       {nav}
-      <div style={{maxWidth:1280, margin:'0 auto', padding:'32px 24px'}}>
+      <div style={{maxWidth:1280, margin:'0 auto', padding: isMobile ? '16px' : '32px 24px'}}>
 
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:32}}>
           <div>
@@ -95,7 +103,7 @@ export default function etatsdeslieux() {
             </button>
           </div>
         ) : (
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:20}}>
+          <div style={{display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: isMobile ? 16 : 20}}>
             {edls.map(edl => (
               <div
                 key={edl.id}
