@@ -64,10 +64,27 @@ export async function POST(req: NextRequest) {
     const subscription = event.data.object as any
     const customerId = subscription.customer
 
+    // Récupérer le user_id
+    const { data: customer } = await supabaseAdmin
+      .from('customers')
+      .select('user_id')
+      .eq('stripe_customer_id', customerId)
+      .single()
+
+    // Passer le plan en gratuit
     await supabaseAdmin
       .from('customers')
       .update({ plan: 'gratuit' })
       .eq('stripe_customer_id', customerId)
+
+    // Passer tous les baux actifs en suspendu
+    if (customer?.user_id) {
+      await supabaseAdmin
+        .from('Baux')
+        .update({ statut: 'suspendu' })
+        .eq('user_id', customer.user_id)
+        .eq('statut', 'actif')
+    }
   }
 
   if (event.type === 'customer.subscription.updated') {
@@ -84,6 +101,22 @@ export async function POST(req: NextRequest) {
       .from('customers')
       .update({ plan })
       .eq('stripe_customer_id', customerId)
+
+      // Récupérer le user_id
+const { data: custData } = await supabaseAdmin
+  .from('customers')
+  .select('user_id')
+  .eq('stripe_customer_id', customerId)
+  .single()
+
+// Restaurer les baux suspendus si retour sur plan payant
+if (custData?.user_id && (plan === 'manuel' || plan === 'automatique')) {
+  await supabaseAdmin
+    .from('Baux')
+    .update({ statut: 'actif' })
+    .eq('user_id', custData.user_id)
+    .eq('statut', 'suspendu')
+}
   }
 
   return NextResponse.json({ received: true })
