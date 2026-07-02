@@ -420,7 +420,15 @@ useEffect(() => {
               )}
 
               {bail.statut === 'brouillon' && (
-  <button onClick={() => window.location.href = `/baux/nouveau/non-meuble?id=${bail.id}&sign=true`}
+  <button onClick={() => window.location.href = `/baux/nouveau/${
+  bail.type_bail === 'Meublé' ? 'meuble' :
+  bail.type_bail === 'Commercial (3-6-9)' ? 'commercial' :
+  bail.type_bail === 'Parking / Garage' ? 'parking' :
+  bail.type_bail === 'Étudiant' ? 'etudiant' :
+  bail.type_bail === 'Mobilité' ? 'mobilite' :
+  bail.type_bail === 'Autre' ? 'autre' :
+  'non-meuble'
+}?id=${bail.id}&sign=true`}
     style={{ flex: 1, background: '#16a34a', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
     ✍️ Signer le bail
   </button>
