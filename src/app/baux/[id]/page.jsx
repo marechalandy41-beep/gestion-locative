@@ -165,6 +165,7 @@ useEffect(() => {
     if (!confirm('Confirmer la clôture de ce bail ? Il passera en statut "Terminé".')) return;
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('Baux').update({ statut: 'termine' }).eq('id', bail.id);
+    await supabase.from('lots').update({ statut: 'vacant', bail_id: null }).eq('bail_id', bail.id);
     fetch('/api/sync-quantity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -445,6 +446,7 @@ useEffect(() => {
                 const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
                 if (!confirm2) return;
                 const { data: { user } } = await supabase.auth.getUser();
+                await supabase.from('lots').update({ statut: 'vacant', bail_id: null }).eq('bail_id', bail.id);
                 const { error } = await supabase.from('Baux').delete().eq('id', bail.id);
                 if (!error) {
                   if (bail.statut === 'actif') {

@@ -9,6 +9,8 @@ export default function NouveauBailParking() {
   const [loading, setLoading] = useState(false)
   const [etape, setEtape] = useState(1)
   const [bailIdExistant, setBailIdExistant] = useState(null)
+  const [lotsDisponibles, setLotsDisponibles] = useState([])
+  const [lotsSelectionnes, setLotsSelectionnes] = useState([])
   const [signatureBailleur, setSignatureBailleur] = useState(null)
   const [signatureLocataire, setSignatureLocataire] = useState(null)
   const [signatureActive, setSignatureActive] = useState(null)
@@ -84,6 +86,13 @@ export default function NouveauBailParking() {
     setSignatureActive(null); effacer()
   }
   function sanitize(nom) { return (nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_') }
+
+  async function chargerLots(bienId) {
+    const { data } = await supabase.from('lots').select('*').eq('bien_id', bienId)
+    setLotsDisponibles(data || [])
+    setLotsSelectionnes([])
+  }
+
   const bienSel = biens.find(b => b.id === parseInt(form.bien_id))
 
   async function sauvegarderBrouillon() {
@@ -184,6 +193,13 @@ export default function NouveauBailParking() {
       if (bailIdExistant) { const res = await supabase.from('Baux').update(bailData).eq('id', bailIdExistant).select().single(); bail = res.data; bailError = res.error }
       else { const res = await supabase.from('Baux').insert(bailData).select().single(); bail = res.data; bailError = res.error }
       if (bailError) { alert('Erreur : ' + bailError.message); setLoading(false); return }
+
+      if (lotsSelectionnes.length > 0) {
+        await supabase.from('lots')
+          .update({ statut: 'loue', bail_id: bail.id })
+          .in('id', lotsSelectionnes.map(l => l.id))
+      }
+
       await fetch('/api/sync-quantity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }).catch(() => {})
       setLoading(false); window.location.href = `/baux/${bail.id}`
     } catch (err) { alert('Erreur : ' + err.message); setLoading(false) }
@@ -245,11 +261,50 @@ export default function NouveauBailParking() {
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>🅿️ Emplacement & conditions</h3>
               <div style={{ marginBottom: 14 }}>
                 <label style={lbl}>Bien concerné *</label>
-                <select style={inp} value={form.bien_id} onChange={e => setForm({...form, bien_id: e.target.value})}>
+                <select style={inp} value={form.bien_id} onChange={e => {
+                  setForm({...form, bien_id: e.target.value})
+                  if (e.target.value) chargerLots(parseInt(e.target.value))
+                  else { setLotsDisponibles([]); setLotsSelectionnes([]) }
+                }}>
                   <option value="">— Sélectionnez —</option>
                   {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
                 </select>
               </div>
+              {lotsDisponibles.length > 0 && (
+                <div style={{ marginTop: 12, marginBottom: 14, background: '#fefce8', border: '1px solid #fde047', borderRadius: 10, padding: 14 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#ca8a04', marginBottom: 10 }}>🅿️ Sélectionnez les lots (places) concernés par ce bail</p>
+                  {lotsDisponibles.map(lot => (
+                    <label key={lot.id} htmlFor={`lot-${lot.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
+                      <input type="checkbox"
+                        id={`lot-${lot.id}`}
+                        checked={lotsSelectionnes.some(l => l.id === lot.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            const nouveauxLots = [...lotsSelectionnes, lot]
+                            setLotsSelectionnes(nouveauxLots)
+                            setForm(f => ({...f, numero_place: nouveauxLots.map(l => l.nom).join(', ')}))
+                          } else {
+                            const nouveauxLots = lotsSelectionnes.filter(l => l.id !== lot.id)
+                            setLotsSelectionnes(nouveauxLots)
+                            setForm(f => ({...f, numero_place: nouveauxLots.map(l => l.nom).join(', ')}))
+                          }
+                        }}
+                        style={{ width: 16, height: 16 }} />
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</span>
+                        {lot.etage && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>— {lot.etage}</span>}
+                      </div>
+                    </label>
+                  ))}
+                  {lotsSelectionnes.length > 0 && (
+                    <div style={{ background: 'white', borderRadius: 8, padding: 10, marginTop: 8, border: '1px solid #fde047' }}>
+                      <p style={{ fontSize: 12, color: '#ca8a04', margin: 0, fontWeight: 600 }}>
+                        ✅ {lotsSelectionnes.length} place{lotsSelectionnes.length > 1 ? 's' : ''} sélectionnée{lotsSelectionnes.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div><label style={lbl}>Numéro de place</label><input style={inp} value={form.numero_place} onChange={e => setForm({...form, numero_place: e.target.value})} placeholder="Place 12, Box A..." /></div>
                 <div><label style={lbl}>Description</label><input style={inp} value={form.description_emplacement} onChange={e => setForm({...form, description_emplacement: e.target.value})} placeholder="Garage fermé, box, place découverte..." /></div>

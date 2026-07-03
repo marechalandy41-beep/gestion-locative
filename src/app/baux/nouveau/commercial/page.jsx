@@ -317,6 +317,13 @@ async function chargerLots(bienId) {
       }
 
       if (bailError) { alert('Erreur : ' + bailError.message); setLoading(false); return }
+
+      if (lotsSelectionnes.length > 0) {
+        await supabase.from('lots')
+          .update({ statut: 'loue', bail_id: bail.id })
+          .in('id', lotsSelectionnes.map(l => l.id))
+      }
+
       await fetch('/api/sync-quantity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }).catch(() => {})
       setLoading(false)
       window.location.href = `/baux/${bail.id}`
