@@ -52,11 +52,13 @@ export default function Biens() {
   const [showForm, setShowForm] = useState(false);
   const [newBien, setNewBien] = useState(formVide);
   const [etapeForm, setEtapeForm] = useState(1);
+  const [lotsNouveauBien, setLotsNouveauBien] = useState([])
   const [user, setUser] = useState(null);
   const [isMobile, setIsMobile] = useState(false)
   const [showLotForm, setShowLotForm] = useState(null) // bien_id du lot en cours
 const [newLot, setNewLot] = useState({ nom: '', surface: '', etage: '', description: '' })
 const [savingLot, setSavingLot] = useState(false)
+
 
 useEffect(() => {
   const check = () => setIsMobile(window.innerWidth < 768)
@@ -132,7 +134,15 @@ async function supprimerLot(lotId, bienId) {
       user_id: user.id,
     }]);
     if (!error) {
-      setShowForm(false); setNewBien(formVide); setEtapeForm(1); chargerBiens(user.id);
+  if (lotsNouveauBien.length > 0) {
+    const { data: bienData } = await supabase.from('Biens').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).single()
+    if (bienData) {
+      for (const lot of lotsNouveauBien) {
+        await supabase.from('lots').insert({ bien_id: bienData.id, user_id: user.id, nom: lot.nom, surface: parseFloat(lot.surface) || null, etage: lot.etage || null, statut: 'vacant' })
+      }
+    }
+  }
+  setShowForm(false); setNewBien(formVide); setEtapeForm(1); setLotsNouveauBien([]); chargerBiens(user.id);
     } else { console.log('Erreur:', error); }
   }
 
@@ -273,6 +283,25 @@ async function supprimerLot(lotId, bienId) {
                     ))}
                   </div>
                 )}
+
+<div style={{ marginBottom: 20 }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+    <label style={labelStyle}>Lots (optionnel)</label>
+    <button type="button" onClick={() => setLotsNouveauBien([...lotsNouveauBien, { nom: '', surface: '', etage: '' }])}
+      style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+      + Ajouter un lot
+    </button>
+  </div>
+  {lotsNouveauBien.map((lot, i) => (
+    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+      <input placeholder="Nom du lot *" value={lot.nom} onChange={e => { const n = [...lotsNouveauBien]; n[i].nom = e.target.value; setLotsNouveauBien(n) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
+      <input placeholder="Surface m²" type="number" value={lot.surface} onChange={e => { const n = [...lotsNouveauBien]; n[i].surface = e.target.value; setLotsNouveauBien(n) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
+      <input placeholder="Étage" value={lot.etage} onChange={e => { const n = [...lotsNouveauBien]; n[i].etage = e.target.value; setLotsNouveauBien(n) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
+      <button onClick={() => setLotsNouveauBien(lotsNouveauBien.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 18 }}>×</button>
+    </div>
+  ))}
+</div>
+
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={ajouterBien}
                     style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
