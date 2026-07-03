@@ -427,9 +427,10 @@ async function chargerLots(bienId) {
   <div style={{ marginTop: 12, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: 14 }}>
     <p style={{ fontSize: 13, fontWeight: 700, color: '#ea580c', marginBottom: 10 }}>🏢 Sélectionnez les lots concernés par ce bail</p>
     {lotsDisponibles.map(lot => (
-      <label key={lot.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
+      <label key={lot.id || lot.nom} htmlFor={`lot-${lot.id || lot.nom}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
         <input type="checkbox"
-          checked={lotsSelectionnes.some(l => l.id === lot.id)}
+  id={`lot-${lot.id || lot.nom}`}
+  checked={lotsSelectionnes.some(l => l.id === lot.id)}
           onChange={e => {
             if (e.target.checked) {
               const nouveauxLots = [...lotsSelectionnes, lot]

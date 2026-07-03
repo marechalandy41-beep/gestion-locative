@@ -162,7 +162,7 @@ export default function NouveauBail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {typesBail.map(type => (
                 <div key={type.id}
-                  onClick={() => window.location.href = getRedirection(type.id)}
+                  onClick={() => window.location.href = '/baux/nouveau/' + type.id}
                   style={{ background: type.bg, borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: `2px solid transparent`, transition: 'border 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.border = `2px solid ${type.border}`}
                   onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
