@@ -316,8 +316,8 @@ async function supprimerLot(lotId, bienId) {
                     {lots[bien.id].length === 0 ? (
                       <p style={{ fontSize: 13, color: '#9ca3af' }}>Aucun lot enregistré</p>
                     ) : (
-                      lots[bien.id].map(lot => (
-  <div key={lot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' }}>
+                      lots[bien.id].map((lot, idx) => (
+  <div key={lot.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' }}>
     <div>
       <p style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</p>
       <p style={{ fontSize: 11, color: '#9ca3af' }}>{lot.surface ? `${lot.surface} m²` : ''}{lot.etage ? ` — ${lot.etage}` : ''}</p>
