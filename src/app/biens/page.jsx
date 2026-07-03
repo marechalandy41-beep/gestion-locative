@@ -110,8 +110,12 @@ async function ajouterLot(bienId) {
 
 async function supprimerLot(lotId, bienId) {
   if (!confirm('Supprimer ce lot ?')) return
-  await supabase.from('lots').delete().eq('id', lotId)
-  setLots(prev => ({ ...prev, [bienId]: prev[bienId].filter(l => l.id !== lotId) }))
+  const { error } = await supabase.from('lots').delete().eq('id', lotId)
+  if (error) { alert('Erreur : ' + error.message); return }
+  // Recharger depuis la base pour être sûr
+  setLots(prev => ({ ...prev, [bienId]: null }))
+  const { data } = await supabase.from('lots').select('*').eq('bien_id', bienId)
+  setLots(prev => ({ ...prev, [bienId]: data || [] }))
 }
 
   async function ajouterBien() {
