@@ -10,6 +10,8 @@ export default function NouveauBailCommercial() {
   const [etape, setEtape] = useState(1)
   const [plan, setPlan] = useState('')
   const [bailIdExistant, setBailIdExistant] = useState(null)
+  const [lotsDisponibles, setLotsDisponibles] = useState([])
+const [lotsSelectionnes, setLotsSelectionnes] = useState([])
   const [signatureBailleur, setSignatureBailleur] = useState(null)
   const [signatureLocataire, setSignatureLocataire] = useState(null)
   const [signatureActive, setSignatureActive] = useState(null)
@@ -105,6 +107,12 @@ export default function NouveauBailCommercial() {
     else setSignatureLocataire(dataUrl)
     setSignatureActive(null); effacer()
   }
+
+async function chargerLots(bienId) {
+  const { data } = await supabase.from('lots').select('*').eq('bien_id', bienId)
+  setLotsDisponibles(data || [])
+  setLotsSelectionnes([])
+}
 
   function sanitize(nom) {
     return (nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_')
@@ -404,15 +412,58 @@ export default function NouveauBailCommercial() {
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>🏢 Locaux & conditions financières</h3>
               <div style={{ marginBottom: 14 }}>
-                <label style={lbl}>Bien concerné *</label>
-                <select style={inp} value={form.bien_id} onChange={e => {
-                  const b = biens.find(b => b.id === parseInt(e.target.value))
-                  setForm({...form, bien_id: e.target.value, surface_habitable: b?.surface?.toString() || '', etage: b?.etage || '', numero_lot: b?.numero_lot || ''})
-                }}>
+  <label style={lbl}>Bien concerné *</label>
+  <select style={inp} value={form.bien_id} onChange={e => {
+    const b = biens.find(b => b.id === parseInt(e.target.value))
+    setForm({...form, bien_id: e.target.value, surface_habitable: b?.surface?.toString() || '', etage: b?.etage || '', numero_lot: b?.numero_lot || ''})
+    if (e.target.value) chargerLots(parseInt(e.target.value))
+    else { setLotsDisponibles([]); setLotsSelectionnes([]) }
+  }}>
                   <option value="">— Sélectionnez un bien —</option>
                   {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
                 </select>
               </div>
+              {lotsDisponibles.length > 0 && (
+  <div style={{ marginTop: 12, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: 14 }}>
+    <p style={{ fontSize: 13, fontWeight: 700, color: '#ea580c', marginBottom: 10 }}>🏢 Sélectionnez les lots concernés par ce bail</p>
+    {lotsDisponibles.map(lot => (
+      <label key={lot.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
+        <input type="checkbox"
+          checked={lotsSelectionnes.some(l => l.id === lot.id)}
+          onChange={e => {
+            if (e.target.checked) {
+              const nouveauxLots = [...lotsSelectionnes, lot]
+              setLotsSelectionnes(nouveauxLots)
+              // Calcul auto surface totale
+              const surfaceTotale = nouveauxLots.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)
+              if (surfaceTotale > 0) setForm(f => ({...f, surface_habitable: surfaceTotale.toString()}))
+              // Concat les noms de lots
+              setForm(f => ({...f, numero_lot: nouveauxLots.map(l => l.nom).join(', ')}))
+            } else {
+              const nouveauxLots = lotsSelectionnes.filter(l => l.id !== lot.id)
+              setLotsSelectionnes(nouveauxLots)
+              const surfaceTotale = nouveauxLots.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)
+              if (surfaceTotale > 0) setForm(f => ({...f, surface_habitable: surfaceTotale.toString()}))
+              setForm(f => ({...f, numero_lot: nouveauxLots.map(l => l.nom).join(', ')}))
+            }
+          }}
+          style={{ width: 16, height: 16 }} />
+        <div>
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</span>
+          {lot.surface && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>{lot.surface} m²</span>}
+          {lot.etage && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>— {lot.etage}</span>}
+        </div>
+      </label>
+    ))}
+    {lotsSelectionnes.length > 0 && (
+      <div style={{ background: 'white', borderRadius: 8, padding: 10, marginTop: 8, border: '1px solid #fed7aa' }}>
+        <p style={{ fontSize: 12, color: '#ea580c', margin: 0, fontWeight: 600 }}>
+          ✅ {lotsSelectionnes.length} lot{lotsSelectionnes.length > 1 ? 's' : ''} sélectionné{lotsSelectionnes.length > 1 ? 's' : ''} — Surface totale : {lotsSelectionnes.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)} m²
+        </p>
+      </div>
+    )}
+  </div>
+)}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div><label style={lbl}>Surface (m²)</label><input style={inp} type="number" value={form.surface_habitable} onChange={e => setForm({...form, surface_habitable: e.target.value})} placeholder="120" /></div>
                 <div><label style={lbl}>Étage / Bât.</label><input style={inp} value={form.etage} onChange={e => setForm({...form, etage: e.target.value})} placeholder="RDC" /></div>
