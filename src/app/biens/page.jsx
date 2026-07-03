@@ -54,6 +54,9 @@ export default function Biens() {
   const [etapeForm, setEtapeForm] = useState(1);
   const [user, setUser] = useState(null);
   const [isMobile, setIsMobile] = useState(false)
+  const [showLotForm, setShowLotForm] = useState(null) // bien_id du lot en cours
+const [newLot, setNewLot] = useState({ nom: '', surface: '', etage: '', description: '' })
+const [savingLot, setSavingLot] = useState(false)
 
 useEffect(() => {
   const check = () => setIsMobile(window.innerWidth < 768)
@@ -81,6 +84,33 @@ useEffect(() => {
     const { data, error } = await supabase.from('lots').select('*').eq('bien_id', bienId);
     if (!error) setLots(prev => ({ ...prev, [bienId]: data }));
   }
+
+async function ajouterLot(bienId) {
+  if (!newLot.nom) { alert('Nom du lot obligatoire.'); return }
+  setSavingLot(true)
+  const { error } = await supabase.from('lots').insert({
+    bien_id: bienId,
+    user_id: user.id,
+    nom: newLot.nom,
+    surface: parseFloat(newLot.surface) || null,
+    etage: newLot.etage || null,
+    description: newLot.description || null,
+    statut: 'vacant',
+  })
+  if (!error) {
+    setNewLot({ nom: '', surface: '', etage: '', description: '' })
+    setShowLotForm(null)
+    setLots(prev => ({ ...prev, [bienId]: null })) // force reload
+    await chargerLots(bienId)
+  } else { alert('Erreur : ' + error.message) }
+  setSavingLot(false)
+}
+
+async function supprimerLot(lotId, bienId) {
+  if (!confirm('Supprimer ce lot ?')) return
+  await supabase.from('lots').delete().eq('id', lotId)
+  setLots(prev => ({ ...prev, [bienId]: prev[bienId].filter(l => l.id !== lotId) }))
+}
 
   async function ajouterBien() {
     if (!newBien.nom || !newBien.rue || !newBien.code_postal || !newBien.ville) return;
@@ -287,21 +317,48 @@ useEffect(() => {
                       <p style={{ fontSize: 13, color: '#9ca3af' }}>Aucun lot enregistré</p>
                     ) : (
                       lots[bien.id].map(lot => (
-                        <div key={lot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' }}>
-                          <div>
-                            <p style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</p>
-                            <p style={{ fontSize: 11, color: '#9ca3af' }}>{lot.surface} m²</p>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, background: lot.statut === 'loue' ? '#dcfce7' : '#fef3c7', color: lot.statut === 'loue' ? '#15803d' : '#d97706' }}>
-                            {lot.statut === 'loue' ? '✓ Loué' : '⏳ Vacant'}
-                          </span>
-                        </div>
+  <div key={lot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' }}>
+    <div>
+      <p style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</p>
+      <p style={{ fontSize: 11, color: '#9ca3af' }}>{lot.surface ? `${lot.surface} m²` : ''}{lot.etage ? ` — ${lot.etage}` : ''}</p>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, background: lot.statut === 'loue' ? '#dcfce7' : '#fef3c7', color: lot.statut === 'loue' ? '#15803d' : '#d97706' }}>
+        {lot.statut === 'loue' ? '✓ Loué' : '⏳ Vacant'}
+      </span>
+      <button onClick={e => { e.stopPropagation(); supprimerLot(lot.id, bien.id) }} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 14, padding: 2 }}>🗑</button>
+    </div>
+  </div>
                       ))
                     )}
+
+{showLotForm === bien.id && (
+  <div style={{ background: '#f9fafb', borderRadius: 10, padding: 12, marginTop: 8, border: '1px solid #e5e7eb' }} onClick={e => e.stopPropagation()}>
+    <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Nouveau lot</p>
+    <input placeholder="Nom du lot *" value={newLot.nom} onChange={e => setNewLot({...newLot, nom: e.target.value})}
+      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 6, boxSizing: 'border-box' }} />
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+      <input placeholder="Surface (m²)" type="number" value={newLot.surface} onChange={e => setNewLot({...newLot, surface: e.target.value})}
+        style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px 10px', fontSize: 12, width: '100%', boxSizing: 'border-box' }} />
+      <input placeholder="Étage / Niveau" value={newLot.etage} onChange={e => setNewLot({...newLot, etage: e.target.value})}
+        style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px 10px', fontSize: 12, width: '100%', boxSizing: 'border-box' }} />
+    </div>
+    <input placeholder="Description (optionnel)" value={newLot.description} onChange={e => setNewLot({...newLot, description: e.target.value})}
+      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 8, boxSizing: 'border-box' }} />
+    <div style={{ display: 'flex', gap: 6 }}>
+      <button onClick={() => setShowLotForm(null)} style={{ flex: 1, background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', fontSize: 12 }}>Annuler</button>
+      <button onClick={() => ajouterLot(bien.id)} disabled={savingLot} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+        {savingLot ? '...' : '✅ Ajouter'}
+      </button>
+    </div>
+  </div>
+)}
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
-                      <button style={{ background: '#f3f4f6', color: '#374151', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
-                        + Lot
-                      </button>
+                      <button onClick={e => { e.stopPropagation(); setShowLotForm(showLotForm === bien.id ? null : bien.id); setNewLot({ nom: '', surface: '', etage: '', description: '' }) }}
+  style={{ background: '#f3f4f6', color: '#374151', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+  + Lot
+</button>
                       <button onClick={e => { e.stopPropagation(); window.location.href = '/coffre-fort?bien=' + bien.id; }}
                         style={{ background: '#eff6ff', color: '#2563eb', padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
                         📁 Coffre-fort
