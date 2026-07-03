@@ -51,18 +51,12 @@ export default function NouveauBail() {
     { id: 'non-meuble', emoji: '🏠', label: 'Non meublé', desc: 'Loi 89-462 — Durée minimale 3 ans', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
     { id: 'meuble', emoji: '🛋️', label: 'Meublé', desc: 'Loi 89-462 — Durée minimale 1 an', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
     { id: 'commercial', emoji: '🏢', label: 'Commercial (3-6-9)', desc: 'Loi 1953 — Durée minimale 9 ans', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-    { id: 'colocation-non-meuble', emoji: '👥', label: 'Colocation non meublée', desc: 'Plusieurs locataires — 1 seule brique facturée', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-    { id: 'colocation-meuble', emoji: '👥🛋️', label: 'Colocation meublée', desc: 'Plusieurs locataires — logement équipé', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    { id: 'parking', emoji: '🅿️', label: 'Parking / Garage', desc: 'Bail libre — non encadré par la loi 89-462', color: '#ca8a04', bg: '#fefce8', border: '#fde047' },
+   { id: 'parking', emoji: '🅿️', label: 'Parking / Garage', desc: 'Bail libre — non encadré par la loi 89-462', color: '#ca8a04', bg: '#fefce8', border: '#fde047' },
     { id: 'etudiant', emoji: '🎓', label: 'Bail étudiant', desc: 'Meublé — Durée 9 mois non renouvelable', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
     { id: 'mobilite', emoji: '⚡', label: 'Bail mobilité', desc: 'Meublé — Durée 1 à 10 mois', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
     { id: 'autre', emoji: '📦', label: 'Autre', desc: 'Stockage, cave, local divers...', color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
   ]
 
-  const getRedirection = (id) => {
-    if (id === 'colocation-non-meuble' || id === 'colocation-meuble') return '/baux/nouveau-colocation'
-    return `/baux/nouveau/${id}`
-  }
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb', padding: '40px 16px' }}>
