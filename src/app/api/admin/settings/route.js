@@ -23,8 +23,7 @@ export async function POST(request) {
     const { cle, valeur } = await request.json();
     const { error } = await supabase
       .from('settings')
-      .update({ valeur })
-      .eq('cle', cle);
+      .upsert({ cle, valeur }, { onConflict: 'cle' });
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -631,6 +631,29 @@ async function ouvrirConversationAdmin(conv) {
             )}
 
            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>🚦 Mode du site</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Basculez entre la page "Bientôt disponible" et la landing page complète.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div onClick={async () => {
+                  const newVal = settings.coming_soon === 'true' ? 'false' : 'true'
+                  setSettings(prev => ({ ...prev, coming_soon: newVal }))
+                  await sauvegarderSetting('coming_soon', newVal)
+                }}
+                  style={{ width: 52, height: 28, borderRadius: 99, background: settings.coming_soon === 'true' ? '#2563eb' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 4, left: settings.coming_soon === 'true' ? 28 : 4, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+                </div>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>
+                    {settings.coming_soon === 'true' ? '🔒 Mode Coming Soon activé' : '🌐 Landing page complète activée'}
+                  </p>
+                  <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0' }}>
+                    {settings.coming_soon === 'true' ? 'Les visiteurs voient la page "Bientôt disponible"' : 'Les visiteurs voient la landing page complète'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+           <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>💰 Prix des plans</h3>
               <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 20px' }}>⚠️ Modifier un prix crée un nouveau tarif sur Stripe. Les abonnés existants ne sont pas affectés rétroactivement.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
