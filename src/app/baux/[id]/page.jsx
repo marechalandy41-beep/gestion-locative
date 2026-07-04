@@ -11,6 +11,9 @@ export default function DetailBail() {
   const [editContact, setEditContact] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newTel, setNewTel] = useState('');
+  const [editPayeur, setEditPayeur] = useState(false);
+  const [newPayeurPrenom, setNewPayeurPrenom] = useState('');
+  const [newPayeurNom, setNewPayeurNom] = useState('');
   const [sending, setSending] = useState(false);
   const [emailToast, setEmailToast] = useState(null);
   const [sendingRelance, setSendingRelance] = useState(false);
@@ -348,6 +351,56 @@ useEffect(() => {
               {info('Nationalité', bail.locataire_nationalite)}
               {info('Profession', bail.locataire_profession)}
               {info('Adresse actuelle', bail.locataire_adresse)}
+
+              {/* ===== PAYEUR ===== */}
+              <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#854d0e', margin: '0 0 8px' }}>💳 Payeur du loyer</p>
+                {!editPayeur ? (
+                  <div>
+                    <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px' }}>
+                      {bail.payeur_prenom || bail.payeur_nom
+                        ? `${bail.payeur_prenom || ''} ${bail.payeur_nom || ''}`.trim()
+                        : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Identique au locataire</span>}
+                    </p>
+                    <button onClick={() => { setNewPayeurPrenom(bail.payeur_prenom || ''); setNewPayeurNom(bail.payeur_nom || ''); setEditPayeur(true); }}
+                      style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                      ✏️ Modifier le payeur
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Prénom du payeur</label>
+                        <input value={newPayeurPrenom} onChange={e => setNewPayeurPrenom(e.target.value)}
+                          placeholder="Ex : Marie (mère du locataire)"
+                          style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Nom du payeur</label>
+                        <input value={newPayeurNom} onChange={e => setNewPayeurNom(e.target.value)}
+                          placeholder="Ex : Dupont"
+                          style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 11, color: '#92400e', margin: '0 0 8px' }}>ℹ️ Laissez vide si le locataire paie lui-même. Bridge recherchera ce nom dans le libellé du virement.</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setEditPayeur(false)}
+                        style={{ flex: 1, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                        Annuler
+                      </button>
+                      <button onClick={async () => {
+                        const { error } = await supabase.from('Baux').update({ payeur_prenom: newPayeurPrenom || null, payeur_nom: newPayeurNom || null }).eq('id', bail.id);
+                        if (!error) { setBail({ ...bail, payeur_prenom: newPayeurPrenom || null, payeur_nom: newPayeurNom || null }); setEditPayeur(false); }
+                        else { alert('Erreur : ' + error.message); }
+                      }}
+                        style={{ flex: 2, background: '#ca8a04', color: 'white', border: 'none', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                        ✅ Sauvegarder
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {section('🏢 Bien loué')}
               {info('Adresse', bien?.adresse)}

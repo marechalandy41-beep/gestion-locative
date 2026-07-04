@@ -333,9 +333,14 @@ export default function NouveauBailParking() {
                 <div><label style={lbl}>Date de fin (optionnel)</label><input style={inp} type="date" value={form.date_fin} onChange={e => setForm({...form, date_fin: e.target.value})} /></div>
               </div>
               <div style={{ marginBottom: 20 }}><label style={lbl}>Clauses particulières</label><textarea style={{ ...inp, minHeight: 80, resize: 'vertical' }} value={form.clauses} onChange={e => setForm({...form, clauses: e.target.value})} placeholder="Ex : accès 24h/24, pas de stockage de matières dangereuses..." /></div>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
+                  💳 <strong>Payeur différent du locataire ?</strong> (ex : parents d'un étudiant) Vous pourrez renseigner le nom du payeur une fois le bail signé, depuis la page détail du bail.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                 <button onClick={() => setEtape(1)} style={{ flex: 1, background: '#f3f4f6', color: '#374151', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600 }}>← Retour</button>
-                <button onClick={() => { if (!form.bien_id || !form.loyer_hc || !form.date_debut) { alert('Bien, loyer et date de début obligatoires.'); return } setEtape(3) }}
+                <button onClick={() => { if (!form.locataire_prenom || !form.locataire_nom || !form.locataire_email) { alert('Prénom, nom et email obligatoires.'); return } setEtape(3) }}
                   style={{ flex: 2, background: '#ca8a04', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>
                   Passer à la signature →
                 </button>

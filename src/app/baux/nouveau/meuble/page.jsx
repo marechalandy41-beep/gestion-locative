@@ -422,6 +422,11 @@ export default function NouveauBailMeuble() {
                 <div><label style={lbl}>Profession</label><input style={inp} value={form.locataire_profession} onChange={e => setForm({...form, locataire_profession: e.target.value})} placeholder="Salarié, étudiant..." /></div>
                 <div><label style={lbl}>Adresse actuelle</label><input style={inp} value={form.locataire_adresse} onChange={e => setForm({...form, locataire_adresse: e.target.value})} placeholder="Adresse actuelle" /></div>
               </div>
+              <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
+                  💳 <strong>Payeur différent du locataire ?</strong> (ex : parents d'un étudiant) Vous pourrez renseigner le nom du payeur une fois le bail signé, depuis la page détail du bail.
+                </p>
+              </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                 <button onClick={() => setEtape(1)} style={{ flex: 1, background: '#f3f4f6', color: '#374151', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600 }}>← Retour</button>
                 <button onClick={() => { if (!form.locataire_prenom || !form.locataire_nom || !form.locataire_email) { alert('Prénom, nom et email obligatoires.'); return } setEtape(3) }}
