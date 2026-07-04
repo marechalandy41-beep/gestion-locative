@@ -125,19 +125,31 @@ export default function ConnexionBancaire() {
   function detecterLoyers(transactions, baux) {
     const matches = [];
     const maintenant = new Date();
-    const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+    // 3 derniers mois au lieu du mois en cours uniquement
+    const debut3Mois = new Date(maintenant.getFullYear(), maintenant.getMonth() - 2, 1);
     for (const tx of transactions) {
       if (tx.amount <= 0) continue;
       const dateTx = new Date(tx.date || tx.transaction_date);
-      if (dateTx < debutMois) continue;
+      if (dateTx < debut3Mois) continue;
       for (const bail of baux) {
         const loyer = parseFloat(bail.loyer_hc) + parseFloat(bail.charges || 0);
         const tolerance = loyer * 0.02;
         if (Math.abs(tx.amount - loyer) <= tolerance) {
           const libelle = (tx.label || tx.description || '').toLowerCase();
-          const nomLocataire = (bail.locataire_nom || '').toLowerCase();
-          const scoreNom = nomLocataire && libelle.includes(nomLocataire) ? 2 : 0;
-          matches.push({ transaction: tx, bail, score: scoreNom + 1, confiance: scoreNom > 0 ? 'haute' : 'moyenne' });
+          // Cherche le payeur en priorité, sinon le locataire
+          const nomRecherche = (bail.payeur_nom || bail.locataire_nom || '').toLowerCase()
+          const prenomRecherche = (bail.payeur_prenom || bail.locataire_prenom || '').toLowerCase()
+          const scoreNom = nomRecherche && libelle.includes(nomRecherche) ? 2 : 0;
+          const scorePrenom = prenomRecherche && libelle.includes(prenomRecherche) ? 1 : 0;
+          const score = scoreNom + scorePrenom + 1;
+          const confiance = scoreNom > 0 ? 'haute' : scorePrenom > 0 ? 'moyenne' : 'faible';
+          // Éviter les doublons (même bail, même mois)
+          const moisTx = dateTx.getMonth();
+          const anneeTx = dateTx.getFullYear();
+          const dejaPresent = matches.some(m => m.bail.id === bail.id && m.moisTx === moisTx && m.anneeTx === anneeTx);
+          if (!dejaPresent) {
+            matches.push({ transaction: tx, bail, score, confiance, moisTx, anneeTx });
+          }
           break;
         }
       }
