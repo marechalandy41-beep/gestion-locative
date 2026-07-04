@@ -10,6 +10,29 @@ const CATEGORIES = [
   'Acte de propriété', 'Autre'
 ]
 
+const VALIDITE_CATEGORIES = {
+  'DPE': { dureeAns: 10, label: '10 ans' },
+  'Diagnostic électricité': { dureeAns: 3, label: '3 ans' },
+  'Diagnostic gaz': { dureeAns: 3, label: '3 ans' },
+  'Diagnostic amiante': { dureeAns: null, label: 'Illimité' },
+  'Diagnostic plomb': { dureeAns: null, label: 'Illimité' },
+}
+
+function getStatutValidite(doc) {
+  const regle = VALIDITE_CATEGORIES[doc.categorie]
+  if (!regle || regle.dureeAns === null) return null
+  if (!doc.date_document) return { statut: 'inconnu', label: 'Date du document manquante', bg: '#f3f4f6', color: '#6b7280' }
+  const dateDoc = new Date(doc.date_document)
+  const dateExpiration = new Date(dateDoc)
+  dateExpiration.setFullYear(dateExpiration.getFullYear() + regle.dureeAns)
+  const maintenant = new Date()
+  const moisRestants = (dateExpiration.getFullYear() - maintenant.getFullYear()) * 12 + (dateExpiration.getMonth() - maintenant.getMonth())
+  const anneeExp = dateExpiration.getFullYear()
+  if (dateExpiration < maintenant) return { statut: 'expire', label: 'Expiré', bg: '#fee2e2', color: '#dc2626' }
+  if (moisRestants <= 12) return { statut: 'bientot', label: `Expire en ${anneeExp}`, bg: '#fef9c3', color: '#ca8a04' }
+  return { statut: 'valide', label: `Valide jusqu'en ${anneeExp}`, bg: '#dcfce7', color: '#16a34a' }
+}
+
 export default function CoffreFort() {
   const [user, setUser] = useState(null)
   const [biens, setBiens] = useState([])
@@ -23,6 +46,7 @@ export default function CoffreFort() {
   const [uploadBienId, setUploadBienId] = useState('')
   const [uploadCategorie, setUploadCategorie] = useState('Autre')
   const [uploadAnnee, setUploadAnnee] = useState(new Date().getFullYear().toString())
+  const [uploadDateDocument, setUploadDateDocument] = useState('')
   const [showUpload, setShowUpload] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarOuverte, setSidebarOuverte] = useState(false)
@@ -84,6 +108,7 @@ export default function CoffreFort() {
         storage_path: nomFichier,
         url: urlData.publicUrl,
         taille: fichier.size,
+        date_document: uploadDateDocument || null,
       }])
       if (insertError) { setMessage('❌ Erreur sauvegarde : ' + insertError.message); setUploading(false); return }
       setMessage('✅ Document ajouté avec succès !')
@@ -225,6 +250,19 @@ export default function CoffreFort() {
                       {[2022,2023,2024,2025,2026,2027].map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
                   </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
+                      Date du document
+                      {VALIDITE_CATEGORIES[uploadCategorie] && <span style={{ color: '#dc2626' }}> *</span>}
+                    </label>
+                    <input type="date" style={inp} value={uploadDateDocument} onChange={e => setUploadDateDocument(e.target.value)}
+                      placeholder="Date d'établissement du document" />
+                    {VALIDITE_CATEGORIES[uploadCategorie] && (
+                      <p style={{ fontSize: 11, color: '#6b7280', margin: '4px 0 0' }}>
+                        ℹ️ Durée de validité : {VALIDITE_CATEGORIES[uploadCategorie].label}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <input type="file" id="file-upload" style={{ display: 'none' }}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={handleUpload} />
@@ -265,7 +303,14 @@ export default function CoffreFort() {
                 {docsFiltres.map(doc => (
                   <div key={doc.id} style={{ background: 'white', borderRadius: 12, padding: isMobile ? '12px 16px' : '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {doc.nom_fichier}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <p style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {doc.nom_fichier}</p>
+                        {(() => { const v = getStatutValidite(doc); return v ? (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: v.bg, color: v.color, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            {v.statut === 'expire' ? '⚠️' : v.statut === 'bientot' ? '⏳' : '✅'} {v.label}
+                          </span>
+                        ) : null })()}
+                      </div>
                       <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, margin: '4px 0 0' }}>
                         🏠 {doc.Biens?.nom} — 📂 {doc.categorie} — 📅 {doc.annee}
                         {doc.taille ? ` — ${(doc.taille / 1024).toFixed(0)} Ko` : ''}
