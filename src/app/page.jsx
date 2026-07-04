@@ -176,19 +176,10 @@ export default function Home() {
           <p style={{ fontSize: 16, color: '#047857', lineHeight: 1.7, margin: '0 0 24px' }}>
             En tant que propriétaire bailleur, l'abonnement Ma Gestion-Locative est déductible de vos revenus fonciers au titre de l'article 31 du CGI (frais de gestion et d'administration). 
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {[
-              { label: 'Tranche 11%', avant: `${prixAuto}€`, apres: `${(parseFloat(prixAuto) * 0.89).toFixed(2)}€` },
-              { label: 'Tranche 30%', avant: `${prixAuto}€`, apres: `${(parseFloat(prixAuto) * 0.70).toFixed(2)}€` },
-              { label: 'Tranche 41%', avant: `${prixAuto}€`, apres: `${(parseFloat(prixAuto) * 0.59).toFixed(2)}€` },
-            ].map((t, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 12, padding: 20 }}>
-                <p style={{ color: '#6b7280', fontSize: 12, margin: '0 0 8px', fontWeight: 600 }}>{t.label}</p>
-                <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 4px', textDecoration: 'line-through' }}>{t.avant}/bail/mois</p>
-                <p style={{ color: '#065f46', fontSize: 22, fontWeight: 700, margin: 0 }}>{t.apres}/bail/mois</p>
-                <p style={{ color: '#6b7280', fontSize: 11, margin: '4px 0 0' }}>après déduction</p>
-              </div>
-            ))}
+          <div style={{ background: 'white', borderRadius: 12, padding: 20, display: 'inline-block', marginTop: 8 }}>
+            <p style={{ color: '#065f46', fontSize: 15, fontWeight: 600, margin: 0 }}>
+              💰 Selon votre tranche d'imposition, votre coût réel après déduction peut être significativement réduit. Consultez votre conseiller fiscal pour plus d'informations.
+            </p>
           </div>
         </div>
       </section>
