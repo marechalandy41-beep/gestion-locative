@@ -14,6 +14,7 @@ const moisLabels = {
 export default function ConnexionBancaire() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [comptes, setComptes] = useState([]);
   const [accessToken, setAccessToken] = useState(null);
@@ -29,6 +30,8 @@ export default function ConnexionBancaire() {
       if (!data.user) { router.push('/auth'); return; }
       setUser(data.user);
       chargerBaux(data.user.id);
+      const { data: customer } = await supabase.from('customers').select('plan').eq('user_id', data.user.id).single()
+      setPlan(customer?.plan || 'gratuit')
 
       const params = new URLSearchParams(window.location.search);
       if (params.get('bridge_callback') === 'true') {
@@ -292,7 +295,18 @@ export default function ConnexionBancaire() {
           </div>
         )}
 
-        {etape === 'accueil' && (
+        {plan && plan !== 'automatique' && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: 32, textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#dc2626', marginBottom: 8 }}>Fonctionnalité réservée au plan Automatique</h2>
+            <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>La connexion bancaire et la génération automatique de quittances sont disponibles uniquement avec le plan Automatique.</p>
+            <a href="/compte" style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
+              Passer au plan Automatique →
+            </a>
+          </div>
+        )}
+
+        {etape === 'accueil' && plan === 'automatique' && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>🏦</div>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Connexion bancaire</h1>
@@ -335,7 +349,7 @@ export default function ConnexionBancaire() {
           </div>
         )}
 
-        {etape === 'comptes' && (
+        {etape === 'comptes' && plan === 'automatique' && (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Vos comptes bancaires</h2>
             <p style={{ color: '#6b7280', marginBottom: 24 }}>Sélectionnez le compte sur lequel vous recevez les loyers.</p>
@@ -356,7 +370,7 @@ export default function ConnexionBancaire() {
           </div>
         )}
 
-        {etape === 'succes' && (
+        {etape === 'succes' && plan === 'automatique' && (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Virements détectés ce mois</h2>
             <p style={{ color: '#6b7280', marginBottom: 24 }}>Validez les loyers — la quittance sera générée et envoyée automatiquement.</p>
