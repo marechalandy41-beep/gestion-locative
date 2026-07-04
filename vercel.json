@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/relances",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/bridge-sync",
+      "schedule": "0 9 * * 1,4"
     }
   ]
 }

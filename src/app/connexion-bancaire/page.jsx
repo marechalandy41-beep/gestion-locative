@@ -105,6 +105,13 @@ export default function ConnexionBancaire() {
     setLoading(true);
     setErreur(null);
     try {
+      // Sauvegarder le token et l'account_id dans customers pour le cron
+      await supabase.from('customers').update({
+        bridge_access_token: accessToken,
+        bridge_account_id: accountId.toString(),
+        bridge_last_sync: new Date().toISOString(),
+      }).eq('user_id', user.id)
+
       const res = await fetch('/api/bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
