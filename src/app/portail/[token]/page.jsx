@@ -120,7 +120,7 @@ export default function PortailLocataire() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <nav style={{ background: '#2563eb', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>GestionLocative</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>Ma Gestion-Locative</span>
         <span style={{ fontSize: 13, color: '#bfdbfe' }}>Espace locataire</span>
       </nav>
 

@@ -183,7 +183,7 @@ export default function ConnexionBancaire() {
     doc.setFontSize(9); doc.setTextColor(150, 150, 150);
     doc.text('Signature du propriétaire', 14, y + 5);
     doc.setFontSize(8);
-    doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 290, { align: 'center' });
+    doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
     return doc.output('datauristring').split(',')[1];
   }
 

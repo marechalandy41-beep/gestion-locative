@@ -33,7 +33,7 @@ export default function RootLayout({
 );
 }
 export const metadata: Metadata = {
-  title: "GestionLocative — Gérez vos biens en toute simplicité",
+  title: "Ma Gestion-Locative — Gérez vos biens en toute simplicité",
   description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
   manifest: '/manifest.json',
   icons: {

@@ -266,7 +266,7 @@ async function chargerLots(bienId) {
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36)
       y += 44
       doc.setFontSize(7); doc.setTextColor(150, 150, 150)
-      doc.text('Document généré par GestionLocative — Statut des baux commerciaux — Loi du 30 septembre 1953', pageW / 2, y, { align: 'center' })
+      doc.text('Document généré par Ma Gestion-Locative — Statut des baux commerciaux — Loi du 30 septembre 1953', pageW / 2, y, { align: 'center' })
 
       const nomFichier = `Bail_Commercial_${sanitize(form.locataire_nom)}_${sanitize(form.bailleur_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)

@@ -78,7 +78,7 @@ export default function NouveauBailAutre() {
       doc.setFillColor(75, 85, 99); doc.rect(0, 0, 210, 20, 'F')
       doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
       doc.text('CONTRAT DE LOCATION', pageW / 2, 10, { align: 'center' })
-      doc.setFontSize(9); doc.text(`${form.type_location || 'Bail libre'} — Document généré par GestionLocative`, pageW / 2, 16, { align: 'center' })
+      doc.setFontSize(9); doc.text(`${form.type_location || 'Bail libre'} — Document généré par Ma Gestion-Locative`, pageW / 2, 16, { align: 'center' })
       y = 28; doc.setTextColor(0, 0, 0)
 
       titre('ARTICLE 1 — LE BAILLEUR')
@@ -117,7 +117,7 @@ export default function NouveauBailAutre() {
       doc.setDrawColor(180, 180, 180); doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38)
       if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 1, 78, 36)
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36)
-      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par GestionLocative', pageW / 2, y, { align: 'center' })
+      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par Ma Gestion-Locative', pageW / 2, y, { align: 'center' })
 
       const nomFichier = `Bail_${sanitize(form.type_location || 'Autre')}_${sanitize(form.locataire_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)

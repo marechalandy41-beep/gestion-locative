@@ -123,7 +123,7 @@ export default function NouveauBailEtudiant() {
       doc.setDrawColor(180, 180, 180); doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38)
       if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 1, 78, 36)
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36)
-      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par GestionLocative — Bail étudiant loi 89-462 art. 25-7', pageW / 2, y, { align: 'center' })
+      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par Ma Gestion-Locative — Bail étudiant loi 89-462 art. 25-7', pageW / 2, y, { align: 'center' })
 
       const nomFichier = `Bail_Etudiant_${sanitize(form.locataire_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)

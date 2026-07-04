@@ -23,19 +23,19 @@ export async function POST(req: NextRequest) {
           <li>Donner congé au locataire (préavis légal : 6 mois pour un bail non meublé, 3 mois pour un bail meublé)</li>
           <li>Ou laisser le bail se reconduire tacitement</li>
         </ul>
-        <p>Connectez-vous à votre espace GestionLocative pour gérer ce bail.</p>
+        <p>Connectez-vous à votre espace Ma Gestion-Locative pour gérer ce bail.</p>
       `,
       j30: `
         <p>Bonjour ${proprietaireNom},</p>
         <p>Rappel : votre bail pour le bien <strong>${bienNom}</strong> (locataire : ${locataireNom}) arrive à échéance le <strong>${dateFin}</strong>, soit dans environ 1 mois.</p>
         <p>Si vous n'avez pas encore donné congé, le bail sera reconduit tacitement automatiquement.</p>
-        <p>Connectez-vous à votre espace GestionLocative pour gérer ce bail.</p>
+        <p>Connectez-vous à votre espace Ma Gestion-Locative pour gérer ce bail.</p>
       `,
       reconduit: `
         <p>Bonjour ${proprietaireNom},</p>
         <p>Votre bail pour le bien <strong>${bienNom}</strong> (locataire : ${locataireNom}) a été <strong>reconduit tacitement</strong> à compter du <strong>${dateFin}</strong>.</p>
         <p>Il repart pour une nouvelle période. Aucune action n'est requise de votre part.</p>
-        <p>Connectez-vous à votre espace GestionLocative pour mettre à jour la date de fin si nécessaire.</p>
+        <p>Connectez-vous à votre espace Ma Gestion-Locative pour mettre à jour la date de fin si nécessaire.</p>
       `,
     }
 

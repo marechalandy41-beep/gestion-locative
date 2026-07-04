@@ -25,7 +25,7 @@ export async function POST(request) {
     zip.file('paiements.json', JSON.stringify(paiements.data || [], null, 2))
     zip.file('documents.json', JSON.stringify(documents.data || [], null, 2))
     zip.file('etats_des_lieux.json', JSON.stringify(edl.data || [], null, 2))
-    zip.file('info.txt', `Export RGPD — ${userEmail}\nDate : ${new Date().toLocaleDateString('fr-FR')}\nToutes vos données GestionLocative.`)
+    zip.file('info.txt', `Export RGPD — ${userEmail}\nDate : ${new Date().toLocaleDateString('fr-FR')}\nToutes vos données Ma Gestion-Locative.`)
 
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
 

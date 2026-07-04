@@ -32,7 +32,7 @@ export default function CGU() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <a href="/" style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>GestionLocative</a>
+        <a href="/" style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>Ma Gestion-Locative</a>
         <a href="/" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none' }}>← Retour</a>
       </nav>
 
@@ -62,7 +62,7 @@ export default function CGU() {
           <a href="/contact" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>Contact</a>
           <a href="/auth" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>Connexion</a>
         </div>
-        <p style={{ color: '#9ca3af', fontSize: 12, margin: 0 }}>© 2026 GestionLocative — {s.cgu_nom}</p>
+        <p style={{ color: '#9ca3af', fontSize: 12, margin: 0 }}>© 2026 Ma Gestion-Locative — {s.cgu_nom}</p>
       </footer>
     </main>
   )

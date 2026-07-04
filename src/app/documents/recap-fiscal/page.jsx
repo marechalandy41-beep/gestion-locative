@@ -289,7 +289,7 @@ const cheminStorage = `${user.id}/${bienId}/${categorieSlug}/${nomFichier}`
       doc.setFontSize(8)
       doc.setTextColor(150, 150, 150)
       doc.setFont('helvetica', 'normal')
-      doc.text(`Généré par GestionLocative.fr le ${new Date().toLocaleDateString('fr-FR')} — Document indicatif, consultez un expert-comptable.`, pageWidth / 2, 290, { align: 'center' })
+      doc.text(`Généré par Ma Gestion-Locative.fr le ${new Date().toLocaleDateString('fr-FR')} — Document indicatif, consultez un expert-comptable.`, pageWidth / 2, 290, { align: 'center' })
 
       const nomFichier = `Recap_fiscal_${annee}.pdf`
       doc.save(nomFichier)

@@ -14,7 +14,7 @@ export default function Home() {
     <main style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 560 }}>
         <div style={{ fontSize: 64, marginBottom: 24 }}>🏠</div>
-        <h1 style={{ fontSize: 42, fontWeight: 800, color: 'white', margin: '0 0 16px' }}>GestionLocative</h1>
+        <h1 style={{ fontSize: 42, fontWeight: 800, color: 'white', margin: '0 0 16px' }}>Ma Gestion-Locative</h1>
         <p style={{ fontSize: 20, color: '#bfdbfe', margin: '0 0 12px', fontWeight: 500 }}>Bientôt disponible</p>
         <p style={{ fontSize: 15, color: '#93c5fd', margin: '0 0 40px', lineHeight: 1.7 }}>
           La plateforme de gestion locative tout-en-un pour les propriétaires bailleurs. Baux, quittances, états des lieux, connexion bancaire — tout en un seul endroit.
@@ -51,7 +51,7 @@ export default function Home() {
         </div>
 
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 32 }}>
-          © 2026 GestionLocative — <a href="/cgu" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>CGU</a> — <a href="/contact" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Contact</a>
+          © 2026 Ma Gestion-Locative — <a href="/cgu" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>CGU</a> — <a href="/contact" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Contact</a>
         </p>
       </div>
     </main>

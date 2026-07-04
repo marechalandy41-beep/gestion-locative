@@ -34,7 +34,7 @@ export default function ResetPassword() {
   return (
     <main style={{minHeight:'100vh', background:'#f9fafb', display:'flex', alignItems:'center', justifyContent:'center'}}>
       <div style={{background:'white', borderRadius:20, padding:32, width:'100%', maxWidth:440, boxShadow:'0 1px 3px rgba(0,0,0,0.05)', border:'1px solid #f3f4f6'}}>
-        <h1 style={{fontSize:22, fontWeight:700, color:'#2563eb', textAlign:'center', marginBottom:8}}>GestionLocative</h1>
+        <h1 style={{fontSize:22, fontWeight:700, color:'#2563eb', textAlign:'center', marginBottom:8}}>Ma Gestion-Locative</h1>
         <h2 style={{fontSize:16, fontWeight:600, color:'#374151', textAlign:'center', marginBottom:24}}>Nouveau mot de passe</h2>
 
         {message && (

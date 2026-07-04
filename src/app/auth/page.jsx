@@ -76,7 +76,7 @@ export default function Auth() {
       <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, width: '100%', maxWidth: 440, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
 
         <a href="/" style={{ display: 'block', textAlign: 'center', marginBottom: 4, color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>← Retour au site</a>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', textAlign: 'center', marginBottom: 24 }}>GestionLocative</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', textAlign: 'center', marginBottom: 24 }}>Ma Gestion-Locative</h1>
 
         <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: 10, padding: 4, marginBottom: 24 }}>
           <button onClick={() => { setMode('connexion'); setErreur(''); setMessage(''); }}

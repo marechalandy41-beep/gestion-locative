@@ -260,7 +260,7 @@ export default function NouveauBailNonMeuble() {
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36)
       y += 44
       doc.setFontSize(7); doc.setTextColor(150, 150, 150)
-      doc.text('Document généré par GestionLocative — Conforme loi n°89-462 du 6 juillet 1989 et loi ALUR du 24 mars 2014', pageW / 2, y, { align: 'center' })
+      doc.text('Document généré par Ma Gestion-Locative — Conforme loi n°89-462 du 6 juillet 1989 et loi ALUR du 24 mars 2014', pageW / 2, y, { align: 'center' })
 
       // Téléchargement
       const nomFichier = `Bail_NonMeuble_${sanitize(form.locataire_nom)}_${sanitize(form.bailleur_nom)}_${form.date_debut || 'date'}.pdf`

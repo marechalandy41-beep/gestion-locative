@@ -79,13 +79,13 @@ export async function GET(request) {
       const proprietaireNom = `${bail.bailleur_prenom || ''} ${bail.bailleur_nom || ''}`.trim()
 
       await resend.emails.send({
-        from: 'GestionLocative <onboarding@resend.dev>',
+        from: 'Ma Gestion-Locative <onboarding@resend.dev>',
         to: [bail.locataire_email],
         subject: `Rappel loyer — ${moisNom} ${anneeActuelle} — ${bail.Biens?.nom || ''}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: #f59e0b; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 22px;">GestionLocative</h1>
+              <h1 style="color: white; margin: 0; font-size: 22px;">Ma Gestion-Locative</h1>
             </div>
             <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
               <p style="font-size: 16px; color: #111827;">Bonjour <strong>${bail.locataire_prenom} ${bail.locataire_nom}</strong>,</p>
@@ -100,7 +100,7 @@ export async function GET(request) {
               </div>
               <p style="color: #374151;">Merci de procéder au règlement dans les meilleurs délais.</p>
               <p style="color: #6b7280; font-size: 13px; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-                Ce message est envoyé automatiquement par GestionLocative. Merci de ne pas répondre directement à cet email.
+                Ce message est envoyé automatiquement par Ma Gestion-Locative. Merci de ne pas répondre directement à cet email.
               </p>
             </div>
           </div>

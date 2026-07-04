@@ -96,7 +96,7 @@ export function generateQuittance(data: QuittanceData): void {
   // Footer
   doc.setFontSize(8)
   doc.setTextColor(150)
-  doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 280, { align: 'center' })
+  doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 280, { align: 'center' })
 
   // Téléchargement
   doc.save(`quittance_${data.loyer.periode.replace(' ', '_')}_${data.locataire.nom}.pdf`)

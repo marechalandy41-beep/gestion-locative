@@ -179,7 +179,7 @@ export default function DetailEDL() {
 
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 290, { align: 'center' });
+    doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
 
     return doc;
   }

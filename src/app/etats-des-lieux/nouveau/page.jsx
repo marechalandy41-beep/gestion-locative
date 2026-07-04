@@ -158,7 +158,7 @@ export default function NouvelEDL() {
 
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text('Document généré par GestionLocative.fr', pageWidth / 2, 290, { align: 'center' });
+      doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
 
       const nomFichier = `EDL_${form.type}_${bailData.Biens?.nom}_${form.date_edl}.pdf`;
       const pdfBlob = doc.output('blob');
@@ -195,7 +195,7 @@ export default function NouvelEDL() {
   const nav = (
     <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
       <div style={{maxWidth:1280, margin:'0 auto', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-        <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>GestionLocative</a>
+        <a href="/dashboard" style={{fontSize:22, fontWeight:700, color:'#2563eb', textDecoration:'none'}}>Ma Gestion-Locative</a>
         <button onClick={() => router.push('/etats-des-lieux')} style={{background:'white', color:'#6b7280', padding:'6px 16px', borderRadius:8, border:'1px solid #e5e7eb', cursor:'pointer', fontSize:14}}>
           ← Retour
         </button>

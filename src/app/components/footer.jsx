@@ -5,7 +5,7 @@ export default function Footer() {
         <a href="/cgu" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>CGU & Mentions légales</a>
         <a href="/contact" style={{ color: '#6b7280', fontSize: 13, textDecoration: 'none' }}>Contact</a>
       </div>
-      <p style={{ color: '#9ca3af', fontSize: 12, margin: 0 }}>© 2026 GestionLocative — Andy Maréchal</p>
+      <p style={{ color: '#9ca3af', fontSize: 12, margin: 0 }}>© 2026 Ma Gestion-Locative — Andy Maréchal</p>
     </footer>
   )
 }

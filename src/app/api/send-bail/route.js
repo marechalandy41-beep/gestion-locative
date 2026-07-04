@@ -15,13 +15,13 @@ export async function POST(request) {
 
     // Email au locataire
     const { error: errorLoc } = await resend.emails.send({
-      from: 'GestionLocative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
       to: [locataireEmail],
       subject: `Votre bail de location — ${bienNom}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2563eb; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 22px;">GestionLocative</h1>
+            <h1 style="color: white; margin: 0; font-size: 22px;">Ma Gestion-Locative</h1>
           </div>
           <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
             <p style="font-size: 16px; color: #111827;">Bonjour <strong>${locatairePrenom} ${locataireNom}</strong>,</p>
@@ -34,7 +34,7 @@ export async function POST(request) {
             </div>
             <p style="color: #374151;">Votre bail est disponible en pièce jointe. Conservez-le précieusement.</p>
             <p style="color: #6b7280; font-size: 13px; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-              Ce message est envoyé automatiquement par GestionLocative. Merci de ne pas répondre directement à cet email.
+              Ce message est envoyé automatiquement par Ma Gestion-Locative. Merci de ne pas répondre directement à cet email.
             </p>
           </div>
         </div>
@@ -46,13 +46,13 @@ export async function POST(request) {
 
     // Email au propriétaire
     const { error: errorProp } = await resend.emails.send({
-      from: 'GestionLocative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
       to: [proprietaireEmail],
       subject: `✅ Bail envoyé à ${locatairePrenom} ${locataireNom} — ${bienNom}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2563eb; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 22px;">GestionLocative</h1>
+            <h1 style="color: white; margin: 0; font-size: 22px;">Ma Gestion-Locative</h1>
           </div>
           <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
             <p style="font-size: 16px; color: #111827;">Bonjour <strong>${proprietaireNom}</strong>,</p>
@@ -67,7 +67,7 @@ export async function POST(request) {
             </div>
             <p style="color: #374151;">Le bail est également en pièce jointe pour vos archives.</p>
             <p style="color: #6b7280; font-size: 13px; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-              Ce message est envoyé automatiquement par GestionLocative. Merci de ne pas répondre directement à cet email.
+              Ce message est envoyé automatiquement par Ma Gestion-Locative. Merci de ne pas répondre directement à cet email.
             </p>
           </div>
         </div>

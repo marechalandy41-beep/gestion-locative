@@ -140,7 +140,7 @@ async function ouvrirConversationAdmin(conv) {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🔐</div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'white', margin: '0 0 4px' }}>Back-office</h1>
-          <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>GestionLocative Admin</p>
+          <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Ma Gestion-Locative Admin</p>
         </div>
         <input type="password" placeholder="Mot de passe admin"
           value={motDePasse} onChange={e => setMotDePasse(e.target.value)}

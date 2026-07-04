@@ -47,7 +47,7 @@ export default function Nav({ pageCourante = '' }) {
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <a href={estPayant ? '/dashboard' : '/biens'} style={{ fontSize: 22, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }}>
-            GestionLocative
+            Ma Gestion-Locative
           </a>
 
           {/* DESKTOP */}
