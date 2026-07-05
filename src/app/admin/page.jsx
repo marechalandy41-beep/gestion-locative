@@ -802,6 +802,75 @@ async function ouvrirConversationAdmin(conv) {
               })}
             </div>
 
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>❓ FAQ dynamique</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 20px' }}>Ces questions apparaissent sur la page /faq accessible depuis le footer.</p>
+              {(() => {
+                let faqs = []
+                try { faqs = settings.faq_dynamique ? JSON.parse(settings.faq_dynamique) : [] } catch { faqs = [] }
+                return (
+                  <div>
+                    {faqs.map((faq, i) => (
+                      <div key={i} style={{ background: '#374151', borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                        <div style={{ marginBottom: 8 }}>
+                          <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Question</label>
+                          <input value={faq.q} onChange={e => {
+                            const newFaqs = [...faqs]
+                            newFaqs[i].q = e.target.value
+                            setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                          }}
+                            style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ marginBottom: 8 }}>
+                          <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 4 }}>Réponse</label>
+                          <textarea value={faq.r} onChange={e => {
+                            const newFaqs = [...faqs]
+                            newFaqs[i].r = e.target.value
+                            setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                          }}
+                            rows={3}
+                            style={{ width: '100%', background: '#1f2937', border: '1px solid #4b5563', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'white', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={() => {
+                            const newFaqs = [...faqs]
+                            if (i > 0) { [newFaqs[i-1], newFaqs[i]] = [newFaqs[i], newFaqs[i-1]] }
+                            setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                          }} disabled={i === 0}
+                            style={{ background: '#4b5563', color: '#9ca3af', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 12 }}>↑</button>
+                          <button onClick={() => {
+                            const newFaqs = [...faqs]
+                            if (i < newFaqs.length - 1) { [newFaqs[i], newFaqs[i+1]] = [newFaqs[i+1], newFaqs[i]] }
+                            setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                          }} disabled={i === faqs.length - 1}
+                            style={{ background: '#4b5563', color: '#9ca3af', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: i === faqs.length - 1 ? 'not-allowed' : 'pointer', fontSize: 12 }}>↓</button>
+                          <button onClick={() => {
+                            const newFaqs = faqs.filter((_, idx) => idx !== i)
+                            setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                            sauvegarderSetting('faq_dynamique', JSON.stringify(newFaqs))
+                          }}
+                            style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>🗑 Supprimer</button>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button onClick={() => {
+                        const newFaqs = [...faqs, { q: 'Nouvelle question', r: 'Réponse à compléter...' }]
+                        setSettings(prev => ({ ...prev, faq_dynamique: JSON.stringify(newFaqs) }))
+                      }}
+                        style={{ background: '#374151', color: '#9ca3af', border: '1px dashed #4b5563', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
+                        + Ajouter une question
+                      </button>
+                      <button onClick={() => sauvegarderSetting('faq_dynamique', settings.faq_dynamique)}
+                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        💾 Sauvegarder
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📋 CGU & Mentions légales</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 20px' }}>Ces infos apparaissent sur la page /cgu</p>
