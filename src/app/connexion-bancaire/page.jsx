@@ -292,6 +292,30 @@ export default function ConnexionBancaire() {
       } catch (e) { console.error('Erreur envoi email:', e); }
     }
 
+    // Notification loyer validé
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: user.id,
+        type: 'loyer',
+        message: `💰 Loyer de ${matching.transaction.amount}€ validé — ${matching.bail.Biens?.nom} — Quittance ${moisLabels[mois]} ${annee} générée`,
+        lien: `/baux/${matching.bail.id}`,
+      }),
+    }).catch(() => {})
+
+    // Notification quittance générée
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: user.id,
+        type: 'quittance',
+        message: `✅ Quittance ${moisLabels[mois]} ${annee} générée pour ${matching.bail.locataire_prenom} ${matching.bail.locataire_nom}`,
+        lien: `/baux/${matching.bail.id}`,
+      }),
+    }).catch(() => {})
+
     setMatchings(prev => prev.filter(m => m !== matching));
     setSuccessMessage(`✅ Loyer validé, quittance générée${matching.bail.locataire_email ? ' et envoyée par email' : ''} !`);
     setTimeout(() => setSuccessMessage(null), 5000);

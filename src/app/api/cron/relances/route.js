@@ -179,6 +179,17 @@ export async function GET(request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, type: 'j30' }),
         })
+        // Notification bail fin proche
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: bail.user_id,
+            type: 'bail_fin',
+            message: `📅 Le bail de ${payload.locataireNom} sur ${payload.bienNom} arrive à échéance le ${payload.dateFin} (dans 30 jours)`,
+            lien: `/baux/${bail.id}`,
+          }),
+        }).catch(() => {})
         reconductions++
       }
 
@@ -200,6 +211,47 @@ export async function GET(request) {
       }
     }
     // ===== FIN RECONDUCTION TACITE =====
+
+    // ===== NOTIFICATIONS DOCUMENTS EXPIRÉS =====
+    const VALIDITE = { 'DPE': 10, 'Diagnostic électricité': 3, 'Diagnostic gaz': 3 }
+    const anneeActuelle = new Date().getFullYear()
+
+    const { data: docsAVerifier } = await supabase
+      .from('Documents')
+      .select('*, Biens(nom)')
+      .not('date_document', 'is', null)
+      .in('categorie', Object.keys(VALIDITE))
+
+    for (const doc of (docsAVerifier || [])) {
+      const duree = VALIDITE[doc.categorie]
+      const dateExp = new Date(doc.date_document)
+      dateExp.setFullYear(dateExp.getFullYear() + duree)
+      const moisRestants = (dateExp.getFullYear() - new Date().getFullYear()) * 12 + (dateExp.getMonth() - new Date().getMonth())
+
+      if (moisRestants <= 0) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: doc.user_id,
+            type: 'document_expire',
+            message: `📄 ${doc.categorie} expiré — ${doc.Biens?.nom} — Renouvelez ce document`,
+            lien: `/coffre-fort?bien=${doc.bien_id}`,
+          }),
+        }).catch(() => {})
+      } else if (moisRestants <= 12) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: doc.user_id,
+            type: 'document_expire',
+            message: `📄 ${doc.categorie} expire bientôt — ${doc.Biens?.nom} — Expire en ${dateExp.getFullYear()}`,
+            lien: `/coffre-fort?bien=${doc.bien_id}`,
+          }),
+        }).catch(() => {})
+      }
+    }
 
     return NextResponse.json({ success: true, envoyes, ignores, reconductions })
 

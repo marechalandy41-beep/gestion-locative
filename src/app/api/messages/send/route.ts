@@ -41,6 +41,48 @@ export async function POST(req: NextRequest) {
       .update({ derniere_activite: new Date().toISOString(), statut: 'ouvert' })
       .eq('id', convId)
 
+    // Notification si message du locataire → notifier le propriétaire
+    if (expediteur === 'locataire') {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('user_id, sujet')
+        .eq('id', convId)
+        .single()
+      if (conv) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: conv.user_id,
+            type: 'message',
+            message: `💬 Nouveau message de votre locataire — ${conv.sujet || 'Demande support'}`,
+            lien: '/compte',
+          }),
+        }).catch(() => {})
+      }
+    }
+
+    // Notification si message admin → notifier le client
+    if (expediteur === 'admin') {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('user_id, sujet')
+        .eq('id', convId)
+        .single()
+      if (conv) {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: conv.user_id,
+            type: 'message',
+            message: `💬 Nouvelle réponse du support — ${conv.sujet || 'Demande support'}`,
+            lien: '/compte',
+          }),
+        }).catch(() => {})
+      }
+    }
+
     return NextResponse.json({ success: true, conversationId: convId })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 })
