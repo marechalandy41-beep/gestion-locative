@@ -924,6 +924,7 @@ async function ouvrirConversationAdmin(conv) {
                 { emoji: '📧', label: 'Resend', desc: 'Emails transactionnels', url: 'https://resend.com/emails', couleur: '#2563eb' },
                 { emoji: '🏦', label: 'Bridge API', desc: 'Connexion bancaire', url: 'https://dashboard.bridgeapi.io', couleur: '#f59e0b' },
                 { emoji: '🐙', label: 'GitHub', desc: 'Code source du projet', url: 'https://github.com/marechalandy41-beep/gestion-locative', couleur: '#9ca3af' },
+              { emoji: '🔔', label: 'OneSignal', desc: 'Push notifications', url: 'https://dashboard.onesignal.com/apps/cdedaaea-222b-4d4e-b6d6-23c4299a6053', couleur: '#e54b4b' },
               ].map((lien, i) => (
                 <a key={i} href={lien.url} target="_blank" rel="noopener noreferrer"
                   style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', textDecoration: 'none', display: 'block' }}

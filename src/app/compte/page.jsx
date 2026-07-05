@@ -304,22 +304,13 @@ async function ouvrirConversation(conv) {
 async function activerPushNotifications() {
     setPushLoading(true)
     try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        alert('Vous avez refusé les notifications. Activez-les dans les paramètres de votre navigateur.')
+      if (typeof window === 'undefined' || !window.OneSignal) {
+        alert('OneSignal non chargé. Réessayez dans quelques secondes.')
         setPushLoading(false)
         return
       }
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-      })
-      await fetch('/api/push-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, subscription }),
-      })
+      await window.OneSignal.login(user.email)
+      await window.OneSignal.Notifications.requestPermission()
       setPushActif(true)
       alert('✅ Notifications push activées !')
     } catch (err) {
