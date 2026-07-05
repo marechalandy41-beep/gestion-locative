@@ -19,6 +19,7 @@ export default function RecapFiscal() {
   const [justificatifsParBien, setJustificatifsParBien] = useState({})
   const [showJustifModal, setShowJustifModal] = useState({})
 const [categorieJustif, setCategorieJustif] = useState({})
+  const [chargesSauvegardees, setChargesSauvegardees] = useState({})
 
   useEffect(() => { init() }, [])
 
@@ -116,6 +117,8 @@ const [categorieJustif, setCategorieJustif] = useState({})
       autres: parseFloat(c.autres) || 0,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,bien_id,annee' })
+    setChargesSauvegardees(prev => ({ ...prev, [bienId]: true }))
+    setTimeout(() => setChargesSauvegardees(prev => ({ ...prev, [bienId]: false })), 2000)
   }
 
   async function uploadJustificatif(bienId, fichier, categorie) {
@@ -467,8 +470,8 @@ const cheminStorage = `${user.id}/${bienId}/${categorieSlug}/${nomFichier}`
       ))}
     </div>
     <button onClick={() => sauvegarderCharges(bien.id)}
-      style={{ marginTop: 12, background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-      💾 Sauvegarder les charges
+      style={{ marginTop: 12, background: chargesSauvegardees[bien.id] ? '#16a34a' : '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.3s' }}>
+      {chargesSauvegardees[bien.id] ? '✅ Sauvegardé !' : '💾 Sauvegarder les charges'}
     </button>
   </div>
 )}
