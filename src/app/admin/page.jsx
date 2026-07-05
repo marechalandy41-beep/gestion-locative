@@ -729,7 +729,11 @@ async function ouvrirConversationAdmin(conv) {
                         style={{ background: '#374151', color: '#9ca3af', border: '1px dashed #4b5563', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13 }}>
                         + Ajouter une catégorie
                       </button>
-                      <button onClick={() => sauvegarderSetting('categories_support', settings.categories_support)}
+                      <button onClick={() => {
+                        const valeur = settings.faq_dynamique || '[]'
+                        sauvegarderSetting('faq_dynamique', valeur)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
                         style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                         💾 Sauvegarder
                       </button>
