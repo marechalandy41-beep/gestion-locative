@@ -9,6 +9,7 @@ export default function BauxPage() {
   // ===== MESSAGES NON LUS =====
   const [nonLusParBail, setNonLusParBail] = useState({})
   const [isMobile, setIsMobile] = useState(false)
+  const [filtreStatut, setFiltreStatut] = useState('tous')
 
 useEffect(() => {
   const check = () => setIsMobile(window.innerWidth < 768)
@@ -71,7 +72,7 @@ useEffect(() => {
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '16px' : '32px 24px' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>Mes Baux</h2>
             <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>{baux.length} bail{baux.length > 1 ? 'x' : ''}</p>
@@ -79,6 +80,21 @@ useEffect(() => {
           <a href="/baux/nouveau" style={{ background: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: 12, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
             + Nouveau bail
           </a>
+        </div>
+
+        {/* FILTRES */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          {[
+            { id: 'tous', label: '📋 Tous', count: baux.length },
+            { id: 'actif', label: '✅ Actifs', count: baux.filter(b => b.statut === 'actif').length },
+            { id: 'brouillon', label: '✏️ Brouillons', count: baux.filter(b => b.statut === 'brouillon').length },
+            { id: 'termine', label: '🔒 Terminés', count: baux.filter(b => b.statut === 'termine').length },
+          ].map(f => (
+            <button key={f.id} onClick={() => setFiltreStatut(f.id)}
+              style={{ background: filtreStatut === f.id ? '#2563eb' : 'white', color: filtreStatut === f.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 16px', borderRadius: 99, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              {f.label} {f.count > 0 && <span style={{ opacity: 0.7 }}>({f.count})</span>}
+            </button>
+          ))}
         </div>
 
         {baux.length === 0 ? (
@@ -91,7 +107,7 @@ useEffect(() => {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: isMobile ? 16 : 24 }}>
-            {baux.map(bail => {
+            {baux.filter(b => filtreStatut === 'tous' || b.statut === filtreStatut).map(bail => {
               const s = statutStyle(bail.statut)
               const nbNonLus = nonLusParBail[bail.id] || 0
               return (
