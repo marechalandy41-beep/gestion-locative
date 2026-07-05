@@ -13,6 +13,8 @@ export default function Dashboard() {
   const [plan, setPlan] = useState('gratuit');
   const [nonLusParBail, setNonLusParBail] = useState({});
   const [isMobile, setIsMobile] = useState(false);
+  const [historiquePaiements, setHistoriquePaiements] = useState([]);
+  const [bauxEnFin, setBauxEnFin] = useState([]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -49,6 +51,30 @@ export default function Dashboard() {
     setBiens(biensData || []);
     setBaux(bauxData || []);
     setPaiementsMois(paiementsData || []);
+
+    // Historique 6 derniers mois
+    const debut6Mois = new Date()
+    debut6Mois.setMonth(debut6Mois.getMonth() - 5)
+    const { data: historiqueData } = await supabase
+      .from('paiements')
+      .select('montant, mois, annee')
+      .eq('user_id', userId)
+      .eq('statut', 'valide')
+      .gte('annee', debut6Mois.getFullYear())
+      .order('annee', { ascending: true })
+      .order('mois', { ascending: true })
+    setHistoriquePaiements(historiqueData || [])
+
+    // Baux qui arrivent à échéance dans les 60 jours
+    const dans60jours = new Date()
+    dans60jours.setDate(dans60jours.getDate() + 60)
+    const bauxFin = (bauxData || []).filter(b => {
+      if (!b.date_fin) return false
+      const fin = new Date(b.date_fin)
+      return fin <= dans60jours && fin >= new Date()
+    })
+    setBauxEnFin(bauxFin)
+
     setLoading(false);
     if (bauxData && bauxData.length > 0) chargerNonLus(bauxData.map(b => b.id));
   }
@@ -64,7 +90,21 @@ export default function Dashboard() {
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
   const estPayant = plan !== 'gratuit';
+  const tauxPaiement = baux.length > 0 ? Math.round((paiementsMois.length / baux.length) * 100) : 0;
 
+  const moisLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+  const derniers6Mois = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - (5 - i))
+    return { mois: d.getMonth() + 1, annee: d.getFullYear(), label: moisLabels[d.getMonth()] }
+  })
+  const dataGraphique = derniers6Mois.map(m => ({
+    label: m.label,
+    total: historiquePaiements
+      .filter(p => p.mois === m.mois && p.annee === m.annee)
+      .reduce((acc, p) => acc + (p.montant || 0), 0)
+  }))
+  const maxGraphique = Math.max(...dataGraphique.map(d => d.total), 1)
   function statutLoyer(bail) {
     const jour = new Date().getDate();
     const dejaPaye = paiementsMois.some(p => p.bail_id === bail.id);
@@ -153,7 +193,8 @@ export default function Dashboard() {
         )}
 
         {/* STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
+        {/* STATS */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Loyers du mois</p>
             <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: '#111827', marginTop: 4 }}>{totalLoyers.toLocaleString()}€</p>
@@ -165,6 +206,52 @@ export default function Dashboard() {
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Biens sans bail</p>
             <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: '#ea580c', marginTop: 4 }}>{biensSansBail}</p>
+          </div>
+          <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Taux de paiement</p>
+            <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: tauxPaiement === 100 ? '#16a34a' : tauxPaiement > 50 ? '#ca8a04' : '#dc2626', marginTop: 4 }}>{tauxPaiement}%</p>
+            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{paiementsMois.length}/{baux.length} reçus</p>
+          </div>
+        </div>
+
+        {/* GRAPHIQUE + ALERTES */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20, marginBottom: 24 }}>
+
+          {/* GRAPHIQUE 6 MOIS */}
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 20px' }}>📈 Loyers encaissés — 6 derniers mois</h3>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
+              {dataGraphique.map((d, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>{d.total > 0 ? `${d.total}€` : ''}</span>
+                  <div style={{ width: '100%', background: i === 5 ? '#2563eb' : '#bfdbfe', borderRadius: '4px 4px 0 0', height: `${Math.max(4, (d.total / maxGraphique) * 100)}px`, transition: 'height 0.3s' }} />
+                  <span style={{ fontSize: 11, color: i === 5 ? '#2563eb' : '#9ca3af', fontWeight: i === 5 ? 700 : 400 }}>{d.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ALERTES BAUX EN FIN */}
+          <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 16px' }}>⚠️ Échéances proches</h3>
+            {bauxEnFin.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <p style={{ fontSize: 28, marginBottom: 8 }}>✅</p>
+                <p style={{ color: '#9ca3af', fontSize: 13 }}>Aucune échéance dans les 60 jours</p>
+              </div>
+            ) : bauxEnFin.map(bail => {
+              const fin = new Date(bail.date_fin)
+              const jours = Math.ceil((fin - new Date()) / (1000 * 60 * 60 * 24))
+              return (
+                <div key={bail.id} style={{ background: jours <= 30 ? '#fef2f2' : '#fef9c3', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${jours <= 30 ? '#fecaca' : '#fde047'}` }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 4px' }}>{bail.bien?.nom}</p>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 4px' }}>{bail.locataire_prenom} {bail.locataire_nom}</p>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: jours <= 30 ? '#dc2626' : '#ca8a04', margin: 0 }}>
+                    ⏳ Dans {jours} jour{jours > 1 ? 's' : ''} — {fin.toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         </div>
 
