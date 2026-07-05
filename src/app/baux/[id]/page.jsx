@@ -14,6 +14,7 @@ export default function DetailBail() {
   const [editPayeur, setEditPayeur] = useState(false);
   const [newPayeurPrenom, setNewPayeurPrenom] = useState('');
   const [newPayeurNom, setNewPayeurNom] = useState('');
+  const [lotsLies, setLotsLies] = useState([]);
   const [sending, setSending] = useState(false);
   const [emailToast, setEmailToast] = useState(null);
   const [sendingRelance, setSendingRelance] = useState(false);
@@ -124,6 +125,8 @@ useEffect(() => {
     if (error || !data) { window.location.href = '/baux'; return; }
     setBail(data);
     setBien(data.Biens);
+    const { data: lotsData } = await supabase.from('lots').select('*').eq('bail_id', parseInt(id));
+    setLotsLies(lotsData || []);
     setLoading(false);
   }
 
@@ -403,6 +406,23 @@ useEffect(() => {
               </div>
 
               {section('🏢 Bien loué')}
+              {lotsLies.length > 0 && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', margin: '0 0 8px' }}>🏠 Lots concernés par ce bail</p>
+                  {lotsLies.map((lot, i) => (
+                    <div key={lot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < lotsLies.length - 1 ? '1px solid #dbeafe' : 'none' }}>
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</span>
+                        {lot.surface && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>{lot.surface} m²</span>}
+                        {lot.etage && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>— {lot.etage}</span>}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#dcfce7', color: '#15803d' }}>
+                        ✓ Loué
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {info('Adresse', bien?.adresse)}
               {info('Type de bien', bien?.type)}
               {info('Type de bail', bail.type_bail)}
