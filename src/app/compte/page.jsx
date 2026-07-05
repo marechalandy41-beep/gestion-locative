@@ -34,6 +34,8 @@ export default function Compte() {
   const [portalLoading, setPortalLoading] = useState(false)
   const [faqs, setFaqs] = useState([])
   const [faqOuvert, setFaqOuvert] = useState(null)
+  const [pushActif, setPushActif] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
   const [planActuel, setPlanActuel] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
   const [changementLoading, setChangementLoading] = useState(false)
@@ -299,6 +301,33 @@ async function ouvrirConversation(conv) {
     setEnvoiMessageLoading(false)
   }
 
+async function activerPushNotifications() {
+    setPushLoading(true)
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        alert('Vous avez refusé les notifications. Activez-les dans les paramètres de votre navigateur.')
+        setPushLoading(false)
+        return
+      }
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, subscription }),
+      })
+      setPushActif(true)
+      alert('✅ Notifications push activées !')
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setPushLoading(false)
+  }
+
   const PLANS = [
     { id: 'gratuit', nom: 'Gratuit', prix: '0€', description: 'Quittances manuelles, 50 Mo de stockage', priceId: null },
     { id: 'manuel', nom: 'Manuel', prix: `${prixManuel}€`, description: 'Baux, états des lieux, coffre-fort complet', priceId: priceIdManuel },
@@ -443,9 +472,15 @@ async function ouvrirConversation(conv) {
               <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Téléphone</label>
               <input value={telephone} onChange={e => setTelephone(e.target.value)} placeholder="Ex: 06 12 34 56 78" style={inputStyle} />
             </div>
-            <button onClick={sauvegarderProfil} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-              Sauvegarder
-            </button>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button onClick={sauvegarderProfil} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                Sauvegarder
+              </button>
+              <button onClick={activerPushNotifications} disabled={pushLoading || pushActif}
+                style={{ background: pushActif ? '#f0fdf4' : '#fef9c3', color: pushActif ? '#15803d' : '#92400e', border: `1px solid ${pushActif ? '#bbf7d0' : '#fde047'}`, padding: '10px 24px', borderRadius: 10, cursor: pushActif ? 'default' : 'pointer', fontWeight: 600, fontSize: 14 }}>
+                {pushLoading ? '⏳...' : pushActif ? '✅ Notifications activées' : '🔔 Activer les notifications push'}
+              </button>
+            </div>
           </div>
         )}
 

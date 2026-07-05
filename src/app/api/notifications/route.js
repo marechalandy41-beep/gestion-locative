@@ -16,6 +16,19 @@ export async function POST(request) {
       user_id, type, message, lien: lien || null, lu: false,
     })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Envoyer push notification
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/push-send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user_id,
+        title: 'Ma Gestion-Locative',
+        body: message,
+        url: lien || '/',
+      }),
+    }).catch(() => {})
+
     return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
