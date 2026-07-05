@@ -133,8 +133,13 @@ useEffect(() => {
                   </div>
 
                   {bail.locataire_prenom && (
-                    <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                    <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
                       👤 {bail.locataire_prenom} {bail.locataire_nom}
+                    </p>
+                  )}
+                  {(bail.payeur_prenom || bail.payeur_nom) && (
+                    <p style={{ fontSize: 12, color: '#ca8a04', marginBottom: 8 }}>
+                      💳 Payeur : {bail.payeur_prenom} {bail.payeur_nom}
                     </p>
                   )}
                   {bail.date_debut && (
