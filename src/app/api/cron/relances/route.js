@@ -79,7 +79,7 @@ export async function GET(request) {
       const proprietaireNom = `${bail.bailleur_prenom || ''} ${bail.bailleur_nom || ''}`.trim()
 
       await resend.emails.send({
-        from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+        from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
         to: [bail.locataire_email],
         subject: `Rappel loyer — ${moisNom} ${anneeActuelle} — ${bail.Biens?.nom || ''}`,
         html: `

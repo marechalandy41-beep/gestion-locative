@@ -28,7 +28,7 @@ export async function POST(request) {
 
     // Email à toi
     await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: ['ton@email.fr'],
       subject: `[Contact] ${sujet || 'Nouveau message'} — ${nom}`,
       html: `
@@ -50,7 +50,7 @@ export async function POST(request) {
 
     // Email de confirmation à l'expéditeur
     await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: [email],
       subject: 'Nous avons bien reçu votre message — Ma Gestion-Locative',
       html: `

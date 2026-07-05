@@ -15,7 +15,7 @@ export async function POST(request) {
 
     // Email au locataire
     const { error: errorLoc } = await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: [locataireEmail],
       subject: `Votre bail de location — ${bienNom}`,
       html: `
@@ -46,7 +46,7 @@ export async function POST(request) {
 
     // Email au propriétaire
     const { error: errorProp } = await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: [proprietaireEmail],
       subject: `✅ Bail envoyé à ${locatairePrenom} ${locataireNom} — ${bienNom}`,
       html: `

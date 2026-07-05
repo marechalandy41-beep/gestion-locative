@@ -8,7 +8,7 @@ export async function POST(request) {
     const { locataireEmail, locatairePrenom, locataireNom, proprietaireNom, bienNom, montant, dateEcheance, mois, annee } = await request.json();
 
     const { data, error } = await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: [locataireEmail],
       subject: `Rappel loyer — ${mois} ${annee} — ${bienNom}`,
       html: `

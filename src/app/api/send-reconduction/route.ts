@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'noreply@magestion-locative.fr',
       to: proprietaireEmail,
       subject: sujets[type as keyof typeof sujets],
       html: corps[type as keyof typeof corps],

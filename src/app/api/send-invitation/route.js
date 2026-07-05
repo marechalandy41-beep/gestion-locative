@@ -32,7 +32,7 @@ export async function POST(request) {
 
     // Envoyer l'email
     await resend.emails.send({
-      from: 'Ma Gestion-Locative <onboarding@resend.dev>',
+      from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
       to: [locataireEmail],
       subject: `Votre espace locataire — ${bienNom}`,
       html: `
