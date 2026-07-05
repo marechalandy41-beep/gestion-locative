@@ -315,7 +315,6 @@ async function activerPushNotifications() {
         setPushLoading(false)
         return
       }
-      await window.OneSignal.login(user.email)
       const permission = await window.OneSignal.Notifications.requestPermission()
       if (permission) {
         setPushActif(true)
