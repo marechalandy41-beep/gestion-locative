@@ -32,6 +32,8 @@ export default function Compte() {
   const [conversationsNonLues, setConversationsNonLues] = useState([])
   const [categoriesSupport, setCategoriesSupport] = useState(['Problème technique', 'Facturation / Abonnement', 'Suggestion d\'amélioration', 'Question sur mon compte', 'Autre'])
   const [portalLoading, setPortalLoading] = useState(false)
+  const [faqs, setFaqs] = useState([])
+  const [faqOuvert, setFaqOuvert] = useState(null)
   const [planActuel, setPlanActuel] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
   const [changementLoading, setChangementLoading] = useState(false)
@@ -71,7 +73,7 @@ useEffect(() => {
         const { data: settingsData } = await supabase
           .from('settings')
           .select('cle, valeur')
-          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support'])
+          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support', 'faq_dynamique'])
 
         if (settingsData) {
           const prixManuelSetting = settingsData.find(s => s.cle === 'prix_manuel')
@@ -88,6 +90,11 @@ useEffect(() => {
           if (categoriesSetting) {
             try { setCategoriesSupport(JSON.parse(categoriesSetting.valeur)) } catch {}
           }
+
+        const faqSetting = settingsData.find(s => s.cle === 'faq_dynamique')
+        if (faqSetting) {
+          try { setFaqs(JSON.parse(faqSetting.valeur)) } catch {}
+        }
 
         if (customerData?.code_promo) {
           const { data: codeData } = await supabase
@@ -401,6 +408,7 @@ async function ouvrirConversation(conv) {
             { id: 'securite', label: '🔒 Sécurité' },
             { id: 'abonnement', label: '💳 Abonnement' },
             { id: 'messages', label: `📬 Mes demandes${conversationsNonLues.length > 0 ? ` (${conversationsNonLues.length})` : ''}` },
+            { id: 'faq', label: '❓ FAQ' },
           ].map(o => (
             <button key={o.id} onClick={() => setOnglet(o.id)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
@@ -654,6 +662,31 @@ async function ouvrirConversation(conv) {
                 </>
               )}
             </div>
+          </div>
+        )}
+
+      {/* ONGLET FAQ */}
+        {onglet === 'faq' && (
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>❓ Questions fréquentes</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 24px' }}>Retrouvez les réponses aux questions les plus courantes.</p>
+            {faqs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                <p style={{ color: '#9ca3af', fontSize: 14 }}>Aucune question disponible pour le moment.</p>
+              </div>
+            ) : faqs.map((faq, i) => (
+              <div key={i} style={{ borderBottom: '1px solid #f3f4f6', paddingBottom: 16, marginBottom: 16 }}>
+                <button onClick={() => setFaqOuvert(faqOuvert === i ? null : i)}
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 0, textAlign: 'left' }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{faq.q}</span>
+                  <span style={{ fontSize: 20, color: '#2563eb', flexShrink: 0, marginLeft: 16 }}>{faqOuvert === i ? '−' : '+'}</span>
+                </button>
+                {faqOuvert === i && (
+                  <p style={{ color: '#6b7280', fontSize: 13, lineHeight: 1.7, margin: '10px 0 0' }}>{faq.r}</p>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
