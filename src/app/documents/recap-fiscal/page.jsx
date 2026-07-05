@@ -33,6 +33,32 @@ const [categorieJustif, setCategorieJustif] = useState({})
     setBaux(bauxData || [])
     setPaiements(paiementsData || [])
 
+    // Charger les charges fiscales sauvegardées
+    const { data: chargesData } = await supabase
+      .from('charges_fiscales')
+      .select('*')
+      .eq('user_id', user.id)
+    if (chargesData) {
+      const parBien = {}
+      chargesData.forEach(c => {
+        if (!parBien[c.bien_id]) parBien[c.bien_id] = {}
+        parBien[c.bien_id][c.annee] = {
+          taxe_fonciere: c.taxe_fonciere?.toString() || '',
+          assurance: c.assurance?.toString() || '',
+          travaux: c.travaux?.toString() || '',
+          frais_gestion: c.frais_gestion?.toString() || '',
+          interets_emprunt: c.interets_emprunt?.toString() || '',
+          autres: c.autres?.toString() || '',
+        }
+      })
+      // Initialiser chargesParBien avec les données de l'année sélectionnée
+      const initCharges = {}
+      Object.keys(parBien).forEach(bienId => {
+        initCharges[parseInt(bienId)] = parBien[parseInt(bienId)][annee] || {}
+      })
+      setChargesParBien(initCharges)
+    }
+
     // Charger les justificatifs déjà uploadés par bien
     const { data: docsData } = await supabase
       .from('Documents')
@@ -74,6 +100,22 @@ const [categorieJustif, setCategorieJustif] = useState({})
       ...prev,
       [bienId]: { ...(prev[bienId] || {}), [champ]: valeur }
     }))
+  }
+
+  async function sauvegarderCharges(bienId) {
+    const c = chargesParBien[bienId] || {}
+    await supabase.from('charges_fiscales').upsert({
+      user_id: user.id,
+      bien_id: bienId,
+      annee,
+      taxe_fonciere: parseFloat(c.taxe_fonciere) || 0,
+      assurance: parseFloat(c.assurance) || 0,
+      travaux: parseFloat(c.travaux) || 0,
+      frais_gestion: parseFloat(c.frais_gestion) || 0,
+      interets_emprunt: parseFloat(c.interets_emprunt) || 0,
+      autres: parseFloat(c.autres) || 0,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,bien_id,annee' })
   }
 
   async function uploadJustificatif(bienId, fichier, categorie) {
@@ -424,9 +466,12 @@ const cheminStorage = `${user.id}/${bienId}/${categorieSlug}/${nomFichier}`
         </div>
       ))}
     </div>
+    <button onClick={() => sauvegarderCharges(bien.id)}
+      style={{ marginTop: 12, background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+      💾 Sauvegarder les charges
+    </button>
   </div>
 )}
-
 {/* Modal sélecteur catégorie + fichier */}
 {showJustifModal[bien.id] && (
   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginTop: 12 }}>
