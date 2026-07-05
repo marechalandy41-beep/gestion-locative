@@ -304,15 +304,25 @@ async function ouvrirConversation(conv) {
 async function activerPushNotifications() {
     setPushLoading(true)
     try {
-      if (typeof window === 'undefined' || !window.OneSignal) {
-        alert('OneSignal non chargé. Réessayez dans quelques secondes.')
+      // Attendre que OneSignal soit prêt
+      let tentatives = 0
+      while ((!window.OneSignal || !window.OneSignal.Notifications) && tentatives < 10) {
+        await new Promise(r => setTimeout(r, 500))
+        tentatives++
+      }
+      if (!window.OneSignal || !window.OneSignal.Notifications) {
+        alert('OneSignal non chargé. Rechargez la page et réessayez.')
         setPushLoading(false)
         return
       }
       await window.OneSignal.login(user.email)
-      await window.OneSignal.Notifications.requestPermission()
-      setPushActif(true)
-      alert('✅ Notifications push activées !')
+      const permission = await window.OneSignal.Notifications.requestPermission()
+      if (permission) {
+        setPushActif(true)
+        alert('✅ Notifications push activées !')
+      } else {
+        alert('Permission refusée. Activez les notifications dans les paramètres de votre navigateur.')
+      }
     } catch (err) {
       alert('Erreur : ' + err.message)
     }
