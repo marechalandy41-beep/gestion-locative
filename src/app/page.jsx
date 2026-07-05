@@ -2,6 +2,22 @@
 import { supabase } from '../supabase'
 import { useState, useEffect } from 'react'
 
+function FaqItem({ question, reponse }) {
+  const [ouvert, setOuvert] = useState(false)
+  return (
+    <div style={{ borderBottom: '1px solid #f3f4f6', paddingBottom: 20, marginBottom: 20 }}>
+      <button onClick={() => setOuvert(!ouvert)}
+        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 0, textAlign: 'left' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>{question}</span>
+        <span style={{ fontSize: 20, color: '#2563eb', flexShrink: 0, marginLeft: 16 }}>{ouvert ? '−' : '+'}</span>
+      </button>
+      {ouvert && (
+        <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.7, margin: '12px 0 0' }}>{reponse}</p>
+      )}
+    </div>
+  )
+}
+
 export default function Home() {
   const [email, setEmail] = useState('')
   const [envoye, setEnvoye] = useState(false)
@@ -144,6 +160,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* LOGOS DE CONFIANCE */}
+      <section style={{ padding: '32px 24px', background: 'white', borderBottom: '1px solid #f3f4f6' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24 }}>
+            Propulsé par des technologies de confiance
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+            {[
+              { emoji: '🏦', nom: "Bridge by Bankin'", desc: 'Agréé ACPR — Connexion bancaire sécurisée' },
+              { emoji: '💳', nom: 'Stripe', desc: 'Paiements sécurisés — Leader mondial' },
+              { emoji: '📧', nom: 'Resend', desc: 'Emails transactionnels fiables' },
+              { emoji: '🔒', nom: 'Supabase', desc: 'Base de données sécurisée — RGPD compliant' },
+            ].map((t, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>{t.emoji}</div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 2px' }}>{t.nom}</p>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{t.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FONCTIONNALITÉS */}
       <section id="fonctionnalites" style={{ padding: '80px 24px', background: 'white' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -164,6 +203,38 @@ export default function Home() {
                 <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* COMMENT ÇA MARCHE */}
+      <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>Comment ça marche ?</h2>
+          <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Opérationnel en moins de 5 minutes</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32, position: 'relative' }}>
+            {[
+              { num: '1', emoji: '🏠', titre: 'Créez votre compte', desc: 'Inscrivez-vous gratuitement, ajoutez vos biens immobiliers et renseignez les informations de base.' },
+              { num: '2', emoji: '📄', titre: 'Ajoutez vos baux', desc: 'Créez vos contrats de location conformes ALUR en quelques clics. Signez en ligne ou en présentiel.' },
+              { num: '3', emoji: '🤖', titre: 'Automatisez tout', desc: 'Connectez votre banque via Bridge. Les loyers sont détectés automatiquement, les quittances générées et envoyées.' },
+            ].map((e, i) => (
+              <div key={i} style={{ textAlign: 'center', position: 'relative' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#2563eb', color: 'white', fontSize: 22, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  {e.num}
+                </div>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>{e.emoji}</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 10px' }}>{e.titre}</h3>
+                <p style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.7, margin: 0 }}>{e.desc}</p>
+                {i < 2 && (
+                  <div style={{ position: 'absolute', top: 28, right: -16, fontSize: 24, color: '#d1d5db' }}>→</div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 48 }}>
+            <a href="/auth" style={{ background: '#2563eb', color: 'white', padding: '14px 36px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+              Commencer maintenant →
+            </a>
           </div>
         </div>
       </section>
@@ -249,6 +320,24 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{ padding: '80px 24px', background: 'white' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>Questions fréquentes</h2>
+          <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 48px' }}>Tout ce que vous devez savoir</p>
+          {[
+            { q: 'Est-ce vraiment déductible des impôts ?', r: "Oui. En tant que propriétaire bailleur, les frais de gestion et d'administration sont déductibles de vos revenus fonciers au titre de l'article 31 du CGI. Nous vous recommandons de confirmer avec votre conseiller fiscal selon votre situation." },
+            { q: 'La connexion bancaire est-elle sécurisée ?', r: "Absolument. Nous utilisons Bridge by Bankin', agréé par l'ACPR (Autorité de Contrôle Prudentiel et de Résolution). La connexion est en lecture seule — aucun virement n'est possible depuis notre plateforme." },
+            { q: 'Que se passe-t-il si je résilie mon abonnement ?', r: "Vos données restent accessibles en lecture. Vous passez automatiquement sur le plan gratuit et conservez l'accès à votre coffre-fort et vos documents. Aucune donnée n'est supprimée." },
+            { q: 'Puis-je gérer plusieurs biens ?', r: "Oui, il n'y a aucune limite sur le nombre de biens. Vous payez uniquement pour vos baux actifs — un bien vacant ne vous coûte rien." },
+            { q: 'Les baux générés sont-ils légalement valables ?', r: "Oui. Nos modèles de baux sont conformes à la loi n°89-462 du 6 juillet 1989 modifiée par la loi ALUR du 24 mars 2014. Ils incluent toutes les mentions obligatoires." },
+            { q: 'Comment fonctionne la facturation ?', r: `Vous êtes facturé mensuellement selon le nombre de baux actifs. Un bail brouillon ou terminé n\'est pas comptabilisé. Le prix est de ${prixManuel}€/bail/mois pour le plan Manuel et ${prixAuto}€/bail/mois pour le plan Automatique.` },
+          ].map((faq, i) => (
+            <FaqItem key={i} question={faq.q} reponse={faq.r} />
+          ))}
         </div>
       </section>
 
