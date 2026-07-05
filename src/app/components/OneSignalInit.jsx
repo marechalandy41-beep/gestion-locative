@@ -7,12 +7,16 @@ export default function OneSignalInit() {
     
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID,
-        safari_web_id: '',
-        notifyButton: { enable: false },
-        allowLocalhostAsSecureOrigin: true,
-      })
+      try {
+        await OneSignal.init({
+          appId: process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID,
+          safari_web_id: '',
+          notifyButton: { enable: false },
+          allowLocalhostAsSecureOrigin: true,
+        })
+      } catch(e) {
+        console.log('OneSignal init skipped:', e.message)
+      }
     })
 
     const script = document.createElement('script')
