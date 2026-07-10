@@ -37,15 +37,19 @@ export async function POST(request) {
       }
       const signatureRequestId = signatureData.id
 
-      // 2. Uploader le document dans la signature request
+      // 2. Uploader le document via multipart/form-data
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64')
+      const formData = new FormData()
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' })
+      formData.append('file', blob, nomFichier || 'bail.pdf')
+      formData.append('nature', 'signable_document')
+
       const uploadRes = await fetch(`${YOUSIGN_API_URL}/signature_requests/${signatureRequestId}/documents`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({
-          nature: 'signable_document',
-          content: pdfBase64,
-          filename: nomFichier || 'bail.pdf',
-        }),
+        headers: {
+          'Authorization': `Bearer ${YOUSIGN_API_KEY}`,
+        },
+        body: formData,
       })
       const uploadData = await uploadRes.json()
       console.log('Upload document:', JSON.stringify(uploadData))
