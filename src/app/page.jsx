@@ -187,9 +187,7 @@ export default function Home() {
         </div>
       </section>
 
-      </AnimatedSection>
-
-      <AnimatedSection delay={100}>
+<AnimatedSection>
       {/* SCREENSHOTS */}
       <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -218,7 +216,6 @@ export default function Home() {
 
       <AnimatedSection>
       {/* LOGOS DE CONFIANCE */}
-      
       <section style={{ padding: '32px 24px', background: 'white', borderBottom: '1px solid #f3f4f6' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24 }}>
