@@ -770,7 +770,7 @@ if (bailIdExistant) {
           <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Envoi par email — signature légale à distance — valeur juridique.</p>
         </div>
         <div style={{ marginLeft: 'auto' }}>
-          <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Bientôt</span>
+          <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}></span>
         </div>
       </div>
 

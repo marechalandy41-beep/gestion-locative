@@ -65,6 +65,141 @@ export default function NouveauBailAutre() {
     setLoading(false); window.location.href = '/baux'
   }
 
+async function envoyerVersYousign() {
+    if (!form.locataire_email) { alert('Email du locataire obligatoire pour Yousign.'); return }
+    setLoading(true)
+    try {
+      // Générer le PDF (même logique que finaliserEtSauvegarder)
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      const pageW = 210, margin = 20, contenuW = pageW - margin * 2
+      let y = 20
+      const checkPage = () => { if (y > 270) { doc.addPage(); y = 20 } }
+      const titre = (texte) => {
+        checkPage()
+        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235)
+        doc.text(texte, margin, y); y += 2
+        doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.4)
+        doc.line(margin, y, pageW - margin, y); y += 6; doc.setTextColor(0, 0, 0)
+      }
+      const ligne = (label, valeur) => {
+        if (!valeur) return
+        checkPage()
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text(label, margin, y)
+        doc.setFont('helvetica', 'normal')
+        const lignes = doc.splitTextToSize(valeur.toString(), contenuW - 55)
+        doc.text(lignes, margin + 55, y)
+        y += Math.max(5, lignes.length * 4.5)
+      }
+      const texte = (t) => {
+        checkPage()
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 50, 50)
+        const lignes = doc.splitTextToSize(t, contenuW)
+        lignes.forEach(l => { checkPage(); doc.text(l, margin, y); y += 4.5 })
+        doc.setTextColor(0, 0, 0); y += 2
+      }
+      const bienSel = biens.find(b => b.id === parseInt(form.bien_id))
+
+      doc.setFillColor(37, 99, 235); doc.rect(0, 0, 210, 20, 'F')
+      doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
+      doc.text('CONTRAT DE LOCATION', pageW / 2, 10, { align: 'center' })
+      doc.setFontSize(9)
+      doc.text('NON MEUBLÉ — Loi n°89-462 du 6 juillet 1989', pageW / 2, 16, { align: 'center' })
+      y = 28; doc.setTextColor(0, 0, 0)
+
+      titre('ARTICLE 1 — LE BAILLEUR')
+      ligne('Nom et prénom :', `${form.bailleur_prenom} ${form.bailleur_nom}`)
+      ligne('Adresse :', form.bailleur_adresse)
+
+      titre('ARTICLE 2 — LE LOCATAIRE')
+      ligne('Nom et prénom :', `${form.locataire_prenom} ${form.locataire_nom}`)
+      ligne('Email :', form.locataire_email)
+      ligne('Téléphone :', form.locataire_telephone)
+
+      titre('ARTICLE 3 — BIEN LOUÉ')
+      ligne('Adresse :', bienSel?.adresse)
+      ligne('Surface :', form.surface_habitable ? `${form.surface_habitable} m²` : null)
+
+      titre('ARTICLE 4 — CONDITIONS FINANCIÈRES')
+      ligne('Loyer HC :', `${form.loyer_hc} €`)
+      ligne('Charges :', form.charges ? `${form.charges} €` : null)
+      ligne('Dépôt de garantie :', form.depot_garantie ? `${form.depot_garantie} €` : null)
+
+      titre('ARTICLE 5 — DURÉE')
+      ligne('Date de début :', form.date_debut ? new Date(form.date_debut).toLocaleDateString('fr-FR') : null)
+      ligne('Date de fin :', form.date_fin ? new Date(form.date_fin).toLocaleDateString('fr-FR') : 'Reconduction tacite')
+
+      if (form.clauses) { titre('CLAUSES PARTICULIÈRES'); texte(form.clauses) }
+
+      y += 20; titre('SIGNATURES')
+      doc.text(`À signer électroniquement via Yousign`, margin, y)
+
+      const nomFichier = `Bail_NonMeuble_${sanitize(form.locataire_nom)}_${sanitize(form.bailleur_nom)}_${form.date_debut || 'date'}.pdf`
+      const pdfBase64 = doc.output('datauristring').split(',')[1]
+
+      // Sauvegarder le bail
+      const bailData = {
+        user_id: user.id, bien_id: parseInt(form.bien_id),
+        type_bail: 'Non meublé',
+        loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0,
+        type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
+        date_debut: form.date_debut || null, date_fin: form.date_fin || null,
+        date_exigibilite: parseInt(form.date_exigibilite) || 1,
+        revision_irl: form.revision_irl, modalite_paiement: form.modalite_paiement,
+        clauses: form.clauses, relance_auto_active: form.relance_auto_active || false,
+        relance_auto_jours: form.relance_auto_jours || 5,
+        bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
+        bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
+        bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite,
+        locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
+        locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
+        locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite,
+        locataire_profession: form.locataire_profession, locataire_adresse: form.locataire_adresse,
+        surface_habitable: parseFloat(form.surface_habitable) || null,
+        nombre_pieces: parseInt(form.nombre_pieces) || null,
+        etage: form.etage, equipements: form.equipements,
+        classe_dpe: form.classe_dpe, numero_lot: form.numero_lot,
+        statut: 'en_attente_signature',
+      }
+
+      let bail, bailError
+      if (bailIdExistant) {
+        const res = await supabase.from('Baux').update(bailData).eq('id', bailIdExistant).select().single()
+        bail = res.data; bailError = res.error
+      } else {
+        const res = await supabase.from('Baux').insert(bailData).select().single()
+        bail = res.data; bailError = res.error
+      }
+      if (bailError) { alert('Erreur : ' + bailError.message); setLoading(false); return }
+
+      // Envoyer vers Yousign
+      const res = await fetch('/api/yousign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_signature_request',
+          bailId: bail.id,
+          userId: user.id,
+          pdfBase64,
+          nomFichier,
+          bailleurEmail: user.email,
+          bailleurNom: `${form.bailleur_prenom} ${form.bailleur_nom}`,
+          locataireEmail: form.locataire_email,
+          locataireNom: `${form.locataire_prenom} ${form.locataire_nom}`,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert('✅ Emails de signature envoyés via Yousign au bailleur et au locataire !')
+        window.location.href = `/baux/${bail.id}`
+      } else {
+        alert('Erreur Yousign : ' + (data.error || JSON.stringify(data.details)))
+      }
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setLoading(false)
+  }
+
   async function finaliserEtSauvegarder() {
     setLoading(true)
     try {
@@ -233,8 +368,8 @@ export default function NouveauBailAutre() {
                 <div onClick={() => setEtape(4)} style={{ background: '#f0fdf4', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.border = '2px solid #16a34a'} onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
                   <div style={{ fontSize: 32 }}>✍️</div><div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#16a34a', margin: '0 0 3px' }}>Signer maintenant</h3><p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Signature manuscrite.</p></div><div style={{ marginLeft: 'auto', color: '#16a34a', fontSize: 18 }}>→</div>
                 </div>
-                <div onClick={() => alert('Yousign — bientôt disponible !')} style={{ background: '#f5f3ff', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.border = '2px solid #7c3aed'} onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-                  <div style={{ fontSize: 32 }}>🔏</div><div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed', margin: '0 0 3px' }}>Yousign</h3><p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Signature électronique.</p></div><div style={{ marginLeft: 'auto' }}><span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Bientôt</span></div>
+                <div onClick={envoyerVersYousign} style={{ background: '#f5f3ff', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.border = '2px solid #7c3aed'} onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+                  <div style={{ fontSize: 32 }}>🔏</div><div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed', margin: '0 0 3px' }}>Yousign</h3><p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Signature électronique.</p></div><div style={{ marginLeft: 'auto' }}><span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}></span></div>
                 </div>
                 <div onClick={sauvegarderBrouillon} style={{ background: '#f9fafb', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.border = '2px solid #9ca3af'} onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
                   <div style={{ fontSize: 32 }}>⏰</div><div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#6b7280', margin: '0 0 3px' }}>Signer plus tard</h3><p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Brouillon dans Mes Baux.</p></div><div style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: 18 }}>→</div>
