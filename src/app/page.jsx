@@ -1,6 +1,33 @@
 'use client'
 import { supabase } from '../supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+function useInView(threshold = 0.1) {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setInView(true) },
+      { threshold }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, inView]
+}
+
+function AnimatedSection({ children, delay = 0 }) {
+  const [ref, inView] = useInView()
+  return (
+    <div ref={ref} style={{
+      opacity: inView ? 1 : 0,
+      transform: inView ? 'translateY(0)' : 'translateY(30px)',
+      transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+    }}>
+      {children}
+    </div>
+  )
+}
 
 function FaqItem({ question, reponse }) {
   const [ouvert, setOuvert] = useState(false)
@@ -160,6 +187,7 @@ export default function Home() {
         </div>
       </section>
 
+      <AnimatedSection>
       {/* LOGOS DE CONFIANCE */}
       <section style={{ padding: '32px 24px', background: 'white', borderBottom: '1px solid #f3f4f6' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -182,7 +210,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+</AnimatedSection>
 
+      <AnimatedSection delay={100}>
       {/* FONCTIONNALITÉS */}
       <section id="fonctionnalites" style={{ padding: '80px 24px', background: 'white' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -207,6 +237,9 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* COMMENT ÇA MARCHE */}
       <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -239,6 +272,9 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* ARGUMENT FISCAL */}
       <section style={{ padding: '60px 24px', background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
@@ -255,6 +291,9 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* TARIFS */}
       <section id="tarifs" style={{ padding: '80px 24px', background: '#f9fafb' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -323,6 +362,9 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* FAQ */}
       <section style={{ padding: '80px 24px', background: 'white' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -341,6 +383,9 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* CTA FINAL */}
       <section style={{ padding: '80px 24px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -351,7 +396,7 @@ export default function Home() {
           </a>
         </div>
       </section>
-
+</AnimatedSection>
       {/* FOOTER */}
       <footer style={{ background: '#111827', padding: '32px 24px', textAlign: 'center' }}>
         <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px', fontWeight: 700 }}>🏠 Ma Gestion-Locative</p>
