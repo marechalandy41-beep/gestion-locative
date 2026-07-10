@@ -413,6 +413,68 @@ export default function Home() {
       </AnimatedSection>
 
       <AnimatedSection delay={100}>
+      {/* INSTALLER L'APP */}
+      <section style={{ padding: '80px 24px', background: 'white' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>📱 Installez l'app sur votre téléphone</h2>
+          <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 48px' }}>Accédez à Ma Gestion-Locative comme une vraie app mobile, gratuitement</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+
+            {/* iOS */}
+            <div style={{ background: '#f9fafb', borderRadius: 16, padding: 28, border: '1px solid #f3f4f6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 44, height: 44, background: 'black', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🍎</div>
+                <div>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>iPhone</p>
+                  <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Safari uniquement</p>
+                </div>
+              </div>
+              {[
+                'Ouvrez le site dans Safari',
+                'Appuyez sur le bouton Partager ↑',
+                'Appuyez sur "Sur l\'écran d\'accueil"',
+                'Confirmez en appuyant sur "Ajouter"',
+              ].map((step, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2563eb', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
+                  <p style={{ fontSize: 14, color: '#374151', margin: 0, lineHeight: 1.5 }}>{step}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Android */}
+            <div style={{ background: '#f9fafb', borderRadius: 16, padding: 28, border: '1px solid #f3f4f6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 44, height: 44, background: '#16a34a', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🤖</div>
+                <div>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>Android</p>
+                  <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Chrome uniquement</p>
+                </div>
+              </div>
+              {[
+                'Ouvrez le site dans Chrome',
+                'Appuyez sur les 3 points ⋮ en haut',
+                'Appuyez sur "Ajouter à l\'écran d\'accueil"',
+                'Confirmez en appuyant sur "Ajouter"',
+              ].map((step, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#16a34a', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
+                  <p style={{ fontSize: 14, color: '#374151', margin: 0, lineHeight: 1.5 }}>{step}</p>
+                </div>
+              ))}
+            </div>
+
+          </div>
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginTop: 24, textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: '#2563eb', margin: 0 }}>
+              💡 Une fois installée, l'app apparaît sur votre écran d'accueil comme une vraie application native — sans abonnement App Store
+            </p>
+          </div>
+        </div>
+      </section>
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* CTA FINAL */}
       <section style={{ padding: '80px 24px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
