@@ -187,8 +187,38 @@ export default function Home() {
         </div>
       </section>
 
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
+      {/* SCREENSHOTS */}
+      <section style={{ padding: '80px 24px', background: '#f9fafb' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>L'application dans votre poche</h2>
+          <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Gérez vos biens locatifs depuis votre téléphone ou votre ordinateur</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ textAlign: 'center' }}>
+              <img src="/screenshots/dashboard.jpg" alt="Dashboard Ma Gestion-Locative" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Dashboard</p>
+              <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Vos stats en un coup d'oeil</p>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 40 }}>
+              <img src="/screenshots/baux.jpg" alt="Mes Baux" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Mes Baux</p>
+              <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Tous vos contrats centralisés</p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <img src="/screenshots/documents.jpg" alt="Documents" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Documents</p>
+              <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Quittances, EDL, coffre-fort</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      </AnimatedSection>
+
       <AnimatedSection>
       {/* LOGOS DE CONFIANCE */}
+      
       <section style={{ padding: '32px 24px', background: 'white', borderBottom: '1px solid #f3f4f6' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24 }}>
