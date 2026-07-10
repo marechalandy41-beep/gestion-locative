@@ -438,6 +438,7 @@ async function activerPushNotifications() {
             { id: 'abonnement', label: '💳 Abonnement' },
             { id: 'messages', label: `📬 Mes demandes${conversationsNonLues.length > 0 ? ` (${conversationsNonLues.length})` : ''}` },
             { id: 'faq', label: '❓ FAQ' },
+            { id: 'installer', label: '📱 Installer l\'app' },
           ].map(o => (
             <button key={o.id} onClick={() => setOnglet(o.id)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
@@ -700,7 +701,63 @@ async function activerPushNotifications() {
           </div>
         )}
 
-      {/* ONGLET FAQ */}
+      {/* ONGLET INSTALLER */}
+        {onglet === 'installer' && (
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>📱 Installer Ma Gestion-Locative sur votre téléphone</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 32px' }}>Accédez à l'application comme une vraie app mobile — sans passer par le navigateur.</p>
+
+            {/* iOS */}
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, background: '#f3f4f6', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🍎</div>
+                <h4 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>iPhone (iOS / Safari)</h4>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { num: '1', texte: 'Ouvrez magestion-locative.fr dans Safari (pas Chrome)' },
+                  { num: '2', texte: 'Appuyez sur le bouton Partager en bas de l\'écran (carré avec une flèche vers le haut)' },
+                  { num: '3', texte: 'Faites défiler et appuyez sur "Sur l\'écran d\'accueil"' },
+                  { num: '4', texte: 'Appuyez sur "Ajouter" en haut à droite' },
+                ].map((e, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2563eb', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{e.num}</div>
+                    <p style={{ fontSize: 14, color: '#374151', margin: 0, lineHeight: 1.5 }}>{e.texte}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Android */}
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, background: '#f3f4f6', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
+                <h4 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Android (Chrome)</h4>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { num: '1', texte: 'Ouvrez magestion-locative.fr dans Chrome' },
+                  { num: '2', texte: 'Appuyez sur les 3 points en haut à droite' },
+                  { num: '3', texte: 'Appuyez sur "Ajouter à l\'écran d\'accueil"' },
+                  { num: '4', texte: 'Appuyez sur "Ajouter" pour confirmer' },
+                ].map((e, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#16a34a', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{e.num}</div>
+                    <p style={{ fontSize: 14, color: '#374151', margin: 0, lineHeight: 1.5 }}>{e.texte}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16 }}>
+              <p style={{ fontSize: 13, color: '#2563eb', margin: 0 }}>
+                💡 Une fois installée, l'app apparaît sur votre écran d'accueil comme une vraie application. Vous pouvez l'utiliser sans connexion internet pour consulter vos données.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET FAQ */}
         {onglet === 'faq' && (
           <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>❓ Questions fréquentes</h3>
