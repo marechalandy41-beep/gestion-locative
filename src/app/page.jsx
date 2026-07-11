@@ -148,6 +148,7 @@ export default function Home() {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <a href="#tarifs" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Tarifs</a>
             <a href="#fonctionnalites" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Fonctionnalités</a>
+            <a href="/blog" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Blog</a>
             {user ? (
               <a href="/dashboard" style={{ background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>
                 Mon espace →
@@ -493,6 +494,7 @@ export default function Home() {
           © 2026 Ma Gestion-Locative —{' '}
           <a href="/cgu" style={{ color: '#6b7280', textDecoration: 'none' }}>CGU</a> —{' '}
           <a href="/faq" style={{ color: '#6b7280', textDecoration: 'none' }}>FAQ</a> —{' '}
+          <a href="/blog" style={{ color: '#6b7280', textDecoration: 'none' }}>Blog</a> —{' '}
           <a href="/contact" style={{ color: '#6b7280', textDecoration: 'none' }}>Contact</a> —{' '}
           <a href="/auth" style={{ color: '#6b7280', textDecoration: 'none' }}>Se connecter</a>
         </p>

@@ -82,6 +82,7 @@ export default function FAQ() {
           © 2026 Ma Gestion-Locative —{' '}
           <a href="/cgu" style={{ color: '#6b7280', textDecoration: 'none' }}>CGU</a> —{' '}
           <a href="/faq" style={{ color: '#6b7280', textDecoration: 'none' }}>FAQ</a> —{' '}
+          <a href="/blog" style={{ color: '#6b7280', textDecoration: 'none' }}>Blog</a> —{' '}
           <a href="/contact" style={{ color: '#6b7280', textDecoration: 'none' }}>Contact</a> —{' '}
           <a href="/auth" style={{ color: '#6b7280', textDecoration: 'none' }}>Se connecter</a>
         </p>
