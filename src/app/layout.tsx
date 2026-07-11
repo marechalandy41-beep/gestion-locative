@@ -39,11 +39,28 @@ export default function RootLayout({
 }
 
 export const metadata: Metadata = {
-  title: "Ma Gestion-Locative — Gérez vos biens en toute simplicité",
-  description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
+  title: "Ma Gestion-Locative — Logiciel de gestion locative en ligne",
+  description: "Gérez vos biens locatifs en toute simplicité. Baux conformes ALUR, quittances automatiques, états des lieux, connexion bancaire. Déductible de vos revenus fonciers.",
+  keywords: "gestion locative, logiciel gestion locative, quittance de loyer, bail location, état des lieux, propriétaire bailleur, quittance automatique",
   manifest: '/manifest.json',
+  openGraph: {
+    title: "Ma Gestion-Locative — Logiciel de gestion locative en ligne",
+    description: "Gérez vos biens locatifs en toute simplicité. Baux conformes ALUR, quittances automatiques, états des lieux, connexion bancaire.",
+    url: "https://www.magestion-locative.fr",
+    siteName: "Ma Gestion-Locative",
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ma Gestion-Locative — Logiciel de gestion locative en ligne",
+    description: "Gérez vos biens locatifs en toute simplicité. Baux conformes ALUR, quittances automatiques, états des lieux, connexion bancaire.",
+  },
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
     apple: '/Icon-192.png',
   },
 };
