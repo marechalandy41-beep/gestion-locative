@@ -36,7 +36,7 @@ export default function Compte() {
   const [faqOuvert, setFaqOuvert] = useState(null)
   const [pushActif, setPushActif] = useState(false)
   const [pushLoading, setPushLoading] = useState(false)
-  const [plan, setplan] = useState('gratuit')
+  const [plan, setPlan] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
   const [changementLoading, setChangementLoading] = useState(false)
   const [prixManuel, setPrixManuel] = useState('4')
@@ -72,7 +72,7 @@ useEffect(() => {
           .single();
 
         if (customerData?.plan) {
-          setplan(customerData.plan)
+          setPlan(customerData.plan)
         }
 
 
@@ -356,7 +356,7 @@ async function activerPushNotifications() {
         })
         const data = await res.json()
         if (data.success) {
-          setplan('gratuit')
+          setPlan('gratuit')
           setPlanSelectionne(null)
           setMessage('Vous êtes repassé en plan Gratuit.')
           setTimeout(() => setMessage(''), 4000)
@@ -372,7 +372,7 @@ async function activerPushNotifications() {
         })
         const data = await res.json()
         if (data.success) {
-          setplan(planChoisi.id)
+          setPlan(planChoisi.id)
           setPlanSelectionne(null)
           setMessage(`Vous êtes passé au plan ${planChoisi.nom}.`)
           setTimeout(() => setMessage(''), 4000)
