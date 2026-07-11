@@ -27,6 +27,8 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2563eb" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/Icon-192.png" />
       </head>
       <body className="min-h-full flex flex-col">
         <OneSignalInit />
@@ -40,5 +42,8 @@ export const metadata: Metadata = {
   title: "Ma Gestion-Locative — Gérez vos biens en toute simplicité",
   description: "Logiciel de gestion locative en ligne — baux, quittances, coffre-fort numérique",
   manifest: '/manifest.json',
-  icons: {},
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/Icon-192.png',
+  },
 };
