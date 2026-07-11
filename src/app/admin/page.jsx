@@ -299,7 +299,7 @@ async function ouvrirConversationAdmin(conv) {
                       style={{ background: '#374151', color: 'white', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}>
                       <option value="gratuit">Gratuit</option>
                       <option value="manuel">Manuel</option>
-                      <option value="auto">Automatique</option>
+                      <option value="automatique">Automatique</option>
                     </select>
                     <button
                       onClick={async () => {

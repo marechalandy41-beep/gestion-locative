@@ -36,7 +36,7 @@ export default function Compte() {
   const [faqOuvert, setFaqOuvert] = useState(null)
   const [pushActif, setPushActif] = useState(false)
   const [pushLoading, setPushLoading] = useState(false)
-  const [planActuel, setPlanActuel] = useState('gratuit')
+  const [plan, setplan] = useState('gratuit')
   const [planSelectionne, setPlanSelectionne] = useState(null)
   const [changementLoading, setChangementLoading] = useState(false)
   const [prixManuel, setPrixManuel] = useState('4')
@@ -72,7 +72,7 @@ useEffect(() => {
           .single();
 
         if (customerData?.plan) {
-          setPlanActuel(customerData.plan)
+          setplan(customerData.plan)
         }
 
 
@@ -340,11 +340,11 @@ async function activerPushNotifications() {
   ]
 
   async function confirmerChangementPlan() {
-    if (!planSelectionne || planSelectionne === planActuel) return
+    if (!planSelectionne || planSelectionne === plan) return
     setChangementLoading(true)
 
     const planChoisi = PLANS.find(p => p.id === planSelectionne)
-    const aUnAbonnementPayantActif = planActuel === 'manuel' || planActuel === 'automatique'
+    const aUnAbonnementPayantActif = plan === 'manuel' || plan === 'automatique'
 
     try {
       if (planChoisi.id === 'gratuit') {
@@ -356,7 +356,7 @@ async function activerPushNotifications() {
         })
         const data = await res.json()
         if (data.success) {
-          setPlanActuel('gratuit')
+          setplan('gratuit')
           setPlanSelectionne(null)
           setMessage('Vous êtes repassé en plan Gratuit.')
           setTimeout(() => setMessage(''), 4000)
@@ -372,7 +372,7 @@ async function activerPushNotifications() {
         })
         const data = await res.json()
         if (data.success) {
-          setPlanActuel(planChoisi.id)
+          setplan(planChoisi.id)
           setPlanSelectionne(null)
           setMessage(`Vous êtes passé au plan ${planChoisi.nom}.`)
           setTimeout(() => setMessage(''), 4000)
@@ -484,8 +484,8 @@ async function activerPushNotifications() {
               </button>
               {isMobileDevice && <button onClick={activerPushNotifications} disabled={pushLoading || pushActif}
                 style={{ background: pushActif ? '#f0fdf4' : '#fef9c3', color: pushActif ? '#15803d' : '#92400e', border: `1px solid ${pushActif ? '#bbf7d0' : '#fde047'}`, padding: '10px 24px', borderRadius: 10, cursor: pushActif ? 'default' : 'pointer', fontWeight: 600, fontSize: 14 }}>
-                {pushLoading ? '⏳...' : pushActif ? '✅ Notifications activées' : '🔔 Activer les notifications push'}
-              </button>
+                {pushLoading ? 'Chargement...' : pushActif ? 'Notifications activées' : 'Activer les notifications push'}
+              </button>}
             </div>
           </div>
         )}
@@ -523,7 +523,7 @@ async function activerPushNotifications() {
               <h4 style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 14 }}>Changer de plan</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
                 {PLANS.map(p => {
-                  const estActuel = p.id === planActuel
+                  const estActuel = p.id === plan
                   const estSelectionne = p.id === planSelectionne
                   return (
                     <div key={p.id} onClick={() => setPlanSelectionne(p.id)}
@@ -547,7 +547,7 @@ async function activerPushNotifications() {
                 })}
               </div>
 
-              {planSelectionne && planSelectionne !== planActuel && (
+              {planSelectionne && planSelectionne !== plan && (
                 <button onClick={confirmerChangementPlan} disabled={changementLoading}
                   style={{ background: changementLoading ? '#93c5fd' : '#16a34a', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: changementLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
                   {changementLoading ? 'Traitement...' : `✅ Confirmer le passage au plan ${PLANS.find(p => p.id === planSelectionne)?.nom}`}
