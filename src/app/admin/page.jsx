@@ -8,7 +8,10 @@ export default function Admin() {
   const [showFormCode, setShowFormCode] = useState(false)
   const [settings, setSettings] = useState({})
   const [savingSettings, setSavingSettings] = useState(false)
-  const [settingsToast, setSettingsToast] = useState(false)
+  const [settingsToast, setSettingsToast] = useState('')
+  const [articles, setArticles] = useState([])
+  const [showArticleForm, setShowArticleForm] = useState(false)
+  const [articleEnCours, setArticleEnCours] = useState(null)
   const [accesOk, setAccesOk] = useState(false)
   const [motDePasse, setMotDePasse] = useState('')
   const [erreur, setErreur] = useState('')
@@ -21,6 +24,7 @@ export default function Admin() {
   const [nouveauMessageAdmin, setNouveauMessageAdmin] = useState('')
   const [envoiAdminLoading, setEnvoiAdminLoading] = useState(false)
   const [onglet, setOnglet] = useState('dashboard')
+  
 
   useEffect(() => {
     const adminOk = sessionStorage.getItem('admin_ok')
@@ -85,6 +89,9 @@ export default function Admin() {
     const resConvs = await fetch('/api/admin/conversations')
     const dataConvs = await resConvs.json()
     if (dataConvs.conversations) setConversations(dataConvs.conversations)
+
+    const { data: dataArticles } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
+    if (dataArticles) setArticles(dataArticles)
 
     setLoading(false)
   }
@@ -170,6 +177,7 @@ async function ouvrirConversationAdmin(conv) {
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
     { id: 'liens', label: '🔗 Liens rapides' },
+    { id: 'blog', label: '📝 Blog' },
   ]
 
   return (
@@ -942,6 +950,115 @@ async function ouvrirConversationAdmin(conv) {
             </div>
           </div>
         )}
+
+      {/* ONGLET BLOG */}
+      {onglet === 'blog' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <h2 style={{ color: 'white', fontSize: 20, fontWeight: 700, margin: 0 }}>📝 Articles du blog</h2>
+            <button onClick={() => {
+              setArticleEnCours({ titre: '', slug: '', contenu: '', meta_description: '', publie: false })
+              setShowArticleForm(true)
+            }}
+              style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              + Nouvel article
+            </button>
+          </div>
+
+          {showArticleForm && (
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 24 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 16px' }}>
+                {articleEnCours?.id ? 'Modifier l\'article' : 'Nouvel article'}
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input value={articleEnCours?.titre || ''} onChange={e => setArticleEnCours(prev => ({ ...prev, titre: e.target.value }))}
+                  placeholder="Titre de l'article"
+                  style={{ background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 14px', color: 'white', fontSize: 14, outline: 'none' }} />
+                <input value={articleEnCours?.slug || ''} onChange={e => setArticleEnCours(prev => ({ ...prev, slug: e.target.value }))}
+                  placeholder="slug-url (ex: quittance-de-loyer-2026)"
+                  style={{ background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 14px', color: 'white', fontSize: 14, outline: 'none' }} />
+                <input value={articleEnCours?.meta_description || ''} onChange={e => setArticleEnCours(prev => ({ ...prev, meta_description: e.target.value }))}
+                  placeholder="Meta description (160 caractères max)"
+                  style={{ background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 14px', color: 'white', fontSize: 14, outline: 'none' }} />
+                <textarea value={articleEnCours?.contenu || ''} onChange={e => setArticleEnCours(prev => ({ ...prev, contenu: e.target.value }))}
+                  placeholder="Contenu en Markdown (## Titre, **gras**, - liste...)"
+                  rows={15}
+                  style={{ background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 14px', color: 'white', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'monospace' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input type="checkbox" id="publie" checked={articleEnCours?.publie || false}
+                    onChange={e => setArticleEnCours(prev => ({ ...prev, publie: e.target.checked }))} />
+                  <label htmlFor="publie" style={{ color: '#9ca3af', fontSize: 14 }}>Publier l'article</label>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setShowArticleForm(false); setArticleEnCours(null) }}
+                    style={{ flex: 1, background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '10px', cursor: 'pointer', fontWeight: 600 }}>
+                    Annuler
+                  </button>
+                  <button onClick={async () => {
+  if (!articleEnCours?.titre || !articleEnCours?.slug) { alert('Titre et slug obligatoires'); return }
+  let error
+  if (articleEnCours.id) {
+  const { id, created_at, ...donneesAMettreAJour } = articleEnCours
+  const res = await supabase.from('articles').update({ ...donneesAMettreAJour, updated_at: new Date().toISOString() }).eq('id', articleEnCours.id)
+  error = res.error
+} else {
+    const res = await supabase.from('articles').insert({ ...articleEnCours })
+    error = res.error
+  }
+  if (error) {
+    console.error('Erreur sauvegarde article:', error)
+    alert('Erreur : ' + error.message)
+    return
+  }
+  const { data } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
+  setArticles(data || [])
+  setShowArticleForm(false)
+  setArticleEnCours(null)
+}}
+  style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px', cursor: 'pointer', fontWeight: 600 }}>
+  💾 Sauvegarder
+</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(articles || []).map(article => (
+              <div key={article.id} style={{ background: '#1f2937', borderRadius: 14, padding: 20, border: '1px solid #374151', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <h3 style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0 }}>{article.titre}</h3>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: article.publie ? '#dcfce7' : '#f3f4f6', color: article.publie ? '#16a34a' : '#6b7280', fontWeight: 600 }}>
+                      {article.publie ? 'Publié' : 'Brouillon'}
+                    </span>
+                  </div>
+                  <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 4px' }}>{article.meta_description}</p>
+                  <p style={{ color: '#6b7280', fontSize: 12, margin: 0 }}>/{article.slug} · {new Date(article.created_at).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginLeft: 16 }}>
+                  <a href={`/blog/${article.slug}`} target="_blank" rel="noreferrer"
+                    style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none' }}>
+                    👁 Voir
+                  </a>
+                  <button onClick={() => { setArticleEnCours(article); setShowArticleForm(true) }}
+                    style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                    ✏️ Modifier
+                  </button>
+                  <button onClick={async () => {
+                    if (!confirm('Supprimer cet article ?')) return
+                    await supabase.from('articles').delete().eq('id', article.id)
+                    setArticles(prev => prev.filter(a => a.id !== article.id))
+                  }}
+                    style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       </div>
     </main>
