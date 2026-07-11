@@ -927,6 +927,7 @@ async function ouvrirConversationAdmin(conv) {
               { emoji: '🔔', label: 'OneSignal', desc: 'Push notifications', url: 'https://dashboard.onesignal.com/apps/cdedaaea-222b-4d4e-b6d6-23c4299a6053', couleur: '#e54b4b' },
               { emoji: '📧', label: 'Webmail Pro', desc: 'contact@magestion-locative.fr', url: 'https://zimbra1.mail.ovh.net/modern/', couleur: '#2563eb' },
               { emoji: '✍️', label: 'Yousign', desc: 'Signatures électroniques', url: 'https://yousign.app', couleur: '#7c3aed' },
+              { emoji: '🔍', label: 'Search Console', desc: 'Référencement Google', url: 'https://search.google.com/search-console?resource_id=sc-domain%3Amagestion-locative.fr&after_verification_success=', couleur: '#16a34a' },
               ].map((lien, i) => (
                 <a key={i} href={lien.url} target="_blank" rel="noopener noreferrer"
                   style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', textDecoration: 'none', display: 'block' }}
