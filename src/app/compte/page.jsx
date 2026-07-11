@@ -44,7 +44,12 @@ export default function Compte() {
   const [priceIdManuel, setPriceIdManuel] = useState('price_1TkNf95LCX9emtMyBEftu67t')
   const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
   const [isMobile, setIsMobile] = useState(false);
+const [isMobileDevice, setIsMobileDevice] = useState(false)
 
+  useEffect(() => {
+    setIsMobileDevice(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+  }, [])
+  
 useEffect(() => {
   const check = () => setIsMobile(window.innerWidth < 768);
   check();
@@ -477,7 +482,7 @@ async function activerPushNotifications() {
               <button onClick={sauvegarderProfil} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
                 Sauvegarder
               </button>
-              <button onClick={activerPushNotifications} disabled={pushLoading || pushActif}
+              {isMobileDevice && <button onClick={activerPushNotifications} disabled={pushLoading || pushActif}
                 style={{ background: pushActif ? '#f0fdf4' : '#fef9c3', color: pushActif ? '#15803d' : '#92400e', border: `1px solid ${pushActif ? '#bbf7d0' : '#fde047'}`, padding: '10px 24px', borderRadius: 10, cursor: pushActif ? 'default' : 'pointer', fontWeight: 600, fontSize: 14 }}>
                 {pushLoading ? '⏳...' : pushActif ? '✅ Notifications activées' : '🔔 Activer les notifications push'}
               </button>
