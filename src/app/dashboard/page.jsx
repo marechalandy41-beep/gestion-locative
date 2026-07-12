@@ -15,6 +15,11 @@ export default function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const [historiquePaiements, setHistoriquePaiements] = useState([]);
   const [bauxEnFin, setBauxEnFin] = useState([]);
+  const [ongletActif, setOngletActif] = useState('overview');
+  const [anneeFiscale, setAnneeFiscale] = useState(new Date().getFullYear());
+  const [paiementsFiscal, setPaiementsFiscal] = useState([]);
+  const [chargesFiscal, setChargesFiscal] = useState([]);
+  const [loadingFiscal, setLoadingFiscal] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -87,6 +92,61 @@ export default function Dashboard() {
     setNonLusParBail(compteur);
   }
 
+async function chargerFiscal(userId, annee) {
+    setLoadingFiscal(true);
+    // Loyers réellement encaissés sur l'année (manuels 'valide' + Bridge 'paye'), on exclut les relances (montant 0)
+    const { data: paiementsData } = await supabase
+      .from('paiements')
+      .select('montant, bail_id, statut')
+      .eq('user_id', userId)
+      .eq('annee', annee)
+      .in('statut', ['valide', 'paye'])
+      .gt('montant', 0);
+    // Charges déductibles de l'année
+    const { data: chargesData } = await supabase
+      .from('charges_fiscales')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('annee', annee);
+    setPaiementsFiscal(paiementsData || []);
+    setChargesFiscal(chargesData || []);
+    setLoadingFiscal(false);
+  }
+
+  useEffect(() => {
+    if (user?.id && ongletActif === 'fiscal') {
+      chargerFiscal(user.id, anneeFiscale);
+    }
+  }, [user, ongletActif, anneeFiscale]);
+
+  // Calculs fiscaux
+  const totalLoyersPercus = paiementsFiscal.reduce((a, p) => a + (parseFloat(p.montant) || 0), 0);
+  const totalChargesDeductibles = chargesFiscal.reduce((a, c) =>
+    a + (parseFloat(c.taxe_fonciere) || 0)
+      + (parseFloat(c.assurance) || 0)
+      + (parseFloat(c.travaux) || 0)
+      + (parseFloat(c.frais_gestion) || 0)
+      + (parseFloat(c.interets_emprunt) || 0)
+      + (parseFloat(c.autres) || 0), 0);
+  const revenuNet = totalLoyersPercus - totalChargesDeductibles;
+
+  // Détail par bien
+  const detailParBien = biens.map(bien => {
+    const bauxDuBien = baux.filter(b => b.bien?.id === bien.id).map(b => b.id);
+    // fallback : certains paiements peuvent ne pas matcher un bail actif, on somme par bail rattaché au bien
+    const loyersBien = paiementsFiscal
+      .filter(p => bauxDuBien.includes(p.bail_id))
+      .reduce((a, p) => a + (parseFloat(p.montant) || 0), 0);
+    const c = chargesFiscal.find(ch => ch.bien_id === bien.id);
+    const chargesBien = c
+      ? (parseFloat(c.taxe_fonciere) || 0) + (parseFloat(c.assurance) || 0) + (parseFloat(c.travaux) || 0)
+        + (parseFloat(c.frais_gestion) || 0) + (parseFloat(c.interets_emprunt) || 0) + (parseFloat(c.autres) || 0)
+      : 0;
+    return { bien, loyers: loyersBien, charges: chargesBien, net: loyersBien - chargesBien };
+  }).filter(d => d.loyers > 0 || d.charges > 0);
+
+  const anneesDispo = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
   const estPayant = plan !== 'gratuit';
@@ -151,6 +211,24 @@ export default function Dashboard() {
       <Nav pageCourante="dashboard" />
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '24px 16px' : '32px 24px' }}>
+
+{/* ONGLETS */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #e5e7eb' }}>
+          <button onClick={() => setOngletActif('overview')}
+            style={{ background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+              color: ongletActif === 'overview' ? '#2563eb' : '#6b7280',
+              borderBottom: ongletActif === 'overview' ? '2px solid #2563eb' : '2px solid transparent', marginBottom: -1 }}>
+            📊 Vue d'ensemble
+          </button>
+          <button onClick={() => setOngletActif('fiscal')}
+            style={{ background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+              color: ongletActif === 'fiscal' ? '#2563eb' : '#6b7280',
+              borderBottom: ongletActif === 'fiscal' ? '2px solid #2563eb' : '2px solid transparent', marginBottom: -1 }}>
+            💰 Bilan fiscal
+          </button>
+        </div>
+
+        {ongletActif === 'overview' && (<>
 
         {/* EN-TÊTE */}
         {isMobile ? (
@@ -326,6 +404,80 @@ export default function Dashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+        </>)}
+
+        {/* ONGLET FISCAL */}
+        {ongletActif === 'fiscal' && (
+          <div>
+            {/* Sélecteur d'année */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Année fiscale :</label>
+              <select value={anneeFiscale} onChange={e => setAnneeFiscale(parseInt(e.target.value))}
+                style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 600, color: '#111827', background: 'white', cursor: 'pointer' }}>
+                {anneesDispo.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            {loadingFiscal ? (
+              <p style={{ textAlign: 'center', color: '#6b7280', padding: 40 }}>Calcul en cours...</p>
+            ) : (
+              <>
+                {/* 3 cartes de synthèse */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+                  <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>Loyers perçus {anneeFiscale}</p>
+                    <p style={{ fontSize: 30, fontWeight: 700, color: '#16a34a', marginTop: 8 }}>{totalLoyersPercus.toLocaleString('fr-FR')}€</p>
+                  </div>
+                  <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>Charges déductibles</p>
+                    <p style={{ fontSize: 30, fontWeight: 700, color: '#ea580c', marginTop: 8 }}>{totalChargesDeductibles.toLocaleString('fr-FR')}€</p>
+                  </div>
+                  <div style={{ background: revenuNet >= 0 ? '#f0fdf4' : '#fef2f2', borderRadius: 16, padding: 24, border: `1px solid ${revenuNet >= 0 ? '#bbf7d0' : '#fecaca'}` }}>
+                    <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>Revenu foncier net</p>
+                    <p style={{ fontSize: 30, fontWeight: 700, color: revenuNet >= 0 ? '#16a34a' : '#dc2626', marginTop: 8 }}>{revenuNet.toLocaleString('fr-FR')}€</p>
+                  </div>
+                </div>
+
+                {/* Détail par bien */}
+                <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 16px' }}>🏠 Détail par bien</h3>
+                  {detailParBien.length === 0 ? (
+                    <p style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Aucune donnée pour {anneeFiscale}.</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <th style={{ textAlign: 'left', padding: '8px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>BIEN</th>
+                            <th style={{ textAlign: 'right', padding: '8px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>LOYERS</th>
+                            <th style={{ textAlign: 'right', padding: '8px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>CHARGES</th>
+                            <th style={{ textAlign: 'right', padding: '8px 12px', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>NET</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detailParBien.map(d => (
+                            <tr key={d.bien.id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                              <td style={{ padding: '12px', color: '#111827', fontWeight: 600 }}>{d.bien.nom}</td>
+                              <td style={{ padding: '12px', textAlign: 'right', color: '#16a34a', fontWeight: 600 }}>{d.loyers.toLocaleString('fr-FR')}€</td>
+                              <td style={{ padding: '12px', textAlign: 'right', color: '#ea580c', fontWeight: 600 }}>{d.charges.toLocaleString('fr-FR')}€</td>
+                              <td style={{ padding: '12px', textAlign: 'right', color: d.net >= 0 ? '#111827' : '#dc2626', fontWeight: 700 }}>{d.net.toLocaleString('fr-FR')}€</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ background: '#eff6ff', borderRadius: 12, padding: 16, border: '1px solid #bfdbfe' }}>
+                  <p style={{ fontSize: 13, color: '#1e40af', margin: 0 }}>
+                    ℹ️ Les charges déductibles proviennent de votre récap fiscal. Pour les modifier, rendez-vous dans <a href="/documents/recap-fiscal" style={{ color: '#2563eb', fontWeight: 600 }}>Récap fiscal</a>. Ces chiffres sont indicatifs et ne constituent pas un conseil fiscal.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
