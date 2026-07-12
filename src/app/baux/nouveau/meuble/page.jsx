@@ -16,6 +16,8 @@ export default function NouveauBailMeuble() {
   const [signatureLocataire, setSignatureLocataire] = useState(null)
   const [signatureActive, setSignatureActive] = useState(null)
   const [dessin, setDessin] = useState(false)
+  const [luApprouveBailleur, setLuApprouveBailleur] = useState(false)
+  const [luApprouveLocataire, setLuApprouveLocataire] = useState(false)
   const canvasRef = useRef(null)
 
   const inp = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'white' }
@@ -100,6 +102,8 @@ export default function NouveauBailMeuble() {
   function stopDraw() { setDessin(false) }
   function effacer() { canvasRef.current.getContext('2d').clearRect(0, 0, 520, 140) }
   function validerSignature() {
+    const caseCochee = signatureActive === 'bailleur' ? luApprouveBailleur : luApprouveLocataire
+    if (!caseCochee) { alert('Veuillez cocher « Je certifie avoir lu et approuvé » avant de valider la signature.'); return }
     const dataUrl = canvasRef.current.toDataURL('image/png')
     if (signatureActive === 'bailleur') setSignatureBailleur(dataUrl)
     else setSignatureLocataire(dataUrl)
@@ -399,12 +403,15 @@ async function envoyerVersYousign() {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
       doc.text(`${form.bailleur_prenom} ${form.bailleur_nom}`, margin, y)
       doc.text(`${form.locataire_prenom} ${form.locataire_nom}`, pageW / 2 + 5, y); y += 2
-      doc.text('(Précédé de "Lu et approuvé")', margin, y)
-      doc.text('(Précédé de "Lu et approuvé")', pageW / 2 + 5, y); y += 4
+      y += 4
       doc.setDrawColor(180, 180, 180)
       doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38)
-      if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 1, 78, 36)
-      if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 1, 78, 36)
+      doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(120, 120, 120)
+      if (luApprouveBailleur) doc.text('Lu et approuvé', margin + 2, y + 4)
+      if (luApprouveLocataire) doc.text('Lu et approuvé', pageW / 2 + 7, y + 4)
+      doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal')
+      if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 5, 78, 32)
+      if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 5, 78, 32)
       y += 44
       doc.setFontSize(7); doc.setTextColor(150, 150, 150)
       doc.text('Document généré par Ma Gestion-Locative — Conforme loi n°89-462 du 6 juillet 1989 et décret n°2015-981', pageW / 2, y, { align: 'center' })
@@ -796,6 +803,10 @@ async function envoyerVersYousign() {
                 </p>
                 {!signatureBailleur || signatureActive === 'bailleur' ? (
                   <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: 'pointer', fontSize: 13, color: '#374151' }}>
+                      <input type="checkbox" checked={luApprouveBailleur} onChange={e => setLuApprouveBailleur(e.target.checked)} style={{ width: 16, height: 16 }} />
+                      Je certifie avoir <strong>&nbsp;lu et approuvé&nbsp;</strong> le contenu du bail
+                    </label>
                     <canvas ref={signatureActive === 'bailleur' || !signatureActive ? canvasRef : null}
                       onClick={() => setSignatureActive('bailleur')}
                       onMouseDown={signatureActive === 'bailleur' ? startDraw : null}
@@ -828,6 +839,10 @@ async function envoyerVersYousign() {
                 </p>
                 {!signatureLocataire || signatureActive === 'locataire' ? (
                   <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: 'pointer', fontSize: 13, color: '#374151' }}>
+                      <input type="checkbox" checked={luApprouveLocataire} onChange={e => setLuApprouveLocataire(e.target.checked)} style={{ width: 16, height: 16 }} />
+                      Je certifie avoir <strong>&nbsp;lu et approuvé&nbsp;</strong> le contenu du bail
+                    </label>
                     <canvas ref={signatureActive === 'locataire' ? canvasRef : null}
                       onClick={() => setSignatureActive('locataire')}
                       onMouseDown={signatureActive === 'locataire' ? startDraw : null}
@@ -854,10 +869,15 @@ async function envoyerVersYousign() {
                   </div>
                 )}
               </div>
+              {(!signatureBailleur || !signatureLocataire || !luApprouveBailleur || !luApprouveLocataire) && (
+                <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: '#854d0e', margin: 0 }}>⚠️ Les deux parties doivent signer et cocher « Lu et approuvé » pour finaliser.</p>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setEtape(5)} style={{ flex: 1, background: '#f3f4f6', color: '#374151', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600 }}>← Retour</button>
-                <button onClick={finaliserEtSauvegarder} disabled={loading}
-                  style={{ flex: 2, background: loading ? '#86efac' : '#16a34a', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 15 }}>
+                <button onClick={finaliserEtSauvegarder} disabled={loading || !signatureBailleur || !signatureLocataire || !luApprouveBailleur || !luApprouveLocataire}
+                  style={{ flex: 2, background: (loading || !signatureBailleur || !signatureLocataire || !luApprouveBailleur || !luApprouveLocataire) ? '#86efac' : '#16a34a', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: (loading || !signatureBailleur || !signatureLocataire || !luApprouveBailleur || !luApprouveLocataire) ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 15 }}>
                   {loading ? '⏳ Génération du bail...' : '🎉 Finaliser et télécharger'}
                 </button>
               </div>
