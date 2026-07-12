@@ -103,7 +103,15 @@ export async function GET(request) {
 
             // Vérifier le nom dans le libellé (payeur ou locataire)
             const libelle = (tx.label || tx.description || '').toLowerCase()
-            const nomRecherche = (bail.payeur_nom || bail.locataire_nom || '').toLowerCase()
+            const nomsACChercher = []
+        if (bail.payeur_nom) nomsACChercher.push(bail.payeur_nom.toLowerCase())
+        // Locataire société : on cherche la dénomination sociale
+        if (bail.locataire_type === 'morale' && bail.locataire_denomination) {
+          nomsACChercher.push(bail.locataire_denomination.toLowerCase())
+        }
+        // Locataire particulier (ou en complément) : nom + prénom
+        if (bail.locataire_nom) nomsACChercher.push(bail.locataire_nom.toLowerCase())
+        if (bail.locataire_prenom) nomsACChercher.push(bail.locataire_prenom.toLowerCase())
             const scoreNom = nomRecherche && libelle.includes(nomRecherche) ? 2 : 0
 
             // Confiance minimum requise : montant exact + (optionnel) nom trouvé
