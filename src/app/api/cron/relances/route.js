@@ -51,6 +51,16 @@ export async function GET(request) {
     let ignores = 0
 
     for (const bail of baux) {
+      // Bail trimestriel : ne relancer qu'aux mois d'échéance (mois de début + tous les 3 mois)
+      if (bail.periodicite === 'trimestriel' && bail.date_debut) {
+        const moisDebut = new Date(bail.date_debut).getMonth() // 0-11
+        const moisCourant = moisActuel - 1 // moisActuel est 1-12, on repasse en 0-11
+        if ((((moisCourant - moisDebut) % 3) + 3) % 3 !== 0) {
+          ignores++
+          continue
+        }
+      }
+
       const joursDepuisEcheance = jourActuel - (bail.date_exigibilite || 5)
 
       // Envoyer uniquement si on est exactement au bon nombre de jours après l'échéance

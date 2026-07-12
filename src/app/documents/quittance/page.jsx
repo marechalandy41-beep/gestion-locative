@@ -83,7 +83,7 @@ export default function Quittance() {
       proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
       locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
-      loyer: { montant: bail.loyer_hc || 0, charges: bail.charges || 0, periode: `${moisLabels[mois]} ${annee}`, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+      loyer: { montant: (bail.loyer_hc || 0) * nbMois, charges: (bail.charges || 0) * nbMois, periode: libellePeriode(), datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
     })
 
     // Générer aussi un blob pour sauvegarder dans le coffre
@@ -102,8 +102,8 @@ export default function Quittance() {
       doc.setFont('helvetica', 'normal')
       doc.text(`Bien : ${bail.Biens?.nom || ''}`, 14, y); y += 8
       doc.text(`Locataire : ${bail.locataire_prenom} ${bail.locataire_nom}`, 14, y); y += 8
-      doc.text(`Période : ${moisLabels[mois]} ${annee}`, 14, y); y += 8
-      doc.text(`Loyer CC : ${(bail.loyer_hc || 0) + (bail.charges || 0)}€`, 14, y)
+      doc.text(`Période : ${libellePeriode()}`, 14, y); y += 8
+      doc.text(`Loyer CC : ${montantQuittance}€`, 14, y)
       const pdfBlob = doc.output('blob')
       await sauvegarderDansCoffre(bail, pdfBlob, nomFichier)
     } catch(e) {
@@ -116,6 +116,28 @@ export default function Quittance() {
   const inp = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'white' }
   const lbl = { fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }
   const bailSelectionne = baux.find(b => b.id === parseInt(bailId))
+
+  // Gestion trimestrielle : montant ×3 et période sur 3 mois
+  const estTrimestriel = bailSelectionne?.periodicite === 'trimestriel'
+  const nbMois = estTrimestriel ? 3 : 1
+  const loyerBase = (bailSelectionne?.loyer_hc || 0) + (bailSelectionne?.charges || 0)
+  const montantQuittance = loyerBase * nbMois
+
+  // Construit le libellé de période (1 mois ou 3 mois consécutifs)
+  function libellePeriode() {
+    if (!mois) return ''
+    const moisNum = parseInt(mois)
+    if (!estTrimestriel) return `${moisLabels[mois]} ${annee}`
+    // Trimestriel : mois de début → mois + 2
+    const noms = Object.values(moisLabels)
+    const idxDebut = moisNum - 1
+    const idxFin = (idxDebut + 2) % 12
+    const anneeFin = idxDebut + 2 > 11 ? parseInt(annee) + 1 : annee
+    if (anneeFin !== annee) {
+      return `${noms[idxDebut]} ${annee} – ${noms[idxFin]} ${anneeFin}`
+    }
+    return `${noms[idxDebut]} – ${noms[idxFin]} ${annee}`
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -175,8 +197,8 @@ export default function Quittance() {
               <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#15803d' }}>✅ Récapitulatif</p>
               <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Bien :</b> {bailSelectionne.Biens?.nom} — {bailSelectionne.Biens?.adresse}</p>
               <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Locataire :</b> {bailSelectionne.locataire_prenom} {bailSelectionne.locataire_nom}</p>
-              <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Loyer :</b> {bailSelectionne.loyer_hc}€ + {bailSelectionne.charges}€ = {(bailSelectionne.loyer_hc || 0) + (bailSelectionne.charges || 0)}€ CC</p>
-              <p style={{ margin: 0, fontSize: 12, color: '#374151' }}><b>Période :</b> {moisLabels[mois]} {annee}</p>
+              <p style={{ margin: '0 0 2px', fontSize: 12, color: '#374151' }}><b>Loyer :</b> {loyerBase}€ CC {estTrimestriel ? `× 3 mois = ${montantQuittance}€` : ''}</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#374151' }}><b>Période :</b> {libellePeriode()} {estTrimestriel ? '(trimestre)' : ''}</p>
             </div>
           )}
 

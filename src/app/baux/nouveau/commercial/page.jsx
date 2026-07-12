@@ -34,6 +34,7 @@ const [lotsSelectionnes, setLotsSelectionnes] = useState([])
     loyer_hc: '', charges: '', type_charges: 'Forfaitaires',
     depot_garantie: '', modalite_paiement: 'Virement bancaire',
     date_exigibilite: '1',
+    periodicite: 'mensuel', // mensuel ou trimestriel
     indexation: 'ILC', // ILC ou ILAT
     tva_applicable: false,
     date_debut: '', date_fin: '', clauses: '',
@@ -70,6 +71,7 @@ const [lotsSelectionnes, setLotsSelectionnes] = useState([])
             type_charges: bail.type_charges || 'Forfaitaires', depot_garantie: bail.depot_garantie?.toString() || '',
             modalite_paiement: bail.modalite_paiement || 'Virement bancaire',
             date_exigibilite: bail.date_exigibilite?.toString() || '1',
+            periodicite: bail.periodicite || 'mensuel',
             indexation: bail.indexation || 'ILC', tva_applicable: bail.tva_applicable || false,
             date_debut: bail.date_debut || '', date_fin: bail.date_fin || '', clauses: bail.clauses || '',
           })
@@ -129,6 +131,7 @@ async function chargerLots(bienId) {
       type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
       date_debut: form.date_debut || null, date_fin: form.date_fin || null,
       date_exigibilite: parseInt(form.date_exigibilite) || 1,
+      periodicite: form.periodicite || 'mensuel',
       modalite_paiement: form.modalite_paiement, clauses: form.clauses,
       bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
       bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
@@ -229,6 +232,7 @@ async function envoyerVersYousign() {
         type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
         date_debut: form.date_debut || null, date_fin: form.date_fin || null,
         date_exigibilite: parseInt(form.date_exigibilite) || 1,
+        periodicite: form.periodicite || 'mensuel',
         revision_irl: form.revision_irl, modalite_paiement: form.modalite_paiement,
         clauses: form.clauses, relance_auto_active: form.relance_auto_active || false,
         relance_auto_jours: form.relance_auto_jours || 5,
@@ -427,6 +431,7 @@ async function envoyerVersYousign() {
         type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
         date_debut: form.date_debut || null, date_fin: form.date_fin || null,
         date_exigibilite: parseInt(form.date_exigibilite) || 1,
+        periodicite: form.periodicite || 'mensuel',
         modalite_paiement: form.modalite_paiement, clauses: form.clauses,
         bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
         bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
@@ -645,11 +650,20 @@ async function envoyerVersYousign() {
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={lbl}>Jour d'exigibilité</label>
-                <select style={inp} value={form.date_exigibilite} onChange={e => setForm({...form, date_exigibilite: e.target.value})}>
-                  {[1,5,10,15,20,25].map(j => <option key={j} value={j}>Le {j} du mois</option>)}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div>
+                  <label style={lbl}>Jour d'exigibilité</label>
+                  <select style={inp} value={form.date_exigibilite} onChange={e => setForm({...form, date_exigibilite: e.target.value})}>
+                    {[1,5,10,15,20,25].map(j => <option key={j} value={j}>Le {j} du mois</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Périodicité de paiement</label>
+                  <select style={inp} value={form.periodicite} onChange={e => setForm({...form, periodicite: e.target.value})}>
+                    <option value="mensuel">Mensuel</option>
+                    <option value="trimestriel">Trimestriel (× 3)</option>
+                  </select>
+                </div>
               </div>
               {form.loyer_hc && (
                 <div style={{ background: '#fff7ed', borderRadius: 10, padding: 14, marginBottom: 16, border: '1px solid #fed7aa' }}>

@@ -155,10 +155,11 @@ export default function Dashboard() {
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
   const estPayant = plan !== 'gratuit';
-  const idsBauxActifs = new Set(baux.map(b => b.id));
-  const paiementsBauxActifs = paiementsMois.filter(p => idsBauxActifs.has(p.bail_id));
-  const bauxPayesCeMois = new Set(paiementsBauxActifs.map(p => p.bail_id)).size;
-  const tauxPaiement = baux.length > 0 ? Math.min(100, Math.round((bauxPayesCeMois / baux.length) * 100)) : 0;
+  const bauxAttendusCeMois = baux.filter(b => loyerAttenduCeMois(b));
+  const idsBauxAttendus = new Set(bauxAttendusCeMois.map(b => b.id));
+  const paiementsBauxAttendus = paiementsMois.filter(p => idsBauxAttendus.has(p.bail_id));
+  const bauxPayesCeMois = new Set(paiementsBauxAttendus.map(p => p.bail_id)).size;
+  const tauxPaiement = bauxAttendusCeMois.length > 0 ? Math.min(100, Math.round((bauxPayesCeMois / bauxAttendusCeMois.length) * 100)) : 0;
 
   const moisLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
   const derniers6Mois = Array.from({ length: 6 }, (_, i) => {
@@ -173,8 +174,18 @@ export default function Dashboard() {
       .reduce((acc, p) => acc + (p.montant || 0), 0)
   }))
   const maxGraphique = Math.max(...dataGraphique.map(d => d.total), 1)
+  // Un bail trimestriel n'est attendu qu'au mois de début puis tous les 3 mois
+  function loyerAttenduCeMois(bail) {
+    if (bail.periodicite !== 'trimestriel') return true; // mensuel = attendu chaque mois
+    if (!bail.date_debut) return true; // sécurité : si pas de date, on considère attendu
+    const moisDebut = new Date(bail.date_debut).getMonth(); // 0-11
+    const moisActuel = new Date().getMonth(); // 0-11
+    return (((moisActuel - moisDebut) % 3) + 3) % 3 === 0;
+  }
+
   function statutLoyer(bail) {
     const jour = new Date().getDate();
+    if (!loyerAttenduCeMois(bail)) return { couleur: '#6b7280', bg: '#f3f4f6', texte: '— Trimestriel' };
     const dejaPaye = paiementsMois.some(p => p.bail_id === bail.id);
     if (dejaPaye) return { couleur: '#16a34a', bg: '#dcfce7', texte: '✅ Payé' };
     if (jour < (bail.date_exigibilite || 5)) return { couleur: '#854d0e', bg: '#fef9c3', texte: '⏳ En attente' };
@@ -295,7 +306,7 @@ export default function Dashboard() {
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Taux de paiement</p>
             <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: tauxPaiement === 100 ? '#16a34a' : tauxPaiement > 50 ? '#ca8a04' : '#dc2626', marginTop: 4 }}>{tauxPaiement}%</p>
-            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{bauxPayesCeMois}/{baux.length} reçus</p>
+            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{bauxPayesCeMois}/{bauxAttendusCeMois.length} reçus</p>
           </div>
         </div>
 
