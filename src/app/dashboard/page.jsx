@@ -93,33 +93,6 @@ export default function Dashboard() {
     setNonLusParBail(compteur);
   }
 
-async function chargerFiscal(userId, annee) {
-    setLoadingFiscal(true);
-    // Loyers réellement encaissés sur l'année (manuels 'valide' + Bridge 'paye'), on exclut les relances (montant 0)
-    const { data: paiementsData } = await supabase
-      .from('paiements')
-      .select('montant, bail_id, statut')
-      .eq('user_id', userId)
-      .eq('annee', annee)
-      .in('statut', ['valide', 'paye'])
-      .gt('montant', 0);
-    // Charges déductibles de l'année
-    const { data: chargesData } = await supabase
-      .from('charges_fiscales')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('annee', annee);
-    setPaiementsFiscal(paiementsData || []);
-    setChargesFiscal(chargesData || []);
-    setLoadingFiscal(false);
-  }
-
-  useEffect(() => {
-    if (user?.id && ongletActif === 'fiscal') {
-      chargerFiscal(user.id, anneeFiscale);
-    }
-  }, [user, ongletActif, anneeFiscale]);
-
   // Calculs fiscaux
   const totalLoyersPercus = paiementsFiscal.reduce((a, p) => a + (parseFloat(p.montant) || 0), 0);
   const totalChargesDeductibles = chargesFiscal.reduce((a, c) =>
@@ -182,7 +155,10 @@ async function chargerFiscal(userId, annee) {
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
   const estPayant = plan !== 'gratuit';
-  const tauxPaiement = baux.length > 0 ? Math.round((paiementsMois.length / baux.length) * 100) : 0;
+  const idsBauxActifs = new Set(baux.map(b => b.id));
+  const paiementsBauxActifs = paiementsMois.filter(p => idsBauxActifs.has(p.bail_id));
+  const bauxPayesCeMois = new Set(paiementsBauxActifs.map(p => p.bail_id)).size;
+  const tauxPaiement = baux.length > 0 ? Math.min(100, Math.round((bauxPayesCeMois / baux.length) * 100)) : 0;
 
   const moisLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
   const derniers6Mois = Array.from({ length: 6 }, (_, i) => {
@@ -303,7 +279,6 @@ async function chargerFiscal(userId, annee) {
         )}
 
         {/* STATS */}
-        {/* STATS */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Loyers du mois</p>
@@ -320,7 +295,7 @@ async function chargerFiscal(userId, annee) {
           <div style={{ background: 'white', borderRadius: 12, padding: isMobile ? 14 : 20, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <p style={{ color: '#6b7280', fontSize: isMobile ? 11 : 13 }}>Taux de paiement</p>
             <p style={{ fontSize: isMobile ? 18 : 28, fontWeight: 700, color: tauxPaiement === 100 ? '#16a34a' : tauxPaiement > 50 ? '#ca8a04' : '#dc2626', marginTop: 4 }}>{tauxPaiement}%</p>
-            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{paiementsMois.length}/{baux.length} reçus</p>
+            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{bauxPayesCeMois}/{baux.length} reçus</p>
           </div>
         </div>
 
