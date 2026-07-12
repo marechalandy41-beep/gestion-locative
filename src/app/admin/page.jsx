@@ -90,9 +90,6 @@ export default function Admin() {
     const dataConvs = await resConvs.json()
     if (dataConvs.conversations) setConversations(dataConvs.conversations)
 
-    const { data: dataArticles } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
-    if (dataArticles) setArticles(dataArticles)
-
     setLoading(false)
   }
 
@@ -172,7 +169,6 @@ async function ouvrirConversationAdmin(conv) {
   const onglets = [
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'users', label: '👥 Utilisateurs' },
-    { id: 'abonnements', label: '💳 Abonnements' },
     { id: 'messages', label: `📬 Messages${conversations.filter(c => c.statut === 'ouvert').length > 0 ? ` (${conversations.filter(c => c.statut === 'ouvert').length})` : ''}` },
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
@@ -280,8 +276,8 @@ async function ouvrirConversationAdmin(conv) {
                 <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
                   <span style={{ color: 'white', fontSize: 14 }}>{u.email}</span>
                   <span style={{
-                    background: u.plan === 'auto' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
-                    color: u.plan === 'auto' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
+                    background: u.plan === 'automatique' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
+                    color: u.plan === 'automatique' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
                     padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600, display: 'inline-block'
                   }}>
                     {u.plan || 'gratuit'}
@@ -329,28 +325,6 @@ async function ouvrirConversationAdmin(conv) {
                       📦 RGPD
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ABONNEMENTS */}
-        {onglet === 'abonnements' && (
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>Abonnements</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-              {[
-                { label: 'Plan gratuit', count: stats?.usersGratuits || 0, couleur: '#6b7280', bg: '#374151' },
-                { label: 'Plan manuel', count: stats?.usersManuel || 0, couleur: '#60a5fa', bg: '#1e3a5f' },
-                { label: 'Plan automatique', count: stats?.usersAuto || 0, couleur: '#4ade80', bg: '#14532d' },
-              ].map((p, i) => (
-                <div key={i} style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151' }}>
-                  <div style={{ background: p.bg, borderRadius: 10, padding: '6px 14px', display: 'inline-block', marginBottom: 12 }}>
-                    <span style={{ color: p.couleur, fontSize: 13, fontWeight: 600 }}>{p.label}</span>
-                  </div>
-                  <p style={{ fontSize: 40, fontWeight: 700, color: 'white', margin: '8px 0 4px' }}>{p.count}</p>
-                  <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>utilisateurs</p>
                 </div>
               ))}
             </div>
@@ -998,10 +972,9 @@ async function ouvrirConversationAdmin(conv) {
   if (!articleEnCours?.titre || !articleEnCours?.slug) { alert('Titre et slug obligatoires'); return }
   let error
   if (articleEnCours.id) {
-  const { id, created_at, ...donneesAMettreAJour } = articleEnCours
-  const res = await supabase.from('articles').update({ ...donneesAMettreAJour, updated_at: new Date().toISOString() }).eq('id', articleEnCours.id)
-  error = res.error
-} else {
+    const res = await supabase.from('articles').update({ ...articleEnCours, updated_at: new Date().toISOString() }).eq('id', articleEnCours.id)
+    error = res.error
+  } else {
     const res = await supabase.from('articles').insert({ ...articleEnCours })
     error = res.error
   }

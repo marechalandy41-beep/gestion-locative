@@ -26,11 +26,11 @@ export async function GET() {
 
     const usersGratuits = users.filter(u => !u.plan || u.plan === 'gratuit').length;
     const usersManuel = users.filter(u => u.plan === 'manuel').length;
-    const usersAuto = users.filter(u => u.plan === 'auto').length;
+    const usersAuto = users.filter(u => u.plan === 'automatique').length;
     const usersPayants = usersManuel + usersAuto;
 
     const revenuManuel = users.filter(u => u.plan === 'manuel').reduce((acc, u) => acc + u.nbBaux * 4, 0);
-    const revenuAuto = users.filter(u => u.plan === 'auto').reduce((acc, u) => acc + u.nbBaux * 6, 0);
+    const revenuAuto = users.filter(u => u.plan === 'automatique').reduce((acc, u) => acc + u.nbBaux * 6, 0);
     const revenuTotal = revenuManuel + revenuAuto;
 
     return NextResponse.json({

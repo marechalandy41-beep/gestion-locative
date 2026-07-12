@@ -23,15 +23,29 @@ export async function GET(request) {
   const moisNom = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][moisActuel - 1]
 
   try {
-    // Récupérer tous les baux actifs avec relance auto activée
-    const { data: baux, error } = await supabase
-      .from('Baux')
-      .select('*, Biens(nom)')
-      .eq('statut', 'actif')
-      .eq('relance_auto_active', true)
-      .not('locataire_email', 'is', null)
+    // Récupérer les user_id ayant le plan automatique (seuls eux ont droit aux relances auto)
+    const { data: customersAuto } = await supabase
+      .from('customers')
+      .select('user_id')
+      .eq('plan', 'automatique')
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    const userIdsAuto = (customersAuto || []).map(c => c.user_id)
+
+    // Si personne n'a le plan automatique, on saute la partie relances
+    let baux = []
+    if (userIdsAuto.length > 0) {
+      // Récupérer tous les baux actifs avec relance auto activée, appartenant à un user automatique
+      const { data: bauxData, error } = await supabase
+        .from('Baux')
+        .select('*, Biens(nom)')
+        .eq('statut', 'actif')
+        .eq('relance_auto_active', true)
+        .not('locataire_email', 'is', null)
+        .in('user_id', userIdsAuto)
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      baux = bauxData || []
+    }
 
     let envoyes = 0
     let ignores = 0
@@ -214,7 +228,6 @@ export async function GET(request) {
 
     // ===== NOTIFICATIONS DOCUMENTS EXPIRÉS =====
     const VALIDITE = { 'DPE': 10, 'Diagnostic électricité': 3, 'Diagnostic gaz': 3 }
-    const anneeActuelle = new Date().getFullYear()
 
     const { data: docsAVerifier } = await supabase
       .from('Documents')
