@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [paiementsFiscal, setPaiementsFiscal] = useState([]);
   const [chargesFiscal, setChargesFiscal] = useState([]);
   const [loadingFiscal, setLoadingFiscal] = useState(false);
+  const [bauxFiscal, setBauxFiscal] = useState([]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -131,8 +132,9 @@ async function chargerFiscal(userId, annee) {
   const revenuNet = totalLoyersPercus - totalChargesDeductibles;
 
   // Détail par bien
+  
   const detailParBien = biens.map(bien => {
-    const bauxDuBien = baux.filter(b => b.bien?.id === bien.id).map(b => b.id);
+    const bauxDuBien = bauxFiscal.filter(b => b.bien_id === bien.id).map(b => b.id);
     // fallback : certains paiements peuvent ne pas matcher un bail actif, on somme par bail rattaché au bien
     const loyersBien = paiementsFiscal
       .filter(p => bauxDuBien.includes(p.bail_id))
@@ -146,6 +148,36 @@ async function chargerFiscal(userId, annee) {
   }).filter(d => d.loyers > 0 || d.charges > 0);
 
   const anneesDispo = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+  async function chargerFiscal(userId, annee) {
+    setLoadingFiscal(true);
+    const { data: paiementsData } = await supabase
+      .from('paiements')
+      .select('montant, bail_id, statut')
+      .eq('user_id', userId)
+      .eq('annee', annee)
+      .in('statut', ['valide', 'paye'])
+      .gt('montant', 0);
+    const { data: chargesData } = await supabase
+      .from('charges_fiscales')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('annee', annee);
+    const { data: bauxFiscalData } = await supabase
+      .from('Baux')
+      .select('id, bien_id')
+      .eq('user_id', userId);
+    setPaiementsFiscal(paiementsData || []);
+    setChargesFiscal(chargesData || []);
+    setBauxFiscal(bauxFiscalData || []);
+    setLoadingFiscal(false);
+  }
+
+  useEffect(() => {
+    if (user?.id && ongletActif === 'fiscal') {
+      chargerFiscal(user.id, anneeFiscale);
+    }
+  }, [user, ongletActif, anneeFiscale]);
 
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
