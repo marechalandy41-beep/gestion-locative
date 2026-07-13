@@ -16,6 +16,7 @@ export default function Quittance() {
   const [sauvegarde, setSauvegarde] = useState(false)
   const [plan, setPlan] = useState('')
   const [modeManuel, setModeManuel] = useState(false)
+  const [signatureUser, setSignatureUser] = useState(null)
   const [manuel, setManuel] = useState({
     proprietaire_nom: '', proprietaire_prenom: '', proprietaire_adresse: '',
     locataire_nom: '', locataire_prenom: '',
@@ -36,9 +37,10 @@ export default function Quittance() {
   async function chargerPlan() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from('customers').select('plan').eq('user_id', user.id).single()
+    const { data } = await supabase.from('customers').select('plan, signature').eq('user_id', user.id).single()
     const planUser = data?.plan || 'gratuit'
     setPlan(planUser)
+    if (data?.signature) setSignatureUser(data.signature)
     if (planUser === 'gratuit') setModeManuel(true) // gratuit → mode manuel forcé
   }
 
@@ -111,6 +113,7 @@ async function genererManuel() {
         locataire: { nom: manuel.locataire_nom, prenom: manuel.locataire_prenom },
         bien: { adresse: manuel.bien_adresse, ville: manuel.bien_ville, codePostal: manuel.bien_cp },
         loyer: { montant: parseFloat(manuel.loyer) || 0, charges: parseFloat(manuel.charges) || 0, periode: `${moisLabels[mois]} ${annee}`, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+        signature: signatureUser,
       })
       setSauvegarde(true)
     } catch (err) {
@@ -133,6 +136,7 @@ async function genererManuel() {
       locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
       loyer: { montant: (bail.loyer_hc || 0) * nbMois, charges: (bail.charges || 0) * nbMois, periode: libellePeriode(), datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+      signature: signatureUser,
     })
 
     // Générer aussi un blob pour sauvegarder dans le coffre

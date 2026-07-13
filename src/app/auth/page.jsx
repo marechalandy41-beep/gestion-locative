@@ -130,7 +130,7 @@ export default function Auth() {
               <span style={{ color: '#2563eb', cursor: 'pointer' }}
                 onClick={async () => {
                   if (!email) { setErreur("Entrez votre email d'abord"); return; }
-                  await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'http://localhost:3000/auth/reset-password' });
+                  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth/reset_password` });
                   setMessage('Email de réinitialisation envoyé !');
                 }}>
                 Réinitialiser

@@ -91,7 +91,7 @@ export async function GET(request) {
 
             // Vérifier qu'une quittance n'existe pas déjà pour ce bail ce mois
             const { data: existant } = await supabase
-              .from('Paiements')
+              .from('paiements')
               .select('id')
               .eq('bail_id', bail.id)
               .eq('mois', moisTx)
@@ -119,7 +119,7 @@ export async function GET(request) {
             if (scoreNom === 0) break // Sans nom dans le libellé, on ne génère pas automatiquement
 
             // Enregistrer le paiement
-            await supabase.from('Paiements').insert({
+            await supabase.from('paiements').insert({
               bail_id: bail.id,
               user_id: customer.user_id,
               montant: tx.amount,

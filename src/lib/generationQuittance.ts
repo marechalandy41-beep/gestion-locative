@@ -21,6 +21,7 @@ interface QuittanceData {
     periode: string // ex: "juin 2026"
     datePaiement: string // ex: "05/06/2026"
   }
+  signature?: string // image base64 optionnelle
 }
 
 export function generateQuittance(data: QuittanceData): void {
@@ -91,7 +92,11 @@ export function generateQuittance(data: QuittanceData): void {
   // Date et signature
   doc.text(`Fait le ${data.loyer.datePaiement}`, 20, 220)
   doc.text('Signature du bailleur :', pageWidth - 80, 220)
-  doc.line(pageWidth - 80, 235, pageWidth - 20, 235)
+  if (data.signature) {
+    try { doc.addImage(data.signature, 'PNG', pageWidth - 80, 224, 50, 20) } catch (e) { doc.line(pageWidth - 80, 235, pageWidth - 20, 235) }
+  } else {
+    doc.line(pageWidth - 80, 235, pageWidth - 20, 235)
+  }
 
   // Footer
   doc.setFontSize(8)

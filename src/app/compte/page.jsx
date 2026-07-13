@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabase';
 import Nav from '../components/nav'
 
@@ -8,6 +8,10 @@ export default function Compte() {
   const [onglet, setOnglet] = useState('profil');
   const [user, setUser] = useState(null);
   const [prenom, setPrenom] = useState('');
+  const [signature, setSignature] = useState(null);
+  const [signatureActive, setSignatureActive] = useState(false);
+  const [dessinSignature, setDessinSignature] = useState(false);
+  const canvasSignatureRef = useRef(null);
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,12 +71,15 @@ useEffect(() => {
 
         const { data: customerData } = await supabase
           .from('customers')
-          .select('code_promo, reduction, code_parrainage, plan')
+          .select('code_promo, reduction, code_parrainage, plan, signature')
           .eq('user_id', data.user.id)
           .single();
 
         if (customerData?.plan) {
           setPlan(customerData.plan)
+        }
+        if (customerData?.signature) {
+          setSignature(customerData.signature)
         }
 
 
@@ -173,6 +180,49 @@ useEffect(() => {
     return () => { supabase.removeChannel(channel) }
   }, [conversationActive])
   
+function demarrerDessin(e) {
+    setDessinSignature(true)
+    const canvas = canvasSignatureRef.current
+    const rect = canvas.getBoundingClientRect()
+    const ctx = canvas.getContext('2d')
+    ctx.beginPath()
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    ctx.moveTo(x * (canvas.width / rect.width), y * (canvas.height / rect.height))
+  }
+  function dessiner(e) {
+    if (!dessinSignature) return
+    e.preventDefault()
+    const canvas = canvasSignatureRef.current
+    const rect = canvas.getBoundingClientRect()
+    const ctx = canvas.getContext('2d')
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+    ctx.lineTo(x * (canvas.width / rect.width), y * (canvas.height / rect.height))
+    ctx.strokeStyle = '#111827'; ctx.lineWidth = 2; ctx.lineCap = 'round'
+    ctx.stroke()
+  }
+  function arreterDessin() { setDessinSignature(false) }
+  function effacerSignature() {
+    const canvas = canvasSignatureRef.current
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
+  async function sauvegarderSignature() {
+    const canvas = canvasSignatureRef.current
+    const dataUrl = canvas.toDataURL('image/png')
+    const { error } = await supabase.from('customers').update({ signature: dataUrl }).eq('user_id', user.id)
+    if (error) { setMessage('Erreur : ' + error.message); return }
+    setSignature(dataUrl)
+    setSignatureActive(false)
+    setMessage('Signature enregistrée !')
+    setTimeout(() => setMessage(''), 3000)
+  }
+  async function supprimerSignature() {
+    await supabase.from('customers').update({ signature: null }).eq('user_id', user.id)
+    setSignature(null)
+  }
+
   async function sauvegarderProfil() {
     const { error } = await supabase.auth.updateUser({
       data: { prenom, nom, telephone }
@@ -486,6 +536,38 @@ async function activerPushNotifications() {
                 style={{ background: pushActif ? '#f0fdf4' : '#fef9c3', color: pushActif ? '#15803d' : '#92400e', border: `1px solid ${pushActif ? '#bbf7d0' : '#fde047'}`, padding: '10px 24px', borderRadius: 10, cursor: pushActif ? 'default' : 'pointer', fontWeight: 600, fontSize: 14 }}>
                 {pushLoading ? 'Chargement...' : pushActif ? 'Notifications activées' : 'Activer les notifications push'}
               </button>}
+            </div>
+
+            {/* SIGNATURE */}
+            <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #f3f4f6' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 6 }}>✍️ Ma signature</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>Cette signature sera ajoutée automatiquement en bas des quittances de loyer générées.</p>
+
+              {signature && !signatureActive && (
+                <div>
+                  <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 12, background: '#fafafa', display: 'inline-block', marginBottom: 12 }}>
+                    <img src={signature} alt="Signature" style={{ maxWidth: 260, maxHeight: 90 }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => setSignatureActive(true)} style={{ background: '#f3f4f6', color: '#374151', padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>✏️ Modifier</button>
+                    <button onClick={supprimerSignature} style={{ background: 'none', color: '#ef4444', padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Supprimer</button>
+                  </div>
+                </div>
+              )}
+
+              {(!signature || signatureActive) && (
+                <div>
+                  <canvas ref={canvasSignatureRef} width={520} height={180}
+                    onMouseDown={demarrerDessin} onMouseMove={dessiner} onMouseUp={arreterDessin} onMouseLeave={arreterDessin}
+                    onTouchStart={demarrerDessin} onTouchMove={dessiner} onTouchEnd={arreterDessin}
+                    style={{ border: '2px dashed #d1d5db', borderRadius: 10, width: '100%', maxWidth: 520, height: 180, cursor: 'crosshair', touchAction: 'none', background: '#fafafa', display: 'block', marginBottom: 12 }} />
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={effacerSignature} style={{ background: '#f3f4f6', color: '#374151', padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>🗑 Effacer</button>
+                    <button onClick={sauvegarderSignature} style={{ background: '#16a34a', color: 'white', padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>✅ Enregistrer la signature</button>
+                    {signatureActive && signature && <button onClick={() => setSignatureActive(false)} style={{ background: 'none', color: '#6b7280', padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Annuler</button>}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
