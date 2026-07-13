@@ -7,19 +7,47 @@ import Nav from '../../components/nav'
 
 export default function Quittance() {
   const [baux, setBaux] = useState([])
+  const [biens, setBiens] = useState([])
   const [loading, setLoading] = useState(false)
   const [bailId, setBailId] = useState('')
   const [mois, setMois] = useState('')
   const [annee, setAnnee] = useState(new Date().getFullYear().toString())
   const [datePaiement, setDatePaiement] = useState('')
   const [sauvegarde, setSauvegarde] = useState(false)
+  const [plan, setPlan] = useState('')
+  const [modeManuel, setModeManuel] = useState(false)
+  const [manuel, setManuel] = useState({
+    proprietaire_nom: '', proprietaire_prenom: '', proprietaire_adresse: '',
+    locataire_nom: '', locataire_prenom: '',
+    bien_adresse: '', bien_ville: '', bien_cp: '',
+    loyer: '', charges: '',
+  })
+  
 
   useEffect(() => {
     chargerBaux()
+    chargerPlan()
+    chargerBiens()
     const today = new Date()
     setDatePaiement(today.toISOString().split('T')[0])
     setMois((today.getMonth() + 1).toString().padStart(2, '0'))
   }, [])
+
+  async function chargerPlan() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('customers').select('plan').eq('user_id', user.id).single()
+    const planUser = data?.plan || 'gratuit'
+    setPlan(planUser)
+    if (planUser === 'gratuit') setModeManuel(true) // gratuit → mode manuel forcé
+  }
+
+  async function chargerBiens() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('Biens').select('*').eq('user_id', user.id).order('nom')
+    if (data) setBiens(data)
+  }
 
   async function chargerBaux() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -68,6 +96,27 @@ export default function Quittance() {
     } catch (e) {
       console.error('Erreur sauvegarde coffre:', e)
     }
+  }
+
+async function genererManuel() {
+    if (!manuel.proprietaire_nom || !manuel.locataire_nom || !manuel.bien_adresse || !manuel.loyer || !mois || !annee || !datePaiement) {
+      alert('Merci de remplir : propriétaire, locataire, adresse du bien, loyer, période et date.')
+      return
+    }
+    setLoading(true)
+    try {
+      const montantTotal = (parseFloat(manuel.loyer) || 0) + (parseFloat(manuel.charges) || 0)
+      generateQuittance({
+        proprietaire: { nom: manuel.proprietaire_nom, prenom: manuel.proprietaire_prenom, adresse: manuel.proprietaire_adresse },
+        locataire: { nom: manuel.locataire_nom, prenom: manuel.locataire_prenom },
+        bien: { adresse: manuel.bien_adresse, ville: manuel.bien_ville, codePostal: manuel.bien_cp },
+        loyer: { montant: parseFloat(manuel.loyer) || 0, charges: parseFloat(manuel.charges) || 0, periode: `${moisLabels[mois]} ${annee}`, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+      })
+      setSauvegarde(true)
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+    }
+    setLoading(false)
   }
 
   async function handleGenerate() {
@@ -161,16 +210,65 @@ export default function Quittance() {
         )}
 
         <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={lbl}>Bail concerné *</label>
-            <select style={inp} value={bailId} onChange={e => setBailId(e.target.value)}>
-              <option value="">— Sélectionnez un bail —</option>
-              {baux.map(b => (
-                <option key={b.id} value={b.id}>{b.Biens?.nom || 'Bien inconnu'} — {b.locataire_prenom} {b.locataire_nom} — {(b.loyer_hc || 0) + (b.charges || 0)}€/mois</option>
-              ))}
-            </select>
-            {baux.length === 0 && <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>Aucun bail actif trouvé.</p>}
-          </div>
+          {plan !== 'gratuit' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={lbl}>Bail concerné *</label>
+              <select style={inp} value={bailId} onChange={e => setBailId(e.target.value)}>
+                <option value="">— Sélectionnez un bail —</option>
+                {baux.map(b => (
+                  <option key={b.id} value={b.id}>{b.Biens?.nom || 'Bien inconnu'} — {b.locataire_prenom} {b.locataire_nom} — {(b.loyer_hc || 0) + (b.charges || 0)}€/mois</option>
+                ))}
+              </select>
+              {baux.length === 0 && <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>Aucun bail actif trouvé.</p>}
+            </div>
+          )}
+
+          {modeManuel && (
+            <div style={{ marginBottom: 16 }}>
+              {plan === 'gratuit' && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                  <p style={{ fontSize: 12, color: '#1e40af', margin: 0 }}>ℹ️ En plan gratuit, remplissez les informations à la main. Passez à un plan payant pour générer vos quittances automatiquement depuis vos baux.</p>
+                </div>
+              )}
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Propriétaire (bailleur)</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 12 }}>
+                <div><label style={lbl}>Prénom</label><input style={inp} value={manuel.proprietaire_prenom} onChange={e => setManuel({...manuel, proprietaire_prenom: e.target.value})} /></div>
+                <div><label style={lbl}>Nom *</label><input style={inp} value={manuel.proprietaire_nom} onChange={e => setManuel({...manuel, proprietaire_nom: e.target.value})} /></div>
+              </div>
+              <div style={{ marginBottom: 16 }}><label style={lbl}>Adresse du propriétaire <span style={{ fontWeight: 400, color: '#9ca3af' }}>(facultatif)</span></label><input style={inp} value={manuel.proprietaire_adresse} onChange={e => setManuel({...manuel, proprietaire_adresse: e.target.value})} /></div>
+
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Locataire</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div><label style={lbl}>Prénom</label><input style={inp} value={manuel.locataire_prenom} onChange={e => setManuel({...manuel, locataire_prenom: e.target.value})} /></div>
+                <div><label style={lbl}>Nom *</label><input style={inp} value={manuel.locataire_nom} onChange={e => setManuel({...manuel, locataire_nom: e.target.value})} /></div>
+              </div>
+
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Logement loué</p>
+              {biens.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl}>Choisir un bien existant <span style={{ fontWeight: 400, color: '#9ca3af' }}>(ou saisir à la main ci-dessous)</span></label>
+                  <select style={inp} onChange={e => {
+                    const b = biens.find(x => x.id === parseInt(e.target.value))
+                    if (b) setManuel({...manuel, bien_adresse: b.adresse || '', bien_ville: b.ville || '', bien_cp: b.code_postal || ''})
+                  }}>
+                    <option value="">— Saisie manuelle —</option>
+                    {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
+                  </select>
+                </div>
+              )}
+              <div style={{ marginBottom: 12 }}><label style={lbl}>Adresse du bien *</label><input style={inp} value={manuel.bien_adresse} onChange={e => setManuel({...manuel, bien_adresse: e.target.value})} placeholder="12 rue de la Paix" /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div><label style={lbl}>Code postal</label><input style={inp} value={manuel.bien_cp} onChange={e => setManuel({...manuel, bien_cp: e.target.value})} /></div>
+                <div><label style={lbl}>Ville</label><input style={inp} value={manuel.bien_ville} onChange={e => setManuel({...manuel, bien_ville: e.target.value})} /></div>
+              </div>
+
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Montant</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 4 }}>
+                <div><label style={lbl}>Loyer HC (€) *</label><input style={inp} type="number" value={manuel.loyer} onChange={e => setManuel({...manuel, loyer: e.target.value})} /></div>
+                <div><label style={lbl}>Charges (€)</label><input style={inp} type="number" value={manuel.charges} onChange={e => setManuel({...manuel, charges: e.target.value})} /></div>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
             <div>
@@ -202,8 +300,8 @@ export default function Quittance() {
             </div>
           )}
 
-          <button onClick={handleGenerate} disabled={loading || !bailId}
-            style={{ width: '100%', background: loading || !bailId ? '#93c5fd' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: loading || !bailId ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 15 }}>
+          <button onClick={modeManuel ? genererManuel : handleGenerate} disabled={loading || (!modeManuel && !bailId)}
+            style={{ width: '100%', background: (loading || (!modeManuel && !bailId)) ? '#93c5fd' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: (loading || (!modeManuel && !bailId)) ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 15 }}>
             {loading ? 'Génération...' : '📄 Générer la quittance PDF'}
           </button>
         </div>
