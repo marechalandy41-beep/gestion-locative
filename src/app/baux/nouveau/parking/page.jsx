@@ -23,8 +23,11 @@ export default function NouveauBailParking() {
   const lbl = { fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }
 
   const [form, setForm] = useState({
-    bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '',
+   bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '',
+    bailleur_type: 'particulier', bailleur_denomination: '', bailleur_forme_juridique: 'SCI', bailleur_siren: '', bailleur_representant: '', bailleur_representant_type: 'physique', bailleur_representant_denomination: '', bailleur_representant_personne: '',
     locataire_prenom: '', locataire_nom: '', locataire_email: '', locataire_telephone: '',
+    locataire_type: 'particulier', locataire_denomination: '', locataire_forme_juridique: 'SARL', locataire_siren: '', locataire_representant: '', locataire_representant_type: 'physique', locataire_representant_denomination: '', locataire_representant_personne: '',
+    locataire_adresse: '',
     bien_id: '', description_emplacement: '', numero_place: '',
     loyer_hc: '', charges: '', depot_garantie: '',
     modalite_paiement: 'Virement bancaire', date_exigibilite: '1',
@@ -109,8 +112,11 @@ export default function NouveauBailParking() {
       date_exigibilite: parseInt(form.date_exigibilite) || 1,
       modalite_paiement: form.modalite_paiement, clauses: form.clauses,
       bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse,
-      locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
-      locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
+        locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
+        locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
+        locataire_adresse: form.locataire_adresse,
+        locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
       equipements: form.description_emplacement, numero_lot: form.numero_place, statut: 'brouillon',
     }
     if (bailIdExistant) await supabase.from('Baux').update(bailData).eq('id', bailIdExistant)
@@ -325,9 +331,12 @@ async function envoyerVersYousign() {
         depot_garantie: parseFloat(form.depot_garantie) || 0,
         date_debut: form.date_debut || null, date_fin: form.date_fin || null,
         date_exigibilite: parseInt(form.date_exigibilite) || 1, modalite_paiement: form.modalite_paiement, clauses: form.clauses,
-        bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse,
+       bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse,
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
         locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
         locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
+        locataire_adresse: form.locataire_adresse,
+        locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
         equipements: form.description_emplacement, numero_lot: form.numero_place,
         signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut: 'actif',
         ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
@@ -378,21 +387,87 @@ async function envoyerVersYousign() {
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>👤 Bailleur & Locataire</h3>
               <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Bailleur</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div><label style={lbl}>Prénom *</label><input style={inp} value={form.bailleur_prenom} onChange={e => setForm({...form, bailleur_prenom: e.target.value})} /></div>
-                <div><label style={lbl}>Nom *</label><input style={inp} value={form.bailleur_nom} onChange={e => setForm({...form, bailleur_nom: e.target.value})} /></div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setForm({...form, bailleur_type: 'particulier'})} style={{ flex: 1, padding: 9, borderRadius: 10, border: `2px solid ${form.bailleur_type === 'particulier' ? '#ca8a04' : '#e5e7eb'}`, background: form.bailleur_type === 'particulier' ? '#fefce8' : 'white', color: form.bailleur_type === 'particulier' ? '#ca8a04' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>👤 Particulier</button>
+                  <button type="button" onClick={() => setForm({...form, bailleur_type: 'morale'})} style={{ flex: 1, padding: 9, borderRadius: 10, border: `2px solid ${form.bailleur_type === 'morale' ? '#ca8a04' : '#e5e7eb'}`, background: form.bailleur_type === 'morale' ? '#fefce8' : 'white', color: form.bailleur_type === 'morale' ? '#ca8a04' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>🏢 Société</button>
+                </div>
               </div>
-              <div style={{ marginBottom: 20 }}><label style={lbl}>Adresse *</label><input style={inp} value={form.bailleur_adresse} onChange={e => setForm({...form, bailleur_adresse: e.target.value})} /></div>
+              {form.bailleur_type === 'morale' && (
+                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <div><label style={lbl}>Dénomination sociale *</label><input style={inp} value={form.bailleur_denomination} onChange={e => setForm({...form, bailleur_denomination: e.target.value})} placeholder="SCI du Moulin" /></div>
+                    <div><label style={lbl}>Forme juridique</label><select style={inp} value={form.bailleur_forme_juridique} onChange={e => setForm({...form, bailleur_forme_juridique: e.target.value})}><option value="SCI">SCI</option><option value="SARL">SARL</option><option value="SAS">SAS</option><option value="SASU">SASU</option><option value="EURL">EURL</option><option value="SA">SA</option><option value="Autre">Autre</option></select></div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div><label style={lbl}>N° SIREN</label><input style={inp} value={form.bailleur_siren} onChange={e => setForm({...form, bailleur_siren: e.target.value})} placeholder="123 456 789" /></div>
+                    <div><label style={lbl}>Représentée par</label><select style={inp} value={form.bailleur_representant_type} onChange={e => setForm({...form, bailleur_representant_type: e.target.value})}><option value="physique">Une personne physique</option><option value="morale">Une autre société</option></select></div>
+                  </div>
+                  {form.bailleur_representant_type === 'physique' && (
+                    <div style={{ marginTop: 12 }}><label style={lbl}>Nom du représentant légal</label><input style={inp} value={form.bailleur_representant} onChange={e => setForm({...form, bailleur_representant: e.target.value})} placeholder="Jean Dupont, gérant" /></div>
+                  )}
+                  {form.bailleur_representant_type === 'morale' && (
+                    <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div><label style={lbl}>Société représentante</label><input style={inp} value={form.bailleur_representant_denomination} onChange={e => setForm({...form, bailleur_representant_denomination: e.target.value})} placeholder="Holding SAS" /></div>
+                      <div><label style={lbl}>Elle-même représentée par</label><input style={inp} value={form.bailleur_representant_personne} onChange={e => setForm({...form, bailleur_representant_personne: e.target.value})} placeholder="Jean Dupont" /></div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {form.bailleur_type === 'particulier' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div><label style={lbl}>Prénom *</label><input style={inp} value={form.bailleur_prenom} onChange={e => setForm({...form, bailleur_prenom: e.target.value})} /></div>
+                  <div><label style={lbl}>Nom *</label><input style={inp} value={form.bailleur_nom} onChange={e => setForm({...form, bailleur_nom: e.target.value})} /></div>
+                </div>
+              )}
+              <div style={{ marginBottom: 20 }}><label style={lbl}>{form.bailleur_type === 'morale' ? 'Adresse du siège *' : 'Adresse *'}</label><input style={inp} value={form.bailleur_adresse} onChange={e => setForm({...form, bailleur_adresse: e.target.value})} /></div>
               <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Locataire</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div><label style={lbl}>Prénom *</label><input style={inp} value={form.locataire_prenom} onChange={e => setForm({...form, locataire_prenom: e.target.value})} /></div>
-                <div><label style={lbl}>Nom *</label><input style={inp} value={form.locataire_nom} onChange={e => setForm({...form, locataire_nom: e.target.value})} /></div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setForm({...form, locataire_type: 'particulier'})} style={{ flex: 1, padding: 9, borderRadius: 10, border: `2px solid ${form.locataire_type === 'particulier' ? '#ca8a04' : '#e5e7eb'}`, background: form.locataire_type === 'particulier' ? '#fefce8' : 'white', color: form.locataire_type === 'particulier' ? '#ca8a04' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>👤 Particulier</button>
+                  <button type="button" onClick={() => setForm({...form, locataire_type: 'morale'})} style={{ flex: 1, padding: 9, borderRadius: 10, border: `2px solid ${form.locataire_type === 'morale' ? '#ca8a04' : '#e5e7eb'}`, background: form.locataire_type === 'morale' ? '#fefce8' : 'white', color: form.locataire_type === 'morale' ? '#ca8a04' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>🏢 Société</button>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+              {form.locataire_type === 'morale' && (
+                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <div><label style={lbl}>Dénomination sociale *</label><input style={inp} value={form.locataire_denomination} onChange={e => setForm({...form, locataire_denomination: e.target.value})} placeholder="SARL Exemple" /></div>
+                    <div><label style={lbl}>Forme juridique</label><select style={inp} value={form.locataire_forme_juridique} onChange={e => setForm({...form, locataire_forme_juridique: e.target.value})}><option value="SARL">SARL</option><option value="SCI">SCI</option><option value="SAS">SAS</option><option value="SASU">SASU</option><option value="EURL">EURL</option><option value="SA">SA</option><option value="Autre">Autre</option></select></div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div><label style={lbl}>N° SIREN</label><input style={inp} value={form.locataire_siren} onChange={e => setForm({...form, locataire_siren: e.target.value})} placeholder="123 456 789" /></div>
+                    <div><label style={lbl}>Représentée par</label><select style={inp} value={form.locataire_representant_type} onChange={e => setForm({...form, locataire_representant_type: e.target.value})}><option value="physique">Une personne physique</option><option value="morale">Une autre société</option></select></div>
+                  </div>
+                  {form.locataire_representant_type === 'physique' && (
+                    <div style={{ marginTop: 12 }}><label style={lbl}>Nom du représentant légal</label><input style={inp} value={form.locataire_representant} onChange={e => setForm({...form, locataire_representant: e.target.value})} placeholder="Jean Dupont, gérant" /></div>
+                  )}
+                  {form.locataire_representant_type === 'morale' && (
+                    <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div><label style={lbl}>Société représentante</label><input style={inp} value={form.locataire_representant_denomination} onChange={e => setForm({...form, locataire_representant_denomination: e.target.value})} placeholder="Holding SAS" /></div>
+                      <div><label style={lbl}>Elle-même représentée par</label><input style={inp} value={form.locataire_representant_personne} onChange={e => setForm({...form, locataire_representant_personne: e.target.value})} placeholder="Jean Dupont" /></div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {form.locataire_type === 'particulier' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div><label style={lbl}>Prénom *</label><input style={inp} value={form.locataire_prenom} onChange={e => setForm({...form, locataire_prenom: e.target.value})} /></div>
+                  <div><label style={lbl}>Nom *</label><input style={inp} value={form.locataire_nom} onChange={e => setForm({...form, locataire_nom: e.target.value})} /></div>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div><label style={lbl}>Email *</label><input style={inp} type="email" value={form.locataire_email} onChange={e => setForm({...form, locataire_email: e.target.value})} /></div>
                 <div><label style={lbl}>Téléphone</label><input style={inp} value={form.locataire_telephone} onChange={e => setForm({...form, locataire_telephone: e.target.value})} /></div>
               </div>
-              <button onClick={() => { if (!form.bailleur_prenom || !form.bailleur_nom || !form.locataire_prenom || !form.locataire_nom || !form.locataire_email) { alert('Champs obligatoires manquants.'); return } setEtape(2) }}
+              {form.locataire_type === 'morale' && (
+                <div style={{ marginBottom: 20 }}><label style={lbl}>Adresse du siège</label><input style={inp} value={form.locataire_adresse} onChange={e => setForm({...form, locataire_adresse: e.target.value})} /></div>
+              )}
+              <button onClick={() => {
+                  const bailleurOk = form.bailleur_type === 'morale' ? form.bailleur_denomination : (form.bailleur_prenom && form.bailleur_nom)
+                  const locataireOk = form.locataire_type === 'morale' ? form.locataire_denomination : (form.locataire_prenom && form.locataire_nom)
+                  if (!bailleurOk || !locataireOk || !form.locataire_email) { alert('Champs obligatoires manquants.'); return }
+                  setEtape(2)
+                }}
                 style={{ width: '100%', background: '#ca8a04', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>
                 Suivant → Emplacement & loyer
               </button>

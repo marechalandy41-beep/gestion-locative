@@ -5,6 +5,8 @@ import jsPDF from 'jspdf'
 
 export default function NouveauBailEtudiant() {
   const [user, setUser] = useState(null)
+  const [lotsDisponibles, setLotsDisponibles] = useState([])
+  const [lotsSelectionnes, setLotsSelectionnes] = useState([])
   const [biens, setBiens] = useState([])
   const [loading, setLoading] = useState(false)
   const [etape, setEtape] = useState(1)
@@ -22,6 +24,8 @@ export default function NouveauBailEtudiant() {
 
   const [form, setForm] = useState({
     bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '', bailleur_naissance: '', bailleur_lieu_naissance: '', bailleur_nationalite: 'Française',
+    bailleur_type: 'particulier', bailleur_denomination: '', bailleur_forme_juridique: 'SCI', bailleur_siren: '', bailleur_representant: '', bailleur_representant_type: 'physique', bailleur_representant_denomination: '', bailleur_representant_personne: '',
+    locataire_type: 'particulier',
     locataire_prenom: '', locataire_nom: '', locataire_email: '', locataire_telephone: '', locataire_naissance: '', locataire_nationalite: 'Française', locataire_adresse: '', etablissement: '',
     bien_id: '', surface_habitable: '', nombre_pieces: '', etage: '', equipements: '', classe_dpe: 'D', numero_lot: '',
     loyer_hc: '', charges: '', depot_garantie: '', modalite_paiement: 'Virement bancaire', date_exigibilite: '1',
@@ -57,13 +61,19 @@ export default function NouveauBailEtudiant() {
   function sanitize(n) { return (n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_') }
   const bienSel = biens.find(b => b.id === parseInt(form.bien_id))
 
+  async function chargerLots(bienId) {
+    const { data } = await supabase.from('lots').select('*').eq('bien_id', bienId)
+    setLotsDisponibles(data || [])
+    setLotsSelectionnes([])
+  }
+
   // Calcul date fin automatique (9 mois après début)
   const dateFin = form.date_debut ? (() => { const d = new Date(form.date_debut); d.setMonth(d.getMonth() + 9); return d.toLocaleDateString('fr-FR') })() : '—'
 
   async function sauvegarderBrouillon() {
     setLoading(true)
     const d = new Date(form.date_debut); d.setMonth(d.getMonth() + 9)
-    const bailData = { user_id: user.id, bien_id: parseInt(form.bien_id) || null, type_bail: 'Étudiant', loyer_hc: parseFloat(form.loyer_hc) || 0, charges: parseFloat(form.charges) || 0, depot_garantie: parseFloat(form.depot_garantie) || 0, date_debut: form.date_debut || null, date_fin: form.date_debut ? d.toISOString().split('T')[0] : null, date_exigibilite: parseInt(form.date_exigibilite) || 1, modalite_paiement: form.modalite_paiement, clauses: form.clauses, bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null, bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite, locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom, locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone, locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite, locataire_profession: form.etablissement, locataire_adresse: form.locataire_adresse, surface_habitable: parseFloat(form.surface_habitable) || null, nombre_pieces: parseInt(form.nombre_pieces) || null, etage: form.etage, equipements: form.equipements, classe_dpe: form.classe_dpe, numero_lot: form.numero_lot, statut: 'brouillon' }
+   const bailData = { user_id: user.id, bien_id: parseInt(form.bien_id) || null, type_bail: 'Étudiant', loyer_hc: parseFloat(form.loyer_hc) || 0, charges: parseFloat(form.charges) || 0, depot_garantie: parseFloat(form.depot_garantie) || 0, date_debut: form.date_debut || null, date_fin: form.date_debut ? d.toISOString().split('T')[0] : null, date_exigibilite: parseInt(form.date_exigibilite) || 1, modalite_paiement: form.modalite_paiement, clauses: form.clauses, bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null, bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite, bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne, locataire_type: 'particulier', locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom, locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone, locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite, locataire_profession: form.etablissement, locataire_adresse: form.locataire_adresse, surface_habitable: parseFloat(form.surface_habitable) || null, nombre_pieces: parseInt(form.nombre_pieces) || null, etage: form.etage, equipements: form.equipements, classe_dpe: form.classe_dpe, numero_lot: form.numero_lot, statut: 'brouillon' }
     if (bailIdExistant) await supabase.from('Baux').update(bailData).eq('id', bailIdExistant)
     else await supabase.from('Baux').insert(bailData)
     setLoading(false); window.location.href = '/baux'
@@ -143,7 +153,7 @@ async function envoyerVersYousign() {
       // Sauvegarder le bail
       const bailData = {
         user_id: user.id, bien_id: parseInt(form.bien_id),
-        type_bail: 'Non meublé',
+        type_bail: 'Étudiant',
         loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0,
         type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
         date_debut: form.date_debut || null, date_fin: form.date_fin || null,
@@ -154,6 +164,7 @@ async function envoyerVersYousign() {
         bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
         bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
         bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite,
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne, locataire_type: 'particulier',
         locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
         locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
         locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite,
@@ -222,9 +233,21 @@ async function envoyerVersYousign() {
       y = 28; doc.setTextColor(0, 0, 0)
 
       titre('ARTICLE 1 — LE BAILLEUR')
-      ligne('Nom et prénom :', `${form.bailleur_prenom} ${form.bailleur_nom}`)
-      ligne('Date de naissance :', form.bailleur_naissance ? new Date(form.bailleur_naissance).toLocaleDateString('fr-FR') : null)
-      ligne('Adresse :', form.bailleur_adresse); y += 4
+      if (form.bailleur_type === 'morale') {
+        ligne('Société :', `${form.bailleur_denomination} (${form.bailleur_forme_juridique})`)
+        ligne('SIREN :', form.bailleur_siren)
+        ligne('Siège social :', form.bailleur_adresse)
+        if (form.bailleur_representant_type === 'morale') {
+          ligne('Représentée par :', `${form.bailleur_representant_denomination}, elle-même représentée par ${form.bailleur_representant_personne}`)
+        } else {
+          ligne('Représentée par :', form.bailleur_representant)
+        }
+      } else {
+        ligne('Nom et prénom :', `${form.bailleur_prenom} ${form.bailleur_nom}`)
+        ligne('Date de naissance :', form.bailleur_naissance ? new Date(form.bailleur_naissance).toLocaleDateString('fr-FR') : null)
+        ligne('Adresse :', form.bailleur_adresse)
+      }
+      y += 4
 
       titre('ARTICLE 2 — L\'ÉTUDIANT LOCATAIRE')
       ligne('Nom et prénom :', `${form.locataire_prenom} ${form.locataire_nom}`)
@@ -274,11 +297,16 @@ async function envoyerVersYousign() {
       let bailPdfUrl = null
       if (!uploadError) { const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage); bailPdfUrl = urlData.publicUrl; await supabase.from('Documents').insert({ user_id: user.id, bien_id: parseInt(form.bien_id), nom_fichier: nomFichier, categorie: 'Bail', url: bailPdfUrl, storage_path: cheminStorage, annee: new Date().getFullYear() }) }
 
-      const bailData = { user_id: user.id, bien_id: parseInt(form.bien_id), type_bail: 'Étudiant', loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0, depot_garantie: parseFloat(form.depot_garantie) || 0, date_debut: form.date_debut || null, date_fin: dateFinObj.toISOString().split('T')[0], date_exigibilite: parseInt(form.date_exigibilite) || 1, modalite_paiement: form.modalite_paiement, clauses: form.clauses, bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null, bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite, locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom, locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone, locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite, locataire_profession: form.etablissement, locataire_adresse: form.locataire_adresse, surface_habitable: parseFloat(form.surface_habitable) || null, nombre_pieces: parseInt(form.nombre_pieces) || null, etage: form.etage, equipements: form.equipements, classe_dpe: form.classe_dpe, numero_lot: form.numero_lot, signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut: 'actif', ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }) }
+     const bailData = { user_id: user.id, bien_id: parseInt(form.bien_id), type_bail: 'Étudiant', loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0, depot_garantie: parseFloat(form.depot_garantie) || 0, date_debut: form.date_debut || null, date_fin: dateFinObj.toISOString().split('T')[0], date_exigibilite: parseInt(form.date_exigibilite) || 1, modalite_paiement: form.modalite_paiement, clauses: form.clauses, bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom, bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null, bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite, bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne, locataire_type: 'particulier', locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom, locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone, locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite, locataire_profession: form.etablissement, locataire_adresse: form.locataire_adresse, surface_habitable: parseFloat(form.surface_habitable) || null, nombre_pieces: parseInt(form.nombre_pieces) || null, etage: form.etage, equipements: form.equipements, classe_dpe: form.classe_dpe, numero_lot: form.numero_lot, signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut: 'actif', ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }) }
       let bail, bailError
       if (bailIdExistant) { const res = await supabase.from('Baux').update(bailData).eq('id', bailIdExistant).select().single(); bail = res.data; bailError = res.error }
       else { const res = await supabase.from('Baux').insert(bailData).select().single(); bail = res.data; bailError = res.error }
       if (bailError) { alert('Erreur : ' + bailError.message); setLoading(false); return }
+      if (lotsSelectionnes.length > 0) {
+        await supabase.from('lots')
+          .update({ statut: 'loue', bail_id: bail.id })
+          .in('id', lotsSelectionnes.map(l => l.id))
+      }
       await fetch('/api/sync-quantity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id }) }).catch(() => {})
       setLoading(false); window.location.href = `/baux/${bail.id}`
     } catch (err) { alert('Erreur : ' + err.message); setLoading(false) }
@@ -311,16 +339,47 @@ async function envoyerVersYousign() {
           {etape === 1 && (
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>👤 Informations bailleur</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div><label style={lbl}>Prénom *</label><input style={inp} value={form.bailleur_prenom} onChange={e => setForm({...form, bailleur_prenom: e.target.value})} /></div>
-                <div><label style={lbl}>Nom *</label><input style={inp} value={form.bailleur_nom} onChange={e => setForm({...form, bailleur_nom: e.target.value})} /></div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setForm({...form, bailleur_type: 'particulier'})} style={{ flex: 1, padding: 10, borderRadius: 10, border: `2px solid ${form.bailleur_type === 'particulier' ? '#db2777' : '#e5e7eb'}`, background: form.bailleur_type === 'particulier' ? '#fdf2f8' : 'white', color: form.bailleur_type === 'particulier' ? '#db2777' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>👤 Particulier</button>
+                  <button type="button" onClick={() => setForm({...form, bailleur_type: 'morale'})} style={{ flex: 1, padding: 10, borderRadius: 10, border: `2px solid ${form.bailleur_type === 'morale' ? '#db2777' : '#e5e7eb'}`, background: form.bailleur_type === 'morale' ? '#fdf2f8' : 'white', color: form.bailleur_type === 'morale' ? '#db2777' : '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>🏢 Société (SCI, SARL...)</button>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div><label style={lbl}>Date de naissance</label><input style={inp} type="date" value={form.bailleur_naissance} onChange={e => setForm({...form, bailleur_naissance: e.target.value})} /></div>
-                <div><label style={lbl}>Lieu de naissance</label><input style={inp} value={form.bailleur_lieu_naissance} onChange={e => setForm({...form, bailleur_lieu_naissance: e.target.value})} /></div>
-              </div>
-              <div style={{ marginBottom: 24 }}><label style={lbl}>Adresse *</label><input style={inp} value={form.bailleur_adresse} onChange={e => setForm({...form, bailleur_adresse: e.target.value})} /></div>
-              <button onClick={() => { if (!form.bailleur_prenom || !form.bailleur_nom || !form.bailleur_adresse) { alert('Champs obligatoires.'); return } setEtape(2) }} style={{ width: '100%', background: '#db2777', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>Suivant → Étudiant</button>
+              {form.bailleur_type === 'morale' && (
+                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <div><label style={lbl}>Dénomination sociale *</label><input style={inp} value={form.bailleur_denomination} onChange={e => setForm({...form, bailleur_denomination: e.target.value})} placeholder="SCI du Moulin" /></div>
+                    <div><label style={lbl}>Forme juridique</label><select style={inp} value={form.bailleur_forme_juridique} onChange={e => setForm({...form, bailleur_forme_juridique: e.target.value})}><option value="SCI">SCI</option><option value="SARL">SARL</option><option value="SAS">SAS</option><option value="SASU">SASU</option><option value="EURL">EURL</option><option value="SA">SA</option><option value="Autre">Autre</option></select></div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div><label style={lbl}>N° SIREN</label><input style={inp} value={form.bailleur_siren} onChange={e => setForm({...form, bailleur_siren: e.target.value})} placeholder="123 456 789" /></div>
+                    <div><label style={lbl}>Représentée par</label><select style={inp} value={form.bailleur_representant_type} onChange={e => setForm({...form, bailleur_representant_type: e.target.value})}><option value="physique">Une personne physique</option><option value="morale">Une autre société</option></select></div>
+                  </div>
+                  {form.bailleur_representant_type === 'physique' && (
+                    <div style={{ marginTop: 12 }}><label style={lbl}>Nom du représentant légal</label><input style={inp} value={form.bailleur_representant} onChange={e => setForm({...form, bailleur_representant: e.target.value})} placeholder="Jean Dupont, gérant" /></div>
+                  )}
+                  {form.bailleur_representant_type === 'morale' && (
+                    <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div><label style={lbl}>Société représentante</label><input style={inp} value={form.bailleur_representant_denomination} onChange={e => setForm({...form, bailleur_representant_denomination: e.target.value})} placeholder="Holding SAS" /></div>
+                      <div><label style={lbl}>Elle-même représentée par</label><input style={inp} value={form.bailleur_representant_personne} onChange={e => setForm({...form, bailleur_representant_personne: e.target.value})} placeholder="Jean Dupont" /></div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {form.bailleur_type === 'particulier' && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <div><label style={lbl}>Prénom *</label><input style={inp} value={form.bailleur_prenom} onChange={e => setForm({...form, bailleur_prenom: e.target.value})} /></div>
+                    <div><label style={lbl}>Nom *</label><input style={inp} value={form.bailleur_nom} onChange={e => setForm({...form, bailleur_nom: e.target.value})} /></div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                    <div><label style={lbl}>Date de naissance</label><input style={inp} type="date" value={form.bailleur_naissance} onChange={e => setForm({...form, bailleur_naissance: e.target.value})} /></div>
+                    <div><label style={lbl}>Lieu de naissance</label><input style={inp} value={form.bailleur_lieu_naissance} onChange={e => setForm({...form, bailleur_lieu_naissance: e.target.value})} /></div>
+                  </div>
+                </>
+              )}
+              <div style={{ marginBottom: 24 }}><label style={lbl}>{form.bailleur_type === 'morale' ? 'Adresse du siège *' : 'Adresse *'}</label><input style={inp} value={form.bailleur_adresse} onChange={e => setForm({...form, bailleur_adresse: e.target.value})} /></div>
+              <button onClick={() => { if (form.bailleur_type === 'morale') { if (!form.bailleur_denomination || !form.bailleur_adresse) { alert('Dénomination sociale et adresse obligatoires.'); return } } else { if (!form.bailleur_prenom || !form.bailleur_nom || !form.bailleur_adresse) { alert('Champs obligatoires.'); return } } setEtape(2) }} style={{ width: '100%', background: '#db2777', color: 'white', padding: 12, borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>Suivant → Étudiant</button>
             </div>
           )}
 
@@ -352,11 +411,49 @@ async function envoyerVersYousign() {
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginTop: 0, marginBottom: 20 }}>🏠 Bien & conditions financières</h3>
               <div style={{ marginBottom: 14 }}>
                 <label style={lbl}>Bien concerné *</label>
-                <select style={inp} value={form.bien_id} onChange={e => { const b = biens.find(b => b.id === parseInt(e.target.value)); setForm({...form, bien_id: e.target.value, surface_habitable: b?.surface?.toString() || '', nombre_pieces: b?.nombre_pieces?.toString() || '', etage: b?.etage || '', classe_dpe: b?.classe_dpe || 'D', equipements: b?.equipements || '', numero_lot: b?.numero_lot || ''}) }}>
+                <select style={inp} value={form.bien_id} onChange={e => { const b = biens.find(b => b.id === parseInt(e.target.value)); setForm({...form, bien_id: e.target.value, surface_habitable: b?.surface?.toString() || '', nombre_pieces: b?.nombre_pieces?.toString() || '', etage: b?.etage || '', classe_dpe: b?.classe_dpe || 'D', equipements: b?.equipements || '', numero_lot: b?.numero_lot || ''}); if (e.target.value) chargerLots(parseInt(e.target.value)); else { setLotsDisponibles([]); setLotsSelectionnes([]) } }}>
                   <option value="">— Sélectionnez —</option>
                   {biens.map(b => <option key={b.id} value={b.id}>{b.nom} — {b.adresse}</option>)}
                 </select>
               </div>
+              {lotsDisponibles.length > 0 && (
+                <div style={{ marginTop: 12, marginBottom: 14, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 14 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#2563eb', marginBottom: 10 }}>🏠 Sélectionnez les lots concernés par ce bail</p>
+                  {lotsDisponibles.map(lot => (
+                    <label key={lot.id} htmlFor={`lot-${lot.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
+                      <input type="checkbox" id={`lot-${lot.id}`} checked={lotsSelectionnes.some(l => l.id === lot.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            const nouveauxLots = [...lotsSelectionnes, lot]
+                            setLotsSelectionnes(nouveauxLots)
+                            const surfaceTotale = nouveauxLots.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)
+                            if (surfaceTotale > 0) setForm(f => ({...f, surface_habitable: surfaceTotale.toString()}))
+                            setForm(f => ({...f, numero_lot: nouveauxLots.map(l => l.nom).join(', ')}))
+                          } else {
+                            const nouveauxLots = lotsSelectionnes.filter(l => l.id !== lot.id)
+                            setLotsSelectionnes(nouveauxLots)
+                            const surfaceTotale = nouveauxLots.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)
+                            if (surfaceTotale > 0) setForm(f => ({...f, surface_habitable: surfaceTotale.toString()}))
+                            setForm(f => ({...f, numero_lot: nouveauxLots.map(l => l.nom).join(', ')}))
+                          }
+                        }}
+                        style={{ width: 16, height: 16 }} />
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{lot.nom}</span>
+                        {lot.surface && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>{lot.surface} m²</span>}
+                        {lot.etage && <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 8 }}>— {lot.etage}</span>}
+                      </div>
+                    </label>
+                  ))}
+                  {lotsSelectionnes.length > 0 && (
+                    <div style={{ background: 'white', borderRadius: 8, padding: 10, marginTop: 8, border: '1px solid #bfdbfe' }}>
+                      <p style={{ fontSize: 12, color: '#2563eb', margin: 0, fontWeight: 600 }}>
+                        ✅ {lotsSelectionnes.length} lot{lotsSelectionnes.length > 1 ? 's' : ''} sélectionné{lotsSelectionnes.length > 1 ? 's' : ''} — Surface totale : {lotsSelectionnes.reduce((acc, l) => acc + (parseFloat(l.surface) || 0), 0)} m²
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div><label style={lbl}>Surface (m²)</label><input style={inp} type="number" value={form.surface_habitable} onChange={e => setForm({...form, surface_habitable: e.target.value})} /></div>
                 <div><label style={lbl}>Classe DPE</label><select style={inp} value={form.classe_dpe} onChange={e => setForm({...form, classe_dpe: e.target.value})}>{['A','B','C','D','E','F','G'].map(c => <option key={c} value={c}>Classe {c}</option>)}</select></div>

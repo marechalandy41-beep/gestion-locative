@@ -434,8 +434,14 @@ async function envoyerVersYousign() {
       doc.setFont('helvetica', 'bold')
       doc.text('Le Bailleur', margin, y); doc.text('Le Locataire', pageW / 2 + 5, y); y += 4
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
-      doc.text(`${form.bailleur_prenom} ${form.bailleur_nom}`, margin, y)
-      doc.text(`${form.locataire_prenom} ${form.locataire_nom}`, pageW / 2 + 5, y); y += 2
+      const nomSignBailleur = form.bailleur_type === 'morale'
+        ? `${form.bailleur_denomination}${form.bailleur_representant ? ' — ' + form.bailleur_representant : (form.bailleur_representant_personne ? ' — ' + form.bailleur_representant_personne : '')}`
+        : `${form.bailleur_prenom} ${form.bailleur_nom}`
+      const nomSignLocataire = form.locataire_type === 'morale'
+        ? `${form.locataire_denomination}${form.locataire_representant ? ' — ' + form.locataire_representant : (form.locataire_representant_personne ? ' — ' + form.locataire_representant_personne : '')}`
+        : `${form.locataire_prenom} ${form.locataire_nom}`
+      doc.text(nomSignBailleur, margin, y)
+      doc.text(nomSignLocataire, pageW / 2 + 5, y); y += 2
       y += 4
       doc.setDrawColor(180, 180, 180)
       doc.rect(margin, y, 80, 38); doc.rect(pageW / 2 + 5, y, 80, 38)
