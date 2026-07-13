@@ -29,7 +29,7 @@ const [categorieJustif, setCategorieJustif] = useState({})
     setUser(user)
     const { data: biensData } = await supabase.from('Biens').select('*').eq('user_id', user.id)
     const { data: bauxData } = await supabase.from('Baux').select('*, Biens(*)').eq('user_id', user.id)
-    const { data: paiementsData } = await supabase.from('Paiements').select('*, Baux(*, Biens(*))').eq('user_id', user.id)
+    const { data: paiementsData } = await supabase.from('paiements').select('*').eq('user_id', user.id)
     setBiens(biensData || [])
     setBaux(bauxData || [])
     setPaiements(paiementsData || [])
@@ -81,8 +81,9 @@ const [categorieJustif, setCategorieJustif] = useState({})
 
   function statsBien(bienId) {
     const bauxBien = baux.filter(b => b.bien_id === bienId)
-    const paiementsBien = paiementsFiltres.filter(p => p.Baux?.bien_id === bienId)
-    const totalLoyers = paiementsBien.reduce((acc, p) => acc + (p.montant || 0), 0)
+    const idsBaux = bauxBien.map(b => b.id)
+    const paiementsBien = paiementsFiltres.filter(p => idsBaux.includes(p.bail_id) && (parseFloat(p.montant) || 0) > 0)
+    const totalLoyers = paiementsBien.reduce((acc, p) => acc + (parseFloat(p.montant) || 0), 0)
     return { totalLoyers, nbPaiements: paiementsBien.length, bauxBien }
   }
 

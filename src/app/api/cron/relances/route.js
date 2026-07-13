@@ -71,7 +71,7 @@ export async function GET(request) {
 
       // Vérifier qu'il n'y a pas déjà un paiement ce mois
       const { data: paiement } = await supabase
-        .from('Paiements')
+        .from('paiements')
         .select('id')
         .eq('bail_id', bail.id)
         .eq('mois', moisActuel)
@@ -85,7 +85,7 @@ export async function GET(request) {
 
       // Vérifier qu'on n'a pas déjà envoyé une relance ce mois
       const { data: dejaEnvoyee } = await supabase
-        .from('Paiements')
+        .from('paiements')
         .select('id')
         .eq('bail_id', bail.id)
         .eq('mois', moisActuel)
@@ -132,7 +132,7 @@ export async function GET(request) {
       })
 
       // Tracer la relance dans Paiements pour éviter les doublons
-      await supabase.from('Paiements').insert({
+      await supabase.from('paiements').insert({
         bail_id: bail.id,
         user_id: bail.user_id,
         montant: 0,

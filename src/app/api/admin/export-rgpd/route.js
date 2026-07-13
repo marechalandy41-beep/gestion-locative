@@ -14,7 +14,7 @@ export async function POST(request) {
     const [biens, baux, paiements, documents, edl] = await Promise.all([
       supabase.from('Biens').select('*').eq('user_id', userId),
       supabase.from('Baux').select('*').eq('user_id', userId),
-      supabase.from('Paiements').select('*').eq('user_id', userId),
+      supabase.from('paiements').select('*').eq('user_id', userId),
       supabase.from('Documents').select('*').eq('user_id', userId),
       supabase.from('EtatsDesLieux').select('*'),
     ])

@@ -242,7 +242,7 @@ export default function ConnexionBancaire() {
       return;
     }
 
-    await supabase.from('Paiements').insert({
+    await supabase.from('paiements').insert({
       bail_id: matching.bail.id,
       user_id: user.id,
       montant: matching.transaction.amount,
