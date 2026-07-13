@@ -90,6 +90,9 @@ export default function Admin() {
     const dataConvs = await resConvs.json()
     if (dataConvs.conversations) setConversations(dataConvs.conversations)
 
+    const { data: articlesData } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
+    setArticles(articlesData || [])
+
     setLoading(false)
   }
 
