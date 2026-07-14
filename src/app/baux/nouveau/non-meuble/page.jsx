@@ -251,6 +251,8 @@ async function envoyerVersYousign() {
       const bailData = {
         user_id: user.id, bien_id: parseInt(form.bien_id),
         type_bail: 'Non meublé',
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
+        locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
         loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0,
         type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
         date_debut: form.date_debut || null, date_fin: form.date_fin || null,
@@ -479,6 +481,8 @@ async function envoyerVersYousign() {
 const bailData = {
   user_id: user.id, bien_id: parseInt(form.bien_id),
   type_bail: 'Non meublé',
+  bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
+  locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
   loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0,
   type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
   date_debut: form.date_debut || null, date_fin: form.date_fin || null,

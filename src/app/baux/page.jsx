@@ -59,6 +59,14 @@ useEffect(() => {
     termine:   { bg: '#fee2e2', color: '#dc2626', label: 'Terminé' },
   }[s] || { bg: '#f3f4f6', color: '#6b7280', label: s })
 
+async function modifierNote(bail, e) {
+    e.stopPropagation()
+    const nouvelleNote = prompt('Note pour ce bail (locataire, étage, remarque...) :', bail.note || '')
+    if (nouvelleNote === null) return
+    await supabase.from('Baux').update({ note: nouvelleNote }).eq('id', bail.id)
+    setBaux(prev => prev.map(b => b.id === bail.id ? { ...b, note: nouvelleNote } : b))
+  }
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p>Chargement...</p>
@@ -148,9 +156,9 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {bail.locataire_prenom && (
+                  {(bail.locataire_denomination || bail.locataire_prenom || bail.locataire_nom) && (
                     <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
-                      👤 {bail.locataire_prenom} {bail.locataire_nom}
+                      👤 {bail.locataire_denomination ? bail.locataire_denomination : `${bail.locataire_prenom || ''} ${bail.locataire_nom || ''}`}
                     </p>
                   )}
                   {(bail.payeur_prenom || bail.payeur_nom) && (
@@ -161,6 +169,15 @@ useEffect(() => {
                   {bail.date_debut && (
                     <p style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8 }}>
                       📅 Depuis le {new Date(bail.date_debut).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
+<button onClick={e => modifierNote(bail, e)}
+                    style={{ fontSize: 11, color: '#2563eb', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
+                    📝 {bail.note ? 'Modifier la note' : 'Ajouter une note'}
+                  </button>
+                  {bail.note && (
+                    <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontStyle: 'italic', background: '#f9fafb', padding: '6px 10px', borderRadius: 8 }}>
+                      📝 {bail.note}
                     </p>
                   )}
 

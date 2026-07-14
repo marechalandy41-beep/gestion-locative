@@ -206,6 +206,8 @@ async function envoyerVersYousign() {
         revision_irl: form.revision_irl, modalite_paiement: form.modalite_paiement,
         clauses: form.clauses, relance_auto_active: form.relance_auto_active || false,
         relance_auto_jours: form.relance_auto_jours || 5,
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
+        locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
         bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
         bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
         bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite,

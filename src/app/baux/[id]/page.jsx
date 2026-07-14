@@ -305,14 +305,14 @@ useEffect(() => {
             <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 20 }}>
 
               {section('🏠 Bailleur')}
-              {info('Nom et prénom', [bail.bailleur_prenom, bail.bailleur_nom].filter(Boolean).join(' ') || null)}
+              {info(bail.bailleur_denomination ? 'Société' : 'Nom et prénom', bail.bailleur_denomination ? `${bail.bailleur_denomination}${bail.bailleur_forme_juridique ? ' (' + bail.bailleur_forme_juridique + ')' : ''}` : ([bail.bailleur_prenom, bail.bailleur_nom].filter(Boolean).join(' ') || null))}
               {info('Adresse', bail.bailleur_adresse)}
               {info('Date de naissance', bail.bailleur_naissance ? new Date(bail.bailleur_naissance).toLocaleDateString('fr-FR') : null)}
               {info('Lieu de naissance', bail.bailleur_lieu_naissance)}
               {info('Nationalité', bail.bailleur_nationalite)}
 
               {section('👤 Locataire')}
-              {info('Nom et prénom', [bail.locataire_prenom, bail.locataire_nom].filter(Boolean).join(' ') || null)}
+              {info(bail.locataire_denomination ? 'Société' : 'Nom et prénom', bail.locataire_denomination ? `${bail.locataire_denomination}${bail.locataire_forme_juridique ? ' (' + bail.locataire_forme_juridique + ')' : ''}` : ([bail.locataire_prenom, bail.locataire_nom].filter(Boolean).join(' ') || null))}
               {!editContact ? (
                 <div>
                   {info('Email', bail.locataire_email)}

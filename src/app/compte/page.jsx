@@ -504,6 +504,13 @@ async function activerPushNotifications() {
               {o.label}
             </button>
           ))}
+          <a href="/blog" style={{
+            padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500,
+            background: 'transparent', color: '#6b7280', textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap'
+          }}>
+            📖 Blog
+          </a>
         </div>
 
         {/* ONGLET PROFIL */}

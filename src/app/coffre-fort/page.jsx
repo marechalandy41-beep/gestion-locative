@@ -4,7 +4,7 @@ import { supabase } from '../../supabase'
 import Nav from '../components/nav'
 
 const CATEGORIES = [
-  'Bail', 'Quittance', 'État des lieux entrée', 'État des lieux sortie',
+  'Bail', 'Quittance', 'Mise en demeure', 'État des lieux entrée', 'État des lieux sortie',
   'DPE', 'Diagnostic amiante', 'Diagnostic plomb', 'Diagnostic électricité',
   'Diagnostic gaz', 'Taxe foncière', 'Assurance', 'Factures travaux',
   'Acte de propriété', 'Autre'
