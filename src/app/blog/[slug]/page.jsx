@@ -7,6 +7,7 @@ function renderMarkdown(text) {
     .replace(/^## (.+)$/gm, '<h2 style="font-size:22px;font-weight:700;color:#111827;margin:32px 0 12px">$1</h2>')
     .replace(/^### (.+)$/gm, '<h3 style="font-size:18px;font-weight:600;color:#374151;margin:24px 0 8px">$1</h3>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#2563eb;text-decoration:underline">$1</a>')
     .replace(/^- (.+)$/gm, '<li style="margin-bottom:6px;color:#374151">$1</li>')
     .replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:12px 0">$&</ul>')
     .replace(/\n\n/g, '</p><p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 16px">')
