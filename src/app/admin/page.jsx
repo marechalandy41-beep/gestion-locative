@@ -5,6 +5,8 @@ import { supabase } from '../../supabase'
 export default function Admin() {
   const [codes, setCodes] = useState([])
   const [nouveauCode, setNouveauCode] = useState({ code: '', reduction: 10, type: 'promo', usage_max: '', expire_le: '' })
+  const [codeDetail, setCodeDetail] = useState(null)
+  const [codeDetailLoading, setCodeDetailLoading] = useState(false)
   const [showFormCode, setShowFormCode] = useState(false)
   const [settings, setSettings] = useState({})
   const [savingSettings, setSavingSettings] = useState(false)
@@ -162,6 +164,19 @@ async function ouvrirConversationAdmin(conv) {
       </div>
     </main>
   )
+
+async function voirDetailCode(code) {
+    setCodeDetailLoading(true)
+    setCodeDetail({ code, liste: [], total: 0, payants: 0, conversion: 0 })
+    const res = await fetch('/api/admin/code-detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    const data = await res.json()
+    setCodeDetail({ code, ...data })
+    setCodeDetailLoading(false)
+  }
 
   if (loading) return (
     <main style={{ minHeight: '100vh', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -500,23 +515,28 @@ async function ouvrirConversationAdmin(conv) {
                     Annuler
                   </button>
                 </div>
+
               </div>
             )}
 
             <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
-                {['Code', 'Réduction', 'Type', 'Utilisations', 'Expire le', 'Actions'].map(h => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
+                {['Code', 'Réduction', 'Type', 'Utilisations', 'Clients', 'Expire le', 'Actions'].map(h => (
                   <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
                 ))}
               </div>
               {codes.length === 0 ? (
                 <p style={{ color: '#9ca3af', padding: 20, fontSize: 14 }}>Aucun code promo créé.</p>
               ) : codes.map((c, i) => (
-                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < codes.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
+                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < codes.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
                   <span style={{ color: 'white', fontWeight: 700, fontSize: 14, fontFamily: 'monospace' }}>{c.code}</span>
                   <span style={{ color: '#4ade80', fontWeight: 700 }}>-{c.reduction}%</span>
                   <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.type}</span>
                   <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.usage_count}/{c.usage_max || '∞'}</span>
+                  <button onClick={() => voirDetailCode(c.code)}
+                    style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', justifySelf: 'start' }}>
+                    👥 Détail
+                  </button>
                   <span style={{ color: '#9ca3af', fontSize: 13 }}>{c.expire_le ? new Date(c.expire_le).toLocaleDateString('fr-FR') : '—'}</span>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={async () => {
@@ -546,6 +566,52 @@ async function ouvrirConversationAdmin(conv) {
                 </div>
               ))}
             </div>
+            {codeDetail && (
+              <div onClick={() => setCodeDetail(null)}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+                <div onClick={e => e.stopPropagation()}
+                  style={{ background: '#1f2937', borderRadius: 16, padding: 28, maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto', border: '1px solid #374151' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <h3 style={{ color: 'white', fontSize: 18, fontWeight: 700, margin: 0, fontFamily: 'monospace' }}>{codeDetail.code}</h3>
+                    <button onClick={() => setCodeDetail(null)} style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: 22, cursor: 'pointer' }}>×</button>
+                  </div>
+                  {codeDetailLoading ? (
+                    <p style={{ color: '#9ca3af', fontSize: 14 }}>Chargement...</p>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+                        <div style={{ flex: 1, background: '#374151', borderRadius: 10, padding: 14, textAlign: 'center' }}>
+                          <p style={{ color: '#9ca3af', fontSize: 11, margin: '0 0 4px' }}>Clients</p>
+                          <p style={{ color: 'white', fontSize: 22, fontWeight: 700, margin: 0 }}>{codeDetail.total}</p>
+                        </div>
+                        <div style={{ flex: 1, background: '#374151', borderRadius: 10, padding: 14, textAlign: 'center' }}>
+                          <p style={{ color: '#9ca3af', fontSize: 11, margin: '0 0 4px' }}>Payants</p>
+                          <p style={{ color: '#4ade80', fontSize: 22, fontWeight: 700, margin: 0 }}>{codeDetail.payants}</p>
+                        </div>
+                        <div style={{ flex: 1, background: '#374151', borderRadius: 10, padding: 14, textAlign: 'center' }}>
+                          <p style={{ color: '#9ca3af', fontSize: 11, margin: '0 0 4px' }}>Conversion</p>
+                          <p style={{ color: '#60a5fa', fontSize: 22, fontWeight: 700, margin: 0 }}>{codeDetail.conversion}%</p>
+                        </div>
+                      </div>
+                      {codeDetail.liste?.length === 0 ? (
+                        <p style={{ color: '#9ca3af', fontSize: 14 }}>Aucun client n'a encore utilisé ce code.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {codeDetail.liste.map((cl, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111827', borderRadius: 8, padding: '10px 14px' }}>
+                              <span style={{ color: 'white', fontSize: 13 }}>{cl.email}</span>
+                              <span style={{ color: cl.payant ? '#4ade80' : '#9ca3af', fontSize: 12, fontWeight: 600 }}>
+                                {cl.payant ? '💳 ' + cl.plan : 'gratuit'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* PARRAINAGE */}
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginTop: 20 }}>
