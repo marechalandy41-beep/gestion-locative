@@ -340,7 +340,7 @@ async function envoyerVersYousign() {
         locataire_adresse: form.locataire_adresse,
         locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
         equipements: form.description_emplacement, numero_lot: form.numero_place,
-        signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut: 'actif',
+        signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire, statut: (form.date_debut && form.date_debut > new Date().toISOString().split('T')[0] ? 'a_venir' : 'actif'),
         ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
       }
       let bail, bailError

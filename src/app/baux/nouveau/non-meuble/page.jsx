@@ -502,7 +502,7 @@ const bailData = {
   etage: form.etage, equipements: form.equipements,
   classe_dpe: form.classe_dpe, numero_lot: form.numero_lot,
   signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire,
-  statut: 'actif',
+  statut: (form.date_debut && form.date_debut > new Date().toISOString().split('T')[0] ? 'a_venir' : 'actif'),
   ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
 }
 
@@ -947,7 +947,7 @@ if (bailIdExistant) {
           <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Envoi par email — signature légale à distance — valeur juridique.</p>
         </div>
         <div style={{ marginLeft: 'auto' }}>
-          <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>Bientôt</span>
+          →
         </div>
       </div>
 

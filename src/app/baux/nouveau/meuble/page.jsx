@@ -495,7 +495,7 @@ async function envoyerVersYousign() {
         etage: form.etage, equipements: form.equipements,
         classe_dpe: form.classe_dpe, numero_lot: form.numero_lot,
         signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire,
-        statut: 'actif',
+        statut: (form.date_debut && form.date_debut > new Date().toISOString().split('T')[0] ? 'a_venir' : 'actif'),
         ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
       }
 

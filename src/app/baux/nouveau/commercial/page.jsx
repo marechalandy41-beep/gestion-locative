@@ -485,7 +485,7 @@ async function envoyerVersYousign() {
         surface_habitable: parseFloat(form.surface_habitable) || null,
         etage: form.etage, numero_lot: form.numero_lot,
         signature_bailleur: signatureBailleur, signature_locataire: signatureLocataire,
-        statut: 'actif',
+        statut: (form.date_debut && form.date_debut > new Date().toISOString().split('T')[0] ? 'a_venir' : 'actif'),
         ...(bailPdfUrl && { bail_pdf_url: bailPdfUrl }),
       }
 

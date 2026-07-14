@@ -55,6 +55,7 @@ useEffect(() => {
 
   const statutStyle = (s) => ({
     actif:     { bg: '#dcfce7', color: '#16a34a', label: 'Actif' },
+    a_venir:   { bg: '#dbeafe', color: '#2563eb', label: '🕓 À venir' },
     brouillon: { bg: '#fef9c3', color: '#ca8a04', label: 'Brouillon' },
     termine:   { bg: '#fee2e2', color: '#dc2626', label: 'Terminé' },
   }[s] || { bg: '#f3f4f6', color: '#6b7280', label: s })
@@ -95,6 +96,7 @@ async function modifierNote(bail, e) {
           {[
             { id: 'tous', label: '📋 Tous', count: baux.length },
             { id: 'actif', label: '✅ Actifs', count: baux.filter(b => b.statut === 'actif').length },
+            { id: 'a_venir', label: '🕓 À venir', count: baux.filter(b => b.statut === 'a_venir').length },
             { id: 'brouillon', label: '✏️ Brouillons', count: baux.filter(b => b.statut === 'brouillon').length },
             { id: 'termine', label: '🔒 Terminés', count: baux.filter(b => b.statut === 'termine').length },
           ].map(f => (

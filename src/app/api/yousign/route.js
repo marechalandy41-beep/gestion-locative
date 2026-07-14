@@ -119,7 +119,11 @@ export async function POST(request) {
       const data = await res.json()
 
       if (data.status === 'done') {
-        await supabase.from('Baux').update({ statut: 'actif' }).eq('id', bailId)
+        // Récupérer la date de début pour décider actif vs à venir
+        const { data: bailInfo } = await supabase.from('Baux').select('date_debut').eq('id', bailId).single()
+        const aujourdhui = new Date().toISOString().split('T')[0]
+        const nouveauStatut = (bailInfo?.date_debut && bailInfo.date_debut > aujourdhui) ? 'a_venir' : 'actif'
+        await supabase.from('Baux').update({ statut: nouveauStatut }).eq('id', bailId)
       }
 
       return NextResponse.json({ success: true, status: data.status, data })

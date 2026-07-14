@@ -23,6 +23,33 @@ export async function GET(request) {
   const moisNom = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][moisActuel - 1]
 
   try {
+
+    // ===== Activation des baux différés (à venir → actif le jour J) =====
+    const aujourdhui = now.toISOString().split('T')[0]
+    const { data: bauxAActiver } = await supabase
+      .from('Baux')
+      .select('id, user_id')
+      .eq('statut', 'a_venir')
+      .lte('date_debut', aujourdhui)
+
+    if (bauxAActiver && bauxAActiver.length > 0) {
+      // Passer les baux concernés en actif
+      const idsAActiver = bauxAActiver.map(b => b.id)
+      await supabase.from('Baux').update({ statut: 'actif' }).in('id', idsAActiver)
+
+      // Mettre à jour la quantité Stripe pour chaque user concerné (dédupliqué)
+      const usersConcernes = [...new Set(bauxAActiver.map(b => b.user_id))]
+      for (const uid of usersConcernes) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/sync-quantity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: uid }),
+          })
+        } catch (e) { console.error('sync-quantity échoué pour', uid, e) }
+      }
+    }
+
     // Récupérer les user_id ayant le plan automatique (seuls eux ont droit aux relances auto)
     const { data: customersAuto } = await supabase
       .from('customers')
