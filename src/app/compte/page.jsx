@@ -26,6 +26,7 @@ export default function Compte() {
   const [reductionActuelle, setReductionActuelle] = useState(0)
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
+  const [reductionParrain, setReductionParrain] = useState(5)
  const [conversations, setConversations] = useState([])
   const [conversationActive, setConversationActive] = useState(null)
   const [messagesConversation, setMessagesConversation] = useState([])
@@ -87,7 +88,7 @@ useEffect(() => {
         const { data: settingsData } = await supabase
           .from('settings')
           .select('cle, valeur')
-          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support', 'faq_dynamique'])
+          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support', 'faq_dynamique', 'parrainage_reduction_parrain'])
 
         if (settingsData) {
           const prixManuelSetting = settingsData.find(s => s.cle === 'prix_manuel')
@@ -98,6 +99,8 @@ useEffect(() => {
           if (prixAutoSetting) setPrixAutomatique(prixAutoSetting.valeur)
           if (priceIdManuelSetting) setPriceIdManuel(priceIdManuelSetting.valeur)
           if (priceIdAutoSetting) setPriceIdAutomatique(priceIdAutoSetting.valeur)
+            const reducParrainSetting = settingsData.find(s => s.cle === 'parrainage_reduction_parrain')
+          if (reducParrainSetting) setReductionParrain(parseInt(reducParrainSetting.valeur) || 5)
         }
 
         const categoriesSetting = settingsData.find(s => s.cle === 'categories_support')
@@ -647,7 +650,7 @@ async function activerPushNotifications() {
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🤝 Parrainez un proche</h3>
               <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
-                Partagez votre code et obtenez <strong>-5%</strong> sur votre abonnement pour chaque filleul qui s'abonne !
+               Partagez votre code et obtenez <strong>-{reductionParrain}%</strong> sur votre abonnement pour chaque filleul qui s'abonne, <strong>dans la limite de 15%</strong> !
               </p>
               <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
