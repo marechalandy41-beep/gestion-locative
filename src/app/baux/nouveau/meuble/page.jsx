@@ -882,7 +882,7 @@ async function envoyerVersYousign() {
                   onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
                   <div style={{ fontSize: 32 }}>🔏</div>
                   <div><h3 style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed', margin: '0 0 3px' }}>Signature électronique via Yousign</h3><p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Envoi par email — valeur juridique.</p></div>
-                  <div style={{ marginLeft: 'auto' }}><span style={{ background: '#ede9fe', color: '#7c3aed', padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}></span></div>
+                  <div style={{ marginLeft: 'auto', color: '#7c3aed', fontSize: 18 }}>→</div>
                 </div>
                 <div onClick={sauvegarderBrouillon}
                   style={{ background: '#f9fafb', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }}
