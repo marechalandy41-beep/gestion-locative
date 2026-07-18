@@ -134,6 +134,7 @@ export async function POST(request) {
       bien_id: f.bienId || null,
       nom_fichier: nomFichier,
       categorie: 'Attestation',
+      sous_categorie: typeLabel || 'Attestation',
       annee: new Date().getFullYear(),
       storage_path: cheminStorage,
       url: urlData.publicUrl,

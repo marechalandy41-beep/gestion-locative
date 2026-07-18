@@ -50,6 +50,10 @@ export default function CoffreFort() {
   const [showUpload, setShowUpload] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarOuverte, setSidebarOuverte] = useState(false)
+  const [docASupprimer, setDocASupprimer] = useState(null)
+  const [voirArchives, setVoirArchives] = useState(false)
+  const [sousTypeSelectionne, setSousTypeSelectionne] = useState(null)
+  const [vueAttestations, setVueAttestations] = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -119,11 +123,27 @@ export default function CoffreFort() {
   }
 
   const docsFiltres = documents.filter(d => {
+    if (!voirArchives && d.archive) return false
+    if (voirArchives && !d.archive) return false
+    if (vueAttestations) {
+      if (d.categorie !== 'Attestation') return false
+      if (sousTypeSelectionne && (d.sous_categorie || 'Autre') !== sousTypeSelectionne) return false
+      return true
+    }
     if (bienSelectionne && d.bien_id !== bienSelectionne) return false
     if (categorieSelectionnee && d.categorie !== categorieSelectionnee) return false
     if (anneeSelectionnee && d.annee !== anneeSelectionnee) return false
+    if (sousTypeSelectionne && (d.sous_categorie || 'Autre') !== sousTypeSelectionne) return false
     return true
   })
+
+  // Types d'attestation présents parmi les documents actuellement visibles
+  const yaAttestations = docsFiltres.some(d => d.categorie === 'Attestation')
+  const sousTypesAttestation = [...new Set(
+    documents.filter(d => d.categorie === 'Attestation' && (voirArchives ? d.archive : !d.archive))
+      .map(d => d.sous_categorie || 'Autre')
+  )]
+  const nbAttestations = documents.filter(d => d.categorie === 'Attestation' && !d.archive).length
 
   const docParBien = (bienId) => documents.filter(d => d.bien_id === bienId).length
   const docParCategorie = (bienId, cat) => documents.filter(d => d.bien_id === bienId && d.categorie === cat).length
@@ -131,14 +151,15 @@ export default function CoffreFort() {
 
   const inp = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'white' }
 
-  const titreVue = !bienSelectionne ? '📁 Tous les documents' :
+  const titreVue = vueAttestations ? `📝 Attestations${sousTypeSelectionne ? ' — ' + sousTypeSelectionne : ''}` :
+    !bienSelectionne ? '📁 Tous les documents' :
     !categorieSelectionnee ? `🏠 ${biens.find(b => b.id === bienSelectionne)?.nom}` :
     !anneeSelectionnee ? `📂 ${categorieSelectionnee}` :
     `📅 ${categorieSelectionnee} — ${anneeSelectionnee}`
 
   const SidebarContenu = () => (
     <>
-      <div onClick={() => { setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setSidebarOuverte(false) }}
+      <div onClick={() => { setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
         style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4,
           background: !bienSelectionne ? '#eff6ff' : 'transparent',
           color: !bienSelectionne ? '#2563eb' : '#374151',
@@ -147,7 +168,8 @@ export default function CoffreFort() {
       </div>
       {biens.map(bien => (
         <div key={bien.id}>
-          <div onClick={() => { setBienSelectionne(bien.id); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setSidebarOuverte(false) }}
+          <div onClick={() => { setBienSelectionne(bien.id); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+
             style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
               background: bienSelectionne === bien.id && !categorieSelectionnee ? '#eff6ff' : 'transparent',
               color: bienSelectionne === bien.id ? '#2563eb' : '#374151',
@@ -156,7 +178,7 @@ export default function CoffreFort() {
           </div>
           {bienSelectionne === bien.id && CATEGORIES.filter(cat => docParCategorie(bien.id, cat) > 0).map(cat => (
             <div key={cat}>
-              <div onClick={() => { setCategorieSelectionnee(cat); setAnneeSelectionnee(null); setSidebarOuverte(false) }}
+              <div onClick={() => { setCategorieSelectionnee(cat); setAnneeSelectionnee(null); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
                 style={{ padding: '6px 12px 6px 24px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
                   background: categorieSelectionnee === cat && !anneeSelectionnee ? '#f0fdf4' : 'transparent',
                   color: categorieSelectionnee === cat ? '#16a34a' : '#6b7280', fontSize: 13 }}>
@@ -174,8 +196,52 @@ export default function CoffreFort() {
           ))}
         </div>
       ))}
+
+{nbAttestations > 0 && (
+        <div style={{ marginTop: 4 }}>
+          <div onClick={() => { setVueAttestations(true); setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+            style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+              background: vueAttestations && !sousTypeSelectionne ? '#eff6ff' : 'transparent',
+              color: vueAttestations ? '#2563eb' : '#374151',
+              fontWeight: vueAttestations ? 600 : 400, fontSize: 14 }}>
+            📝 Attestations <span style={{ fontSize: 12, color: '#9ca3af' }}>({nbAttestations})</span>
+          </div>
+          {vueAttestations && sousTypesAttestation.map(t => (
+            <div key={t} onClick={() => { setSousTypeSelectionne(t); setSidebarOuverte(false) }}
+              style={{ padding: '6px 12px 6px 24px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+                background: sousTypeSelectionne === t ? '#f0fdf4' : 'transparent',
+                color: sousTypeSelectionne === t ? '#16a34a' : '#6b7280', fontSize: 13 }}>
+              📂 {t} <span style={{ fontSize: 11, color: '#9ca3af' }}>({documents.filter(d => d.categorie === 'Attestation' && !d.archive && (d.sous_categorie || 'Autre') === t).length})</span>
+            </div>
+          ))}
+        </div>
+      )}
+
     </>
   )
+
+async function telechargerPuisSupprimer(doc) {
+    window.open(doc.url, '_blank')
+    setTimeout(async () => {
+      await supabase.storage.from('documents').remove([doc.storage_path])
+      await supabase.from('Documents').delete().eq('id', doc.id)
+      await chargerDocuments(user.id)
+      setDocASupprimer(null)
+    }, 1500)
+  }
+
+  async function supprimerDefinitif(doc) {
+    await supabase.storage.from('documents').remove([doc.storage_path])
+    await supabase.from('Documents').delete().eq('id', doc.id)
+    await chargerDocuments(user.id)
+    setDocASupprimer(null)
+  }
+
+  async function archiverDoc(doc) {
+    await supabase.from('Documents').update({ archive: true }).eq('id', doc.id)
+    await chargerDocuments(user.id)
+    setDocASupprimer(null)
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -283,8 +349,12 @@ export default function CoffreFort() {
             {/* Header vue actuelle */}
             <div style={{ marginBottom: 16 }}>
               <h2 style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, color: '#111827', margin: 0 }}>{titreVue}</h2>
-              <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>{docsFiltres.length} document{docsFiltres.length > 1 ? 's' : ''}</p>
+              <button onClick={() => setVoirArchives(v => !v)}
+                style={{ background: voirArchives ? '#fde047' : '#f3f4f6', color: voirArchives ? '#854d0e' : '#6b7280', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginTop: 8 }}>
+                {voirArchives ? '← Retour aux documents actifs' : '📦 Voir les archives'}
+              </button>
             </div>
+            
 
             {/* Liste documents */}
             {loading ? (
@@ -321,12 +391,7 @@ export default function CoffreFort() {
                         style={{ background: '#eff6ff', color: '#2563eb', padding: isMobile ? '6px 10px' : '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
                         📥
                       </a>
-                      <button onClick={async () => {
-                        if (!confirm('Supprimer ce document ?')) return
-                        await supabase.storage.from('documents').remove([doc.storage_path])
-                        await supabase.from('Documents').delete().eq('id', doc.id)
-                        await chargerDocuments(user.id)
-                      }}
+                      <button onClick={() => setDocASupprimer(doc)}
                         style={{ background: '#fef2f2', color: '#dc2626', padding: isMobile ? '6px 10px' : '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13 }}>
                         🗑
                       </button>
@@ -338,6 +403,41 @@ export default function CoffreFort() {
           </div>
         </div>
       </div>
+
+{docASupprimer && (
+        <div onClick={() => setDocASupprimer(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: 'white', borderRadius: 16, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>Que faire de ce document ?</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {docASupprimer.nom_fichier}</p>
+
+            <button onClick={() => telechargerPuisSupprimer(docASupprimer)}
+              style={{ width: '100%', textAlign: 'left', background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
+              📥 Télécharger puis supprimer
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: '#3b82f6', marginTop: 2 }}>Récupère une copie avant de l'effacer</span>
+            </button>
+
+            <button onClick={() => archiverDoc(docASupprimer)}
+              style={{ width: '100%', textAlign: 'left', background: '#fefce8', color: '#854d0e', border: '1px solid #fde047', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
+              📦 Archiver
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: '#a16207', marginTop: 2 }}>Garde le document mais le masque de la liste</span>
+            </button>
+
+            <button onClick={() => supprimerDefinitif(docASupprimer)}
+              style={{ width: '100%', textAlign: 'left', background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
+              🗑 Supprimer définitivement
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: '#dc2626', marginTop: 2 }}>Action irréversible</span>
+            </button>
+
+            <button onClick={() => setDocASupprimer(null)}
+              style={{ width: '100%', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
     </main>
   )
 }
