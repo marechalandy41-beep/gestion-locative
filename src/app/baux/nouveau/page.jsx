@@ -8,6 +8,17 @@ export default function NouveauBail() {
   const [ecran, setEcran] = useState('choix') // choix | choix-type | import
   const [bienImport, setBienImport] = useState('')
   const [pdfFile, setPdfFile] = useState(null)
+  const [formImport, setFormImport] = useState({
+    type_bail: 'Non meublé',
+    loyer_hc: '', charges: '', depot_garantie: '',
+    date_debut: '', date_fin: '', date_exigibilite: 1,
+    bailleur_prenom: '', bailleur_nom: '', bailleur_adresse: '',
+    locataire_prenom: '', locataire_nom: '', locataire_email: '',
+    bailleur_type: 'particulier', bailleur_denomination: '', bailleur_forme_juridique: 'SCI', bailleur_siren: '', bailleur_representant: '',
+    locataire_type: 'particulier', locataire_denomination: '', locataire_forme_juridique: 'SARL', locataire_siren: '', locataire_representant: '',
+  })
+  const inpStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }
+  const lblStyle = { fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
 
@@ -24,6 +35,7 @@ export default function NouveauBail() {
 
   async function importerBail() {
     if (!bienImport) { alert('Sélectionnez un bien.'); return }
+    if (!formImport.loyer_hc) { alert('Le loyer est obligatoire.'); return }
     setUploading(true)
     let pdfUrl = null
     if (pdfFile) {
@@ -34,11 +46,34 @@ export default function NouveauBail() {
         pdfUrl = urlData.publicUrl
       }
     }
+    const aujourdhui = new Date().toISOString().split('T')[0]
     const { data: bail, error } = await supabase.from('Baux').insert({
       user_id: user.id,
       bien_id: parseInt(bienImport),
-      statut: 'actif',
-      type_bail: 'Non meublé',
+      statut: (formImport.date_debut && formImport.date_debut > aujourdhui) ? 'a_venir' : 'actif',
+      type_bail: formImport.type_bail,
+      loyer_hc: parseFloat(formImport.loyer_hc) || 0,
+      charges: parseFloat(formImport.charges) || 0,
+      depot_garantie: parseFloat(formImport.depot_garantie) || 0,
+      date_debut: formImport.date_debut || null,
+      date_fin: formImport.date_fin || null,
+      date_exigibilite: parseInt(formImport.date_exigibilite) || 1,
+      bailleur_prenom: formImport.bailleur_prenom,
+      bailleur_nom: formImport.bailleur_nom,
+      bailleur_adresse: formImport.bailleur_adresse,
+      locataire_prenom: formImport.locataire_prenom,
+      locataire_nom: formImport.locataire_nom,
+      locataire_email: formImport.locataire_email,
+      bailleur_type: formImport.bailleur_type,
+      bailleur_denomination: formImport.bailleur_denomination,
+      bailleur_forme_juridique: formImport.bailleur_forme_juridique,
+      bailleur_siren: formImport.bailleur_siren,
+      bailleur_representant: formImport.bailleur_representant,
+      locataire_type: formImport.locataire_type,
+      locataire_denomination: formImport.locataire_denomination,
+      locataire_forme_juridique: formImport.locataire_forme_juridique,
+      locataire_siren: formImport.locataire_siren,
+      locataire_representant: formImport.locataire_representant,
       ...(pdfUrl && { bail_pdf_url: pdfUrl }),
     }).select().single()
     setUploading(false)
@@ -136,6 +171,146 @@ export default function NouveauBail() {
                   <option value="">— Sélectionnez un bien —</option>
                   {biens.map(b => <option key={b.id} value={b.id}>{b.nom}</option>)}
                 </select>
+                <div style={{ marginBottom: 16 }}>
+                <label style={lblStyle}>Type de bail *</label>
+                <select style={inpStyle} value={formImport.type_bail} onChange={e => setFormImport(f => ({ ...f, type_bail: e.target.value }))}>
+                  {['Non meublé', 'Meublé', 'Commercial', 'Parking', 'Étudiant', 'Mobilité', 'Autre'].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '20px 0 10px' }}>💰 Loyer</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={lblStyle}>Loyer hors charges (€) *</label>
+                  <input type="number" style={inpStyle} value={formImport.loyer_hc} onChange={e => setFormImport(f => ({ ...f, loyer_hc: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={lblStyle}>Charges (€)</label>
+                  <input type="number" style={inpStyle} value={formImport.charges} onChange={e => setFormImport(f => ({ ...f, charges: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={lblStyle}>Dépôt de garantie (€)</label>
+                  <input type="number" style={inpStyle} value={formImport.depot_garantie} onChange={e => setFormImport(f => ({ ...f, depot_garantie: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={lblStyle}>Jour de paiement du loyer</label>
+                  <input type="number" min="1" max="31" style={inpStyle} value={formImport.date_exigibilite} onChange={e => setFormImport(f => ({ ...f, date_exigibilite: e.target.value }))} />
+                </div>
+              </div>
+
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '20px 0 10px' }}>📅 Dates</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={lblStyle}>Date de début</label>
+                  <input type="date" style={inpStyle} value={formImport.date_debut} onChange={e => setFormImport(f => ({ ...f, date_debut: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={lblStyle}>Date de fin</label>
+                  <input type="date" style={inpStyle} value={formImport.date_fin} onChange={e => setFormImport(f => ({ ...f, date_fin: e.target.value }))} />
+                </div>
+              </div>
+
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '20px 0 10px' }}>🏠 Bailleur</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label style={lblStyle}>Type</label>
+                <select style={inpStyle} value={formImport.bailleur_type} onChange={e => setFormImport(f => ({ ...f, bailleur_type: e.target.value }))}>
+                  <option value="particulier">Particulier</option>
+                  <option value="morale">Société (SCI, SARL...)</option>
+                </select>
+              </div>
+              {formImport.bailleur_type === 'morale' ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={lblStyle}>Dénomination *</label>
+                      <input style={inpStyle} value={formImport.bailleur_denomination} onChange={e => setFormImport(f => ({ ...f, bailleur_denomination: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={lblStyle}>Forme juridique</label>
+                      <select style={inpStyle} value={formImport.bailleur_forme_juridique} onChange={e => setFormImport(f => ({ ...f, bailleur_forme_juridique: e.target.value }))}>
+                        {['SCI','SARL','SAS','SASU','EURL','SA','Autre'].map(x => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={lblStyle}>SIREN</label>
+                      <input style={inpStyle} value={formImport.bailleur_siren} onChange={e => setFormImport(f => ({ ...f, bailleur_siren: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={lblStyle}>Représentant</label>
+                      <input style={inpStyle} value={formImport.bailleur_representant} onChange={e => setFormImport(f => ({ ...f, bailleur_representant: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label style={lblStyle}>Prénom</label>
+                    <input style={inpStyle} value={formImport.bailleur_prenom} onChange={e => setFormImport(f => ({ ...f, bailleur_prenom: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Nom</label>
+                    <input style={inpStyle} value={formImport.bailleur_nom} onChange={e => setFormImport(f => ({ ...f, bailleur_nom: e.target.value }))} />
+                  </div>
+                </div>
+              )}
+              <div style={{ marginBottom: 12 }}>
+                <label style={lblStyle}>Adresse</label>
+                <input style={inpStyle} value={formImport.bailleur_adresse} onChange={e => setFormImport(f => ({ ...f, bailleur_adresse: e.target.value }))} />
+              </div>
+
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '20px 0 10px' }}>👤 Locataire</h4>
+              <div style={{ marginBottom: 12 }}>
+                <label style={lblStyle}>Type</label>
+                <select style={inpStyle} value={formImport.locataire_type} onChange={e => setFormImport(f => ({ ...f, locataire_type: e.target.value }))}>
+                  <option value="particulier">Particulier</option>
+                  <option value="morale">Société (SCI, SARL...)</option>
+                </select>
+              </div>
+              {formImport.locataire_type === 'morale' ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={lblStyle}>Dénomination *</label>
+                      <input style={inpStyle} value={formImport.locataire_denomination} onChange={e => setFormImport(f => ({ ...f, locataire_denomination: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={lblStyle}>Forme juridique</label>
+                      <select style={inpStyle} value={formImport.locataire_forme_juridique} onChange={e => setFormImport(f => ({ ...f, locataire_forme_juridique: e.target.value }))}>
+                        {['SARL','SCI','SAS','SASU','EURL','SA','Autre'].map(x => <option key={x} value={x}>{x}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div>
+                      <label style={lblStyle}>SIREN</label>
+                      <input style={inpStyle} value={formImport.locataire_siren} onChange={e => setFormImport(f => ({ ...f, locataire_siren: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={lblStyle}>Représentant</label>
+                      <input style={inpStyle} value={formImport.locataire_representant} onChange={e => setFormImport(f => ({ ...f, locataire_representant: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label style={lblStyle}>Prénom</label>
+                    <input style={inpStyle} value={formImport.locataire_prenom} onChange={e => setFormImport(f => ({ ...f, locataire_prenom: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={lblStyle}>Nom</label>
+                    <input style={inpStyle} value={formImport.locataire_nom} onChange={e => setFormImport(f => ({ ...f, locataire_nom: e.target.value }))} />
+                  </div>
+                </div>
+              )}
+              <div style={{ marginBottom: 20 }}>
+                <label style={lblStyle}>Email</label>
+                <input type="email" style={inpStyle} value={formImport.locataire_email} onChange={e => setFormImport(f => ({ ...f, locataire_email: e.target.value }))} />
+              </div>
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>PDF du bail (optionnel)</label>
