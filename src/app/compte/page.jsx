@@ -27,6 +27,7 @@ export default function Compte() {
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
   const [reductionParrain, setReductionParrain] = useState(5)
+  const [nbFilleuls, setNbFilleuls] = useState(0)
  const [conversations, setConversations] = useState([])
   const [conversationActive, setConversationActive] = useState(null)
   const [messagesConversation, setMessagesConversation] = useState([])
@@ -75,6 +76,12 @@ useEffect(() => {
           .select('code_promo, reduction, code_parrainage, plan, signature')
           .eq('user_id', data.user.id)
           .single();
+          // Compter les filleuls parrainés
+        const { count: nbF } = await supabase
+          .from('parrainages')
+          .select('*', { count: 'exact', head: true })
+          .eq('parrain_id', data.user.id)
+        setNbFilleuls(nbF || 0)
 
         if (customerData?.plan) {
           setPlan(customerData.plan)
@@ -664,6 +671,24 @@ async function activerPushNotifications() {
                   style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                   📋 Copier
                 </button>
+              </div>
+              <div style={{ marginTop: 16, background: '#eff6ff', borderRadius: 12, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: '#374151' }}>
+                    <strong>{nbFilleuls}</strong> filleul{nbFilleuls > 1 ? 's' : ''} parrainé{nbFilleuls > 1 ? 's' : ''}
+                  </span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#2563eb' }}>
+                    -{Math.min(nbFilleuls * reductionParrain, 15)}%
+                  </span>
+                </div>
+                <div style={{ background: '#dbeafe', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                  <div style={{ background: '#2563eb', height: '100%', width: `${(Math.min(nbFilleuls * reductionParrain, 15) / 15) * 100}%`, transition: 'width .3s' }} />
+                </div>
+                <p style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 0' }}>
+                  {(nbFilleuls * reductionParrain) >= 15 || reductionParrain <= 0
+                    ? '🎉 Vous avez atteint la réduction maximale de 15% !'
+                    : `Encore ${Math.ceil((15 - nbFilleuls * reductionParrain) / reductionParrain)} filleul(s) pour atteindre les 15%`}
+                </p>
               </div>
             </div>
 
