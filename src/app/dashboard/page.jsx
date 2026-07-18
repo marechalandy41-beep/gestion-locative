@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [paiementsMois, setPaiementsMois] = useState([]);
   const [joursRestants, setJoursRestants] = useState(null);
   const [plan, setPlan] = useState('gratuit');
+  const [bandeau, setBandeau] = useState(null);
   const [nonLusParBail, setNonLusParBail] = useState({});
   const [isMobile, setIsMobile] = useState(false);
   const [historiquePaiements, setHistoriquePaiements] = useState([]);
@@ -225,10 +226,24 @@ export default function Dashboard() {
       </a>
     )
   );
-
+useEffect(() => {
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(s => {
+        const st = s?.settings || {}
+        if (st.bandeau_actif === 'oui' && st.bandeau_message) setBandeau(st.bandeau_message)
+      })
+      .catch(() => {})
+  }, [])
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <Nav pageCourante="dashboard" />
+
+      {bandeau && (
+        <div style={{ background: '#fef3c7', borderBottom: '1px solid #fcd34d', padding: '12px 24px', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: 14, color: '#92400e', fontWeight: 500 }}>📢 {bandeau}</p>
+        </div>
+      )}
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '24px 16px' : '32px 24px' }}>
 

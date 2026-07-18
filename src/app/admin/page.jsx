@@ -704,6 +704,37 @@ async function voirDetailCode(code) {
               </div>
             </div>
 
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📢 Bandeau d'annonce</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Affiche un message en haut du dashboard des utilisateurs (maintenance, congés, info...).</p>
+
+              <label style={{ color: '#9ca3af', fontSize: 12, display: 'block', marginBottom: 6 }}>Message</label>
+              <textarea
+                value={settings.bandeau_message || ''}
+                onChange={e => setSettings(prev => ({ ...prev, bandeau_message: e.target.value }))}
+                placeholder="Ex : Maintenance prévue dimanche de 2h à 4h. / Absence du 10 au 20 août."
+                style={{ width: '100%', background: '#374151', border: '1px solid #4b5563', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'white', outline: 'none', boxSizing: 'border-box', minHeight: 70, resize: 'vertical', marginBottom: 12 }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                <div onClick={async () => {
+                  const newVal = settings.bandeau_actif === 'oui' ? 'non' : 'oui'
+                  setSettings(prev => ({ ...prev, bandeau_actif: newVal }))
+                  await sauvegarderSetting('bandeau_actif', newVal)
+                }}
+                  style={{ width: 52, height: 28, borderRadius: 99, background: settings.bandeau_actif === 'oui' ? '#16a34a' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 4, left: settings.bandeau_actif === 'oui' ? 28 : 4, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+                </div>
+                <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>
+                  {settings.bandeau_actif === 'oui' ? '🟢 Bandeau affiché' : '⚪ Bandeau masqué'}
+                </p>
+              </div>
+
+              <button onClick={() => sauvegarderSetting('bandeau_message', settings.bandeau_message || '')}
+                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                💾 Enregistrer le message
+              </button>
+            </div>
+
            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>💰 Prix des plans</h3>
               <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 20px' }}>⚠️ Modifier un prix crée un nouveau tarif sur Stripe. Les abonnés existants ne sont pas affectés rétroactivement.</p>
