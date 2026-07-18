@@ -5,6 +5,11 @@ import { supabase } from '../../supabase'
 export default function Blog() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
+  const [connecte, setConnecte] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setConnecte(!!data?.user))
+  }, [])
 
   useEffect(() => {
     supabase.from('articles').select('*').eq('publie', true).order('created_at', { ascending: false })
@@ -16,8 +21,8 @@ export default function Blog() {
       {/* NAV */}
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <a href="/" style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>🏠 Ma Gestion-Locative</a>
-          <a href="/auth" style={{ background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>Se connecter</a>
+          <a href={connecte ? '/dashboard' : '/'} style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>🏠 Ma Gestion-Locative</a>
+          <a href={connecte ? '/compte' : '/auth'} style={{ background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>{connecte ? '👤 Mon compte' : 'Se connecter'}</a>
         </div>
       </nav>
 

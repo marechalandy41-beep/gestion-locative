@@ -80,6 +80,26 @@ export default function Documents() {
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Tous vos documents immobiliers organisés par bien.</p>
           </div>
 
+{/* Mise en demeure — accessible à tous */}
+          <div onClick={() => window.location.href = '/documents/mise-en-demeure'}
+            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Mise en demeure</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Impayé de loyer, troubles, dégradations : générez une mise en demeure PDF.</p>
+          </div>
+
+          {/* Attestations — accessible à tous */}
+          <div onClick={() => window.location.href = '/documents/attestations'}
+            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Attestations</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Hébergement, bon paiement, fin de bail, sur l'honneur.</p>
+          </div>
+
           {/* État des lieux — payant */}
           {cartePayante(
             () => window.location.href = '/etats-des-lieux',
@@ -101,15 +121,7 @@ export default function Documents() {
             'Rédigez un bail officiel conforme loi ALUR avec signature.'
           )}
 
-          {/* Mise en demeure — accessible à tous */}
-          <div onClick={() => window.location.href = '/documents/mise-en-demeure'}
-            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
-            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
-            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Mise en demeure</h3>
-            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Impayé de loyer, troubles, dégradations : générez une mise en demeure PDF.</p>
-          </div>
+          
 
         </div>
       </div>
