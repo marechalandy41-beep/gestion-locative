@@ -735,6 +735,24 @@ async function voirDetailCode(code) {
               </button>
             </div>
 
+            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>🧪 Mode test (connexion bancaire)</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Affiche le bouton "Simuler un virement" sur la page connexion bancaire. À désactiver en production.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div onClick={async () => {
+                  const newVal = settings.mode_test === 'oui' ? 'non' : 'oui'
+                  setSettings(prev => ({ ...prev, mode_test: newVal }))
+                  await sauvegarderSetting('mode_test', newVal)
+                }}
+                  style={{ width: 52, height: 28, borderRadius: 99, background: settings.mode_test === 'oui' ? '#ea580c' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 4, left: settings.mode_test === 'oui' ? 28 : 4, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+                </div>
+                <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>
+                  {settings.mode_test === 'oui' ? '🟠 Mode test activé (bouton visible)' : '⚪ Mode test désactivé'}
+                </p>
+              </div>
+            </div>
+
            <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>💰 Prix des plans</h3>
               <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 20px' }}>⚠️ Modifier un prix crée un nouveau tarif sur Stripe. Les abonnés existants ne sont pas affectés rétroactivement.</p>

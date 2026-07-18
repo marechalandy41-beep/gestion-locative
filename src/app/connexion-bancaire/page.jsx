@@ -23,6 +23,7 @@ export default function ConnexionBancaire() {
   const [baux, setBaux] = useState([]);
   const [matchings, setMatchings] = useState([]);
   const [validationEnCours, setValidationEnCours] = useState(null);
+  const [modeTest, setModeTest] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
@@ -326,6 +327,13 @@ export default function ConnexionBancaire() {
    <Nav pageCourante="" />
   );
 
+useEffect(() => {
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(s => setModeTest(s?.settings?.mode_test === 'oui'))
+      .catch(() => {})
+  }, [])
+
   return (
     <main style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {nav}
@@ -383,12 +391,14 @@ export default function ConnexionBancaire() {
               style={{ background: loading || baux.length === 0 ? '#9ca3af' : '#2563eb', color: 'white', padding: '14px 32px', borderRadius: 10, border: 'none', cursor: loading || baux.length === 0 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 16 }}>
               {loading ? '⏳ Connexion en cours...' : '🔗 Connecter ma banque'}
             </button>
-            <div style={{ marginTop: 16 }}>
-              <button onClick={simulerVirement}
-                style={{ background: '#f3f4f6', color: '#6b7280', padding: '10px 20px', borderRadius: 10, border: '1px dashed #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
-                🧪 Simuler un virement (test dev)
-              </button>
-            </div>
+            {modeTest && (
+              <div style={{ marginTop: 16 }}>
+                <button onClick={simulerVirement}
+                  style={{ background: '#f3f4f6', color: '#6b7280', padding: '10px 20px', borderRadius: 10, border: '1px dashed #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                  🧪 Simuler un virement (test dev)
+                </button>
+              </div>
+            )}
           </div>
         )}
 

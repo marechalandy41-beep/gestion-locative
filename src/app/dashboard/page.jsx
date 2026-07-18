@@ -226,6 +226,7 @@ export default function Dashboard() {
       </a>
     )
   );
+
 useEffect(() => {
     fetch('/api/admin/settings')
       .then(r => r.json())
@@ -235,6 +236,7 @@ useEffect(() => {
       })
       .catch(() => {})
   }, [])
+  
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <Nav pageCourante="dashboard" />
