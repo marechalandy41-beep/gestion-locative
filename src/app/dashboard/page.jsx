@@ -155,6 +155,7 @@ export default function Dashboard() {
   const totalLoyers = baux.reduce((a, b) => a + (b.loyer_hc || 0) + (b.charges || 0), 0);
   const biensSansBail = Math.max(0, biens.length - baux.length);
   const estPayant = plan !== 'gratuit';
+  const estAuto = plan === 'automatique';
   const bauxAttendusCeMois = baux.filter(b => loyerAttenduCeMois(b));
   const idsBauxAttendus = new Set(bauxAttendusCeMois.map(b => b.id));
   const paiementsBauxAttendus = paiementsMois.filter(p => idsBauxAttendus.has(p.bail_id));
@@ -209,7 +210,7 @@ export default function Dashboard() {
     }
   }
 
-  const boutonBanque = estPayant && (
+  const boutonBanque = estAuto && (
     joursRestants === null ? (
       <a href="/connexion-bancaire" style={{ background: '#f0fdf4', color: '#16a34a', padding: '10px 16px', borderRadius: 12, fontWeight: 600, fontSize: 13, textDecoration: 'none', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         🏦 Connecter ma banque
@@ -264,7 +265,7 @@ export default function Dashboard() {
                 + Ajouter
               </a>
             </div>
-            {estPayant && <div style={{ width: '100%' }}>{boutonBanque}</div>}
+            {estAuto && <div style={{ width: '100%' }}>{boutonBanque}</div>}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', marginBottom: 24, gap: 16 }}>
