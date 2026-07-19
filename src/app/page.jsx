@@ -449,7 +449,7 @@ export default function Home() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>📱 Installez l'app sur votre téléphone</h2>
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 48px' }}>Accédez à Ma Gestion-Locative comme une vraie app mobile, gratuitement</p>
-          <div className="grid grid-cols-1 llg:grid-cols-2" style={{ gap: 24 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 24 }}>
 
             {/* iOS */}
             <div style={{ background: '#f9fafb', borderRadius: 16, padding: 28, border: '1px solid #f3f4f6' }}>
