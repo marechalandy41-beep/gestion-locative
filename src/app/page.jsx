@@ -1,6 +1,7 @@
 'use client'
 import { supabase } from '../supabase'
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 
 function useInView(threshold = 0.1) {
   const ref = useRef(null)
@@ -197,17 +198,17 @@ export default function Home() {
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Gérez vos biens locatifs depuis votre téléphone ou votre ordinateur</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ textAlign: 'center' }}>
-              <img src="/screenshots/dashboard.jpg" alt="Dashboard Ma Gestion-Locative" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <Image src="/screenshots/dashboard.jpg" alt="Dashboard Ma Gestion-Locative" width={220} height={440} style={{ width: 220, height: 'auto', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Dashboard</p>
               <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Vos stats en un coup d'oeil</p>
             </div>
             <div style={{ textAlign: 'center', marginTop: 40 }}>
-              <img src="/screenshots/baux.jpg" alt="Mes Baux" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <Image src="/screenshots/baux.jpg" alt="Mes Baux" width={220} height={440} style={{ width: 220, height: 'auto', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Mes Baux</p>
               <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Tous vos contrats centralisés</p>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <img src="/screenshots/documents.jpg" alt="Documents" style={{ width: 220, borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
+              <Image src="/screenshots/documents.jpg" alt="Documents" width={220} height={440} style={{ width: 220, height: 'auto', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '4px solid white' }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginTop: 16 }}>Documents</p>
               <p style={{ fontSize: 13, color: '#9ca3af', margin: '4px 0 0' }}>Quittances, EDL, coffre-fort</p>
             </div>
