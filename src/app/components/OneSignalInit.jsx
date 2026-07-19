@@ -1,10 +1,19 @@
 'use client'
 import { useEffect } from 'react'
 
+const PAGES_PUBLIQUES = ['/', '/blog', '/faq', '/contact', '/cgu', '/attestation-gratuite', '/auth']
+
+function estPagePublique(pathname) {
+  if (PAGES_PUBLIQUES.includes(pathname)) return true
+  if (pathname.startsWith('/blog/')) return true
+  return false
+}
+
 export default function OneSignalInit() {
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+    if (estPagePublique(window.location.pathname)) return
+
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(async function(OneSignal) {
       try {
