@@ -50,7 +50,6 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [envoye, setEnvoye] = useState(false)
   const [comingSoon, setComingSoon] = useState(true)
-  const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState({})
   const [user, setUser] = useState(null)
 
@@ -62,9 +61,8 @@ export default function Home() {
           setSettings(data.settings)
           setComingSoon(data.settings.coming_soon !== 'false')
         }
-        setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {})
 
     // Vérifier si l'utilisateur est connecté
     supabase.auth.getUser().then(({ data }) => {
@@ -97,8 +95,6 @@ export default function Home() {
     { cle: 'feat_quittance_auto', label: 'Quittances automatiques' },
     { cle: 'feat_relances', label: 'Relances automatiques' },
   ]
-
-  if (loading) return null
 
   // PAGE COMING SOON
   if (comingSoon) return (
