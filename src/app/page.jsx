@@ -52,6 +52,7 @@ export default function Home() {
   const [comingSoon, setComingSoon] = useState(true)
   const [settings, setSettings] = useState({})
   const [user, setUser] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/settings')
@@ -142,7 +143,9 @@ export default function Home() {
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 20, fontWeight: 800, color: '#2563eb' }}>🏠 Ma Gestion-Locative</span>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+
+          {/* Liens desktop uniquement */}
+          <div className="hidden lg:flex" style={{ gap: 12, alignItems: 'center' }}>
             <a href="#tarifs" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Tarifs</a>
             <a href="#fonctionnalites" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Fonctionnalités</a>
             <a href="/blog" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Blog</a>
@@ -157,7 +160,36 @@ export default function Home() {
               </a>
             )}
           </div>
+
+          {/* Bouton hamburger mobile uniquement */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="lg:hidden"
+            style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#374151', padding: 4 }}
+            aria-label="Ouvrir le menu"
+          >
+            {menuOpen ? '✕' : '☰'}
+          </button>
         </div>
+
+        {/* Menu déroulant mobile */}
+        {menuOpen && (
+          <div className="lg:hidden" style={{ borderTop: '1px solid #e5e7eb', padding: '12px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <a href="#tarifs" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Tarifs</a>
+            <a href="#fonctionnalites" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Fonctionnalités</a>
+            <a href="/blog" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Blog</a>
+            <a href="/attestation-gratuite" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Attestations gratuites</a>
+            {user ? (
+              <a href="/dashboard" onClick={() => setMenuOpen(false)} style={{ background: '#2563eb', color: 'white', padding: '10px 18px', borderRadius: 8, fontSize: 15, textDecoration: 'none', fontWeight: 600, textAlign: 'center' }}>
+                Mon espace →
+              </a>
+            ) : (
+              <a href="/auth" onClick={() => setMenuOpen(false)} style={{ background: '#2563eb', color: 'white', padding: '10px 18px', borderRadius: 8, fontSize: 15, textDecoration: 'none', fontWeight: 600, textAlign: 'center' }}>
+                Se connecter
+              </a>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
@@ -244,7 +276,7 @@ export default function Home() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>Tout ce dont vous avez besoin</h2>
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Une plateforme complète pour les propriétaires bailleurs</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 24 }}>
             {[
               { emoji: '📄', titre: 'Baux conformes ALUR', desc: 'Créez et signez vos baux en quelques minutes. Non meublé, meublé, commercial, parking — tous les types de bail.' },
               { emoji: '🧾', titre: 'Quittances automatiques', desc: 'Bridge détecte les virements de loyer et génère les quittances automatiquement. Plus aucun oubli.' },
@@ -271,7 +303,7 @@ export default function Home() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>Comment ça marche ?</h2>
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Opérationnel en moins de 5 minutes</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32, position: 'relative' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 32, position: 'relative' }}>
             {[
               { num: '1', emoji: '🏠', titre: 'Créez votre compte', desc: 'Inscrivez-vous gratuitement, ajoutez vos biens immobiliers et renseignez les informations de base.' },
               { num: '2', emoji: '📄', titre: 'Ajoutez vos baux', desc: 'Créez vos contrats de location conformes ALUR en quelques clics. Signez en ligne ou en présentiel.' },
@@ -325,7 +357,7 @@ export default function Home() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>Tarifs simples et transparents</h2>
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 56px' }}>Payez uniquement pour vos baux actifs — aucun frais caché</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 48 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 24, marginBottom: 48 }}>
             {[
               {
                 plan: 'Gratuit', prix: '0€', unite: '', couleur: '#6b7280', bg: 'white',
@@ -368,14 +400,14 @@ export default function Home() {
           </div>
 
           {/* TABLEAU COMPARATIF */}
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#f9fafb', padding: '16px 24px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e5e7eb', overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', minWidth: 500, background: '#f9fafb', padding: '16px 24px', borderBottom: '1px solid #e5e7eb' }}>
               {['Fonctionnalité', 'Gratuit', 'Manuel', 'Automatique'].map(h => (
                 <span key={h} style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{h}</span>
               ))}
             </div>
             {features.map(({ cle, label }, idx) => (
-              <div key={cle} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '14px 24px', borderBottom: '1px solid #f3f4f6', background: idx % 2 === 0 ? 'white' : '#fafafa' }}>
+              <div key={cle} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', minWidth: 500, padding: '14px 24px', borderBottom: '1px solid #f3f4f6', background: idx % 2 === 0 ? 'white' : '#fafafa' }}>
                 <span style={{ fontSize: 14, color: '#374151' }}>{label}</span>
                 {['gratuit', 'manuel', 'auto'].map(plan => (
                   <span key={plan} style={{ fontSize: 16 }}>
@@ -417,7 +449,7 @@ export default function Home() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#111827', textAlign: 'center', margin: '0 0 12px' }}>📱 Installez l'app sur votre téléphone</h2>
           <p style={{ color: '#6b7280', textAlign: 'center', fontSize: 16, margin: '0 0 48px' }}>Accédez à Ma Gestion-Locative comme une vraie app mobile, gratuitement</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+          <div className="grid grid-cols-1 llg:grid-cols-2" style={{ gap: 24 }}>
 
             {/* iOS */}
             <div style={{ background: '#f9fafb', borderRadius: 16, padding: 28, border: '1px solid #f3f4f6' }}>
