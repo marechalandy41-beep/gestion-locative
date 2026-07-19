@@ -1,5 +1,4 @@
 'use client'
-import { supabase } from '../supabase'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 
@@ -65,9 +64,11 @@ export default function Home() {
       })
       .catch(() => {})
 
-    // Vérifier si l'utilisateur est connecté
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setUser(data.user)
+    // Vérifier si l'utilisateur est connecté (chargement différé de Supabase)
+    import('../supabase').then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) setUser(data.user)
+      })
     })
   }, [])
 
