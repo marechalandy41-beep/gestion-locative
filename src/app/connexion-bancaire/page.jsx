@@ -168,9 +168,13 @@ export default function ConnexionBancaire() {
   function genererPDFQuittance(bail, mois, annee, datePaiement) {
     const montantTotal = (bail.loyer_hc || 0) + (bail.charges || 0);
     const periode = `${moisLabels[mois]} ${annee}`;
+    const nomBailleur = bail.bailleur_type === 'morale' ? (bail.bailleur_denomination || '') : (bail.bailleur_nom || '');
+    const prenomBailleur = bail.bailleur_type === 'morale' ? '' : (bail.bailleur_prenom || '');
+    const nomLocataire = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '');
+    const prenomLocataire = bail.locataire_type === 'morale' ? '' : (bail.locataire_prenom || '');
     const doc = buildQuittanceDoc({
-      proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
-      locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
+      proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
+      locataire: { nom: nomLocataire, prenom: prenomLocataire },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
       loyer: { montant: bail.loyer_hc || 0, charges: bail.charges || 0, periode, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
     });
@@ -228,7 +232,8 @@ export default function ConnexionBancaire() {
       const pdfBlob = new Blob([Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
       const path = `${user.id}/${matching.bail.bien_id}/Quittance/${nomFichier}`;
       await supabase.storage.from('documents').upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true, cacheControl: '0' });
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+      const urlFraiche = `${urlData.publicUrl}?v=${Date.now()}`
       await supabase.from('Documents').insert({
         user_id: user.id,
         bien_id: matching.bail.bien_id,
@@ -237,7 +242,7 @@ export default function ConnexionBancaire() {
         categorie: 'Quittance',
         annee,
         storage_path: path,
-        url: urlData.publicUrl,
+        url: urlFraiche,
       });
     } catch (e) { console.error('Erreur upload coffre:', e); }
 

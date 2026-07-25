@@ -81,6 +81,7 @@ export default function Quittance() {
       if (uploadError) { console.error('Upload erreur:', uploadError); return; }
 
       const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+      const urlFraiche = `${urlData.publicUrl}?v=${Date.now()}`
 
       await supabase.from('Documents').insert({
   user_id: user.id,
@@ -90,7 +91,7 @@ export default function Quittance() {
   categorie: 'Quittance',
   annee: parseInt(annee),
   storage_path: path,
-  url: urlData.publicUrl,
+  url: urlFraiche,
 })
 
       setSauvegarde(true)
@@ -108,9 +109,14 @@ async function genererManuel() {
     setLoading(true)
     try {
       const montantTotal = (parseFloat(manuel.loyer) || 0) + (parseFloat(manuel.charges) || 0)
-      generateQuittance({
-        proprietaire: { nom: manuel.proprietaire_nom, prenom: manuel.proprietaire_prenom, adresse: manuel.proprietaire_adresse },
-        locataire: { nom: manuel.locataire_nom, prenom: manuel.locataire_prenom },
+      const nomBailleur = bail.bailleur_type === 'morale' ? (bail.bailleur_denomination || '') : (bail.bailleur_nom || '')
+    const prenomBailleur = bail.bailleur_type === 'morale' ? '' : (bail.bailleur_prenom || '')
+    const nomLocataire = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '')
+    const prenomLocataire = bail.locataire_type === 'morale' ? '' : (bail.locataire_prenom || '')
+
+    generateQuittance({
+      proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
+      locataire: { nom: nomLocataire, prenom: prenomLocataire },
         bien: { adresse: manuel.bien_adresse, ville: manuel.bien_ville, codePostal: manuel.bien_cp },
         loyer: { montant: parseFloat(manuel.loyer) || 0, charges: parseFloat(manuel.charges) || 0, periode: `${moisLabels[mois]} ${annee}`, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
         signature: signatureUser,
@@ -142,8 +148,8 @@ async function genererManuel() {
     // Sauvegarder dans le coffre le MÊME PDF détaillé que celui téléchargé
     try {
       const docCoffre = buildQuittanceDoc({
-        proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
-        locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
+        proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
+        locataire: { nom: nomLocataire, prenom: prenomLocataire },
         bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
         loyer: { montant: (bail.loyer_hc || 0) * nbMois, charges: (bail.charges || 0) * nbMois, periode: libellePeriode(), datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
         signature: signatureUser,
