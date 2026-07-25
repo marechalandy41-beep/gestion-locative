@@ -184,14 +184,16 @@ export default function ConnexionBancaire() {
     return doc.output('datauristring').split(',')[1];
   }
 
-  async function simulerVirement() {
+  async function simulerVirement(bailId) {
     if (baux.length === 0) { alert('Aucun bail actif trouvé'); return; }
-    const bail = baux[0];
+    const bail = bailId ? baux.find(b => b.id === bailId) : baux[0];
+    if (!bail) { alert('Bail introuvable'); return; }
+    const nomPourLabel = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '');
     await validerLoyer({
       transaction: {
         amount: parseFloat(bail.loyer_hc) + parseFloat(bail.charges || 0),
         date: new Date().toISOString().split('T')[0],
-        label: `VIR ${bail.locataire_nom} LOYER`,
+        label: `VIR ${nomPourLabel} LOYER`,
       },
       bail,
       confiance: 'haute',
@@ -367,11 +369,13 @@ useEffect(() => {
               {loading ? '⏳ Connexion en cours...' : '🔗 Connecter ma banque'}
             </button>
             {modeTest && (
-              <div style={{ marginTop: 16 }}>
-                <button onClick={simulerVirement}
-                  style={{ background: '#f3f4f6', color: '#6b7280', padding: '10px 20px', borderRadius: 10, border: '1px dashed #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
-                  🧪 Simuler un virement (test dev)
-                </button>
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                {baux.map(b => (
+                  <button key={b.id} onClick={() => simulerVirement(b.id)}
+                    style={{ background: '#f3f4f6', color: '#6b7280', padding: '10px 20px', borderRadius: 10, border: '1px dashed #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                    🧪 Simuler un virement — {b.locataire_type === 'morale' ? (b.locataire_denomination || 'bail sans nom') : `${b.locataire_prenom || ''} ${b.locataire_nom || ''}`.trim() || 'bail sans nom'}
+                  </button>
+                ))}
               </div>
             )}
           </div>
