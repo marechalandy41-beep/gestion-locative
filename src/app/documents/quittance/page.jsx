@@ -134,6 +134,11 @@ async function genererManuel() {
     if (!bail) return
     setLoading(true)
 
+    const nomBailleur = bail.bailleur_type === 'morale' ? (bail.bailleur_denomination || '') : (bail.bailleur_nom || '')
+    const prenomBailleur = bail.bailleur_type === 'morale' ? '' : (bail.bailleur_prenom || '')
+    const nomLocataire = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '')
+    const prenomLocataire = bail.locataire_type === 'morale' ? '' : (bail.locataire_prenom || '')
+
     const nomFichier = `Quittance_${moisLabels[mois]}_${annee}_${bail.locataire_nom}.pdf`
 
     // Générer et télécharger le PDF
