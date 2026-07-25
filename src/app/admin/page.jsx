@@ -92,8 +92,9 @@ export default function Admin() {
     const dataConvs = await resConvs.json()
     if (dataConvs.conversations) setConversations(dataConvs.conversations)
 
-    const { data: articlesData } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
-    setArticles(articlesData || [])
+    const resArticles = await fetch('/api/admin/articles')
+    const dataArticles = await resArticles.json()
+    setArticles(dataArticles.articles || [])
 
     setLoading(false)
   }
@@ -1088,21 +1089,18 @@ async function voirDetailCode(code) {
                   </button>
                   <button onClick={async () => {
   if (!articleEnCours?.titre || !articleEnCours?.slug) { alert('Titre et slug obligatoires'); return }
-  let error
-  if (articleEnCours.id) {
-    const res = await supabase.from('articles').update({ ...articleEnCours, updated_at: new Date().toISOString() }).eq('id', articleEnCours.id)
-    error = res.error
-  } else {
-    const res = await supabase.from('articles').insert({ ...articleEnCours })
-    error = res.error
-  }
-  if (error) {
-    console.error('Erreur sauvegarde article:', error)
-    alert('Erreur : ' + error.message)
+  const res = await fetch('/api/admin/articles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(articleEnCours)
+  })
+  const data = await res.json()
+  if (data.error) {
+    console.error('Erreur sauvegarde article:', data.error)
+    alert('Erreur : ' + data.error)
     return
   }
-  const { data } = await supabase.from('articles').select('*').order('created_at', { ascending: false })
-  setArticles(data || [])
+  setArticles(data.articles || [])
   setShowArticleForm(false)
   setArticleEnCours(null)
 }}
@@ -1138,7 +1136,11 @@ async function voirDetailCode(code) {
                   </button>
                   <button onClick={async () => {
                     if (!confirm('Supprimer cet article ?')) return
-                    await supabase.from('articles').delete().eq('id', article.id)
+                    await fetch('/api/admin/articles', {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: article.id })
+                    })
                     setArticles(prev => prev.filter(a => a.id !== article.id))
                   }}
                     style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
