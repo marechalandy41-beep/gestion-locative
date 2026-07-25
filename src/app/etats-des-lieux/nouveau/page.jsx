@@ -14,12 +14,14 @@ export default function NouvelEDL() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [baux, setBaux] = useState([]);
+  const [biens, setBiens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [etape, setEtape] = useState(1); // 1=infos, 2=pièces, 3=compteurs, 4=recap
 
 
   const [form, setForm] = useState({
     bail_id: '',
+    bien_id: '',
     type: 'entree',
     date_edl: new Date().toISOString().split('T')[0],
     observations: '',
@@ -39,10 +41,14 @@ export default function NouvelEDL() {
 
     setUser(data.user);
     supabase.from('Baux')
-      .select('id, locataire_prenom, locataire_nom, Biens(nom)')
+      .select('id, locataire_prenom, locataire_nom, bien_id, Biens(nom)')
       .eq('user_id', data.user.id)
       .in('statut', ['actif', 'brouillon'])
       .then(({ data: bauxData }) => setBaux(bauxData || []));
+    supabase.from('Biens')
+      .select('id, nom, adresse')
+      .eq('user_id', data.user.id)
+      .then(({ data: biensData }) => setBiens(biensData || []));
   });
 }, []);
 
@@ -58,18 +64,24 @@ export default function NouvelEDL() {
   }
 
   async function sauvegarder(statut = 'brouillon') {
-  if (!form.bail_id) { alert('Sélectionnez un bail'); return; }
+  if (!form.bien_id) { alert('Sélectionnez un bien'); return; }
   setLoading(true);
 
-  // Récupérer les infos du bail pour le PDF
-  const { data: bailData } = await supabase
-    .from('Baux')
-    .select('*, Biens(id, nom, adresse)')
-    .eq('id', parseInt(form.bail_id))
-    .single();
+  // Bail optionnel (peut ne pas exister en plan gratuit) : on récupère infos locataire si dispo
+  let bailData = null;
+  if (form.bail_id) {
+    const { data } = await supabase
+      .from('Baux')
+      .select('*, Biens(id, nom, adresse)')
+      .eq('id', parseInt(form.bail_id))
+      .single();
+    bailData = data;
+  }
+  const bienSelectionne = biens.find(b => b.id === parseInt(form.bien_id))
 
   const { data: edl, error } = await supabase.from('EtatsDesLieux').insert({
-    bail_id: parseInt(form.bail_id),
+    bail_id: form.bail_id ? parseInt(form.bail_id) : null,
+    bien_id: parseInt(form.bien_id),
     user_id: user.id,
     type: form.type,
     date_edl: form.date_edl,
@@ -104,12 +116,12 @@ export default function NouvelEDL() {
       doc.setFont('helvetica', 'bold');
       doc.text('Bien :', 18, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(bailData.Biens?.nom || '', 45, y);
+      doc.text(bailData?.Biens?.nom || bienSelectionne?.nom || bienSelectionne?.adresse || '', 45, y);
       y += 8;
       doc.setFont('helvetica', 'bold');
       doc.text('Locataire :', 18, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${bailData.locataire_prenom || ''} ${bailData.locataire_nom || ''}`, 45, y);
+      doc.text(bailData ? `${bailData.locataire_prenom || ''} ${bailData.locataire_nom || ''}` : '—', 45, y);
       y += 8;
       doc.setFont('helvetica', 'bold');
       doc.text('Date :', 18, y);
@@ -149,9 +161,9 @@ export default function NouvelEDL() {
       doc.setTextColor(150, 150, 150);
       doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
 
-      const nomFichier = `EDL_${form.type}_${bailData.Biens?.nom}_${form.date_edl}.pdf`;
+      const nomFichier = `EDL_${form.type}_${bailData?.Biens?.nom || bienSelectionne?.nom || 'bien'}_${form.date_edl}.pdf`;
       const pdfBlob = doc.output('blob');
-      const bienId = bailData.Biens?.id;
+      const bienId = bailData?.Biens?.id || bienSelectionne?.id;
       const cheminStorage = `${user.id}/${bienId}/Etat des lieux/${nomFichier}`;
 
       const { error: uploadError } = await supabase.storage
@@ -215,20 +227,38 @@ export default function NouvelEDL() {
             <h2 style={{fontSize:18, fontWeight:700, color:'#111827', marginBottom:24}}>Informations générales</h2>
 
             <div style={{marginBottom:20}}>
-              <label style={{display:'block', fontSize:14, fontWeight:600, color:'#374151', marginBottom:6}}>Bail concerné *</label>
+              <label style={{display:'block', fontSize:14, fontWeight:600, color:'#374151', marginBottom:6}}>Bien concerné *</label>
               <select
-                value={form.bail_id}
-                onChange={e => setForm({...form, bail_id: e.target.value})}
+                value={form.bien_id}
+                onChange={e => setForm({...form, bien_id: e.target.value, bail_id: ''})}
                 style={{width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:14}}
               >
-                <option value="">Sélectionner un bail</option>
-                {baux.map(bail => (
-                  <option key={bail.id} value={bail.id}>
-                    {bail.Biens?.nom} — {bail.locataire_prenom} {bail.locataire_nom}
+                <option value="">Sélectionner un bien</option>
+                {biens.map(bien => (
+                  <option key={bien.id} value={bien.id}>
+                    {bien.nom || bien.adresse}
                   </option>
                 ))}
               </select>
             </div>
+
+            {baux.filter(b => !form.bien_id || b.bien_id === parseInt(form.bien_id)).length > 0 && (
+              <div style={{marginBottom:20}}>
+                <label style={{display:'block', fontSize:14, fontWeight:600, color:'#374151', marginBottom:6}}>Bail associé (optionnel — préremplit le nom du locataire)</label>
+                <select
+                  value={form.bail_id}
+                  onChange={e => setForm({...form, bail_id: e.target.value})}
+                  style={{width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:14}}
+                >
+                  <option value="">Aucun</option>
+                  {baux.filter(b => !form.bien_id || b.bien_id === parseInt(form.bien_id)).map(bail => (
+                    <option key={bail.id} value={bail.id}>
+                      {bail.locataire_prenom} {bail.locataire_nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div style={{marginBottom:20}}>
               <label style={{display:'block', fontSize:14, fontWeight:600, color:'#374151', marginBottom:6}}>Type d'état des lieux *</label>
@@ -256,7 +286,7 @@ export default function NouvelEDL() {
             </div>
 
             <button
-              onClick={() => { if (!form.bail_id) { alert('Sélectionnez un bail'); return; } setEtape(2); }}
+              onClick={() => { if (!form.bien_id) { alert('Sélectionnez un bien'); return; } setEtape(2); }}
               style={{width:'100%', background:'#2563eb', color:'white', padding:'12px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:15, marginTop:8}}
             >
               Suivant → Pièces
