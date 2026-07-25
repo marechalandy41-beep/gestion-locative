@@ -24,7 +24,7 @@ interface QuittanceData {
   signature?: string // image base64 optionnelle
 }
 
-export function generateQuittance(data: QuittanceData): void {
+export function buildQuittanceDoc(data: QuittanceData): jsPDF {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
 
@@ -103,6 +103,10 @@ export function generateQuittance(data: QuittanceData): void {
   doc.setTextColor(150)
   doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 280, { align: 'center' })
 
-  // Téléchargement
+  return doc
+}
+
+export function generateQuittance(data: QuittanceData): void {
+  const doc = buildQuittanceDoc(data)
   doc.save(`quittance_${data.loyer.periode.replace(' ', '_')}_${data.locataire.nom}.pdf`)
 }

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../supabase'
-import { generateQuittance } from '@/lib/generationQuittance'
+import { generateQuittance, buildQuittanceDoc } from '@/lib/generationQuittance'
 import jsPDF from 'jspdf'
 import Nav from '../../components/nav'
 
@@ -139,25 +139,16 @@ async function genererManuel() {
       signature: signatureUser,
     })
 
-    // Générer aussi un blob pour sauvegarder dans le coffre
+    // Sauvegarder dans le coffre le MÊME PDF détaillé que celui téléchargé
     try {
-      const doc = new jsPDF()
-      const pageWidth = doc.internal.pageSize.getWidth()
-      doc.setFillColor(37, 99, 235)
-      doc.rect(0, 0, pageWidth, 35, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(18)
-      doc.setFont('helvetica', 'bold')
-      doc.text('QUITTANCE DE LOYER', pageWidth / 2, 22, { align: 'center' })
-      doc.setTextColor(0, 0, 0)
-      let y = 50
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Bien : ${bail.Biens?.nom || ''}`, 14, y); y += 8
-      doc.text(`Locataire : ${bail.locataire_prenom} ${bail.locataire_nom}`, 14, y); y += 8
-      doc.text(`Période : ${libellePeriode()}`, 14, y); y += 8
-      doc.text(`Loyer CC : ${montantQuittance}€`, 14, y)
-      const pdfBlob = doc.output('blob')
+      const docCoffre = buildQuittanceDoc({
+        proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
+        locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
+        bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
+        loyer: { montant: (bail.loyer_hc || 0) * nbMois, charges: (bail.charges || 0) * nbMois, periode: libellePeriode(), datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+        signature: signatureUser,
+      })
+      const pdfBlob = docCoffre.output('blob')
       await sauvegarderDansCoffre(bail, pdfBlob, nomFichier)
     } catch(e) {
       console.error('Erreur génération blob:', e)

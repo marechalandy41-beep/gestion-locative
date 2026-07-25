@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import { useRouter } from 'next/navigation';
-import jsPDF from 'jspdf';
+import { buildQuittanceDoc } from '@/lib/generationQuittance'
 import Nav from '../components/nav'
 
 const moisLabels = {
@@ -166,47 +166,14 @@ export default function ConnexionBancaire() {
   }
 
   function genererPDFQuittance(bail, mois, annee, datePaiement) {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
     const montantTotal = (bail.loyer_hc || 0) + (bail.charges || 0);
     const periode = `${moisLabels[mois]} ${annee}`;
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('QUITTANCE DE LOYER', pageWidth / 2, 22, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-    let y = 50;
-    doc.setFillColor(243, 244, 246);
-    doc.rect(14, y - 6, pageWidth - 28, 36, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Période :', 18, y); doc.setFont('helvetica', 'normal'); doc.text(periode, 55, y); y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bien :', 18, y); doc.setFont('helvetica', 'normal'); doc.text(bail.Biens?.nom || '', 55, y); y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Locataire :', 18, y); doc.setFont('helvetica', 'normal'); doc.text(`${bail.locataire_prenom} ${bail.locataire_nom}`, 55, y); y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date paiement :', 18, y); doc.setFont('helvetica', 'normal'); doc.text(new Date(datePaiement).toLocaleDateString('fr-FR'), 55, y);
-    y += 20;
-    doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235);
-    doc.text('DÉTAIL DU LOYER', 14, y); y += 10;
-    doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.setFont('helvetica', 'normal');
-    doc.text(`Loyer hors charges : ${bail.loyer_hc}€`, 18, y); y += 8;
-    doc.text(`Charges : ${bail.charges || 0}€`, 18, y); y += 8;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
-    doc.text(`Total réglé : ${montantTotal}€`, 18, y); y += 20;
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
-    const texte = `Je soussigné(e), ${bail.bailleur_prenom || ''} ${bail.bailleur_nom || ''}, propriétaire du logement désigné ci-dessus, déclare avoir reçu de ${bail.locataire_prenom} ${bail.locataire_nom} la somme de ${montantTotal} euros au titre du loyer et des charges du mois de ${periode}.`;
-    const lines = doc.splitTextToSize(texte, pageWidth - 28);
-    doc.text(lines, 14, y); y += lines.length * 6 + 20;
-    doc.setTextColor(0, 0, 0); doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, 90, y);
-    doc.setFontSize(9); doc.setTextColor(150, 150, 150);
-    doc.text('Signature du propriétaire', 14, y + 5);
-    doc.setFontSize(8);
-    doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
+    const doc = buildQuittanceDoc({
+      proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
+      locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
+      bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
+      loyer: { montant: bail.loyer_hc || 0, charges: bail.charges || 0, periode, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+    });
     return doc.output('datauristring').split(',')[1];
   }
 
