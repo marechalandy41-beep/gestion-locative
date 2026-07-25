@@ -65,7 +65,10 @@ export default function Documents() {
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
             onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Quittance de loyer</h3>
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Générez une quittance PDF pour un locataire et une période donnée.</p>
           </div>
@@ -75,7 +78,10 @@ export default function Documents() {
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
             onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Coffre-fort numérique</h3>
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Tous vos documents immobiliers organisés par bien.</p>
           </div>
@@ -85,7 +91,10 @@ export default function Documents() {
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
             onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Mise en demeure</h3>
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Impayé de loyer, troubles, dégradations : générez une mise en demeure PDF.</p>
           </div>
@@ -95,17 +104,26 @@ export default function Documents() {
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
             onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
             onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Attestations</h3>
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Hébergement, bon paiement, fin de bail, sur l'honneur.</p>
           </div>
 
-          {/* État des lieux — payant */}
-          {cartePayante(
-            () => window.location.href = '/etats-des-lieux',
-            '📋', 'État des lieux',
-            "Créez un état des lieux d'entrée ou de sortie avec photos."
-          )}
+          {/* État des lieux — gratuit, mis en avant */}
+          <div onClick={() => window.location.href = '/etats-des-lieux'}
+            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid #22c55e', position: 'relative' }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(34,197,94,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>État des lieux</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Créez un état des lieux d'entrée ou de sortie avec photos, gratuitement.</p>
+          </div>
 
           {/* Récap fiscal — payant */}
           {cartePayante(

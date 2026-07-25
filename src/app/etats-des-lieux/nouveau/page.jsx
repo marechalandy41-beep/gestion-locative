@@ -37,17 +37,6 @@ export default function NouvelEDL() {
   supabase.auth.getUser().then(async ({ data }) => {
     if (!data.user) { router.push('/auth'); return; }
 
-    // Vérification plan
-    const { data: customer } = await supabase
-      .from('customers')
-      .select('plan')
-      .eq('user_id', data.user.id)
-      .single();
-    if (!customer || customer.plan === 'gratuit') {
-      router.push('/biens?plan=gratuit');
-      return;
-    }
-
     setUser(data.user);
     supabase.from('Baux')
       .select('id, locataire_prenom, locataire_nom, Biens(nom)')

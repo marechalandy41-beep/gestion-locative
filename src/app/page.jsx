@@ -88,8 +88,8 @@ export default function Home() {
     { cle: 'feat_coffre', label: 'Coffre-fort numérique' },
     { cle: 'feat_biens', label: 'Mes Biens' },
     { cle: 'feat_quittance_manuelle', label: 'Quittances manuelles' },
-    { cle: 'feat_baux', label: 'Mes Baux' },
     { cle: 'feat_edl', label: 'États des lieux' },
+    { cle: 'feat_baux', label: 'Mes Baux' },
     { cle: 'feat_email_bail', label: 'Email bail au locataire' },
     { cle: 'feat_recap_fiscal', label: 'Récap fiscal annuel' },
     { cle: 'feat_bridge', label: 'Connexion bancaire' },
@@ -362,11 +362,11 @@ export default function Home() {
             {[
               {
                 plan: 'Gratuit', prix: '0€', unite: '', couleur: '#6b7280', bg: 'white',
-                desc: 'Pour démarrer', features: ['Coffre-fort numérique', 'Mes Biens', 'Quittances manuelles'],
+                desc: 'Pour démarrer', features: ['Coffre-fort numérique', 'Mes Biens', 'Quittances manuelles', 'États des lieux', 'Mise en demeure', 'Attestations'],
               },
               {
                 plan: 'Manuel', prix: `${prixManuel}€`, unite: '/bail actif/mois', couleur: '#2563eb', bg: 'white',
-                desc: 'Pour les propriétaires actifs', features: ['Tout le Gratuit +', 'Mes Baux complets', 'États des lieux', 'Email bail au locataire', 'Récap fiscal'],
+                desc: 'Pour les propriétaires actifs', features: ['Tout le Gratuit +', 'Mes Baux complets', 'Email bail au locataire', 'Récap fiscal'],
                 badge: 'Populaire',
               },
               {
