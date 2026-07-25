@@ -227,7 +227,7 @@ export default function ConnexionBancaire() {
     try {
       const pdfBlob = new Blob([Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
       const path = `${user.id}/${matching.bail.bien_id}/Quittance/${nomFichier}`;
-      await supabase.storage.from('documents').upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true });
+      await supabase.storage.from('documents').upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true, cacheControl: '0' });
       const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
       await supabase.from('Documents').insert({
         user_id: user.id,

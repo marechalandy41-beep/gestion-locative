@@ -76,7 +76,7 @@ export default function Quittance() {
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true })
+        .upload(path, pdfBlob, { contentType: 'application/pdf', upsert: true, cacheControl: '0' })
 
       if (uploadError) { console.error('Upload erreur:', uploadError); return; }
 
