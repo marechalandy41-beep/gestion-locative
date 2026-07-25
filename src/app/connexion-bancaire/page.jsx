@@ -25,14 +25,16 @@ export default function ConnexionBancaire() {
   const [validationEnCours, setValidationEnCours] = useState(null);
   const [modeTest, setModeTest] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [signatureUser, setSignatureUser] = useState(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/auth'); return; }
       setUser(data.user);
       chargerBaux(data.user.id);
-      const { data: customer } = await supabase.from('customers').select('plan').eq('user_id', data.user.id).single()
+      const { data: customer } = await supabase.from('customers').select('plan, signature').eq('user_id', data.user.id).single()
       setPlan(customer?.plan || 'gratuit')
+      if (customer?.signature) setSignatureUser(customer.signature)
 
       const params = new URLSearchParams(window.location.search);
       if (params.get('bridge_callback') === 'true') {
@@ -177,6 +179,7 @@ export default function ConnexionBancaire() {
       locataire: { nom: nomLocataire, prenom: prenomLocataire },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
       loyer: { montant: bail.loyer_hc || 0, charges: bail.charges || 0, periode, datePaiement: new Date(datePaiement).toLocaleDateString('fr-FR') },
+      signature: signatureUser,
     });
     return doc.output('datauristring').split(',')[1];
   }
