@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/bridge-sync",
       "schedule": "0 9 * * 1,4"
+    },
+    {
+      "path": "/api/cron/sync-abonnements",
+      "schedule": "0 6 * * *"
     }
   ]
 }

@@ -51,6 +51,8 @@ export default function Compte() {
   const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
   const [planManuelBloque, setPlanManuelBloque] = useState(false)
   const [planAutoBloque, setPlanAutoBloque] = useState(false)
+  const [resyncLoading, setResyncLoading] = useState(false)
+  const [resyncMessage, setResyncMessage] = useState('')
   const [isMobile, setIsMobile] = useState(false);
 const [isMobileDevice, setIsMobileDevice] = useState(false)
 
@@ -624,6 +626,34 @@ async function activerPushNotifications() {
                 style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, marginBottom: 28 }}>
                 {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
               </button>
+
+              <button onClick={async () => {
+                setResyncLoading(true)
+                setResyncMessage('')
+                try {
+                  const res = await fetch('/api/resync-abonnement', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id }),
+                  })
+                  const data = await res.json()
+                  if (data.error) {
+                    setResyncMessage('❌ Erreur : ' + data.error)
+                  } else if (data.skipped) {
+                    setResyncMessage('ℹ️ ' + data.reason)
+                  } else {
+                    setResyncMessage(`✅ Synchronisé : ${data.quantite} bail(aux) actif(s)${data.reduction ? `, réduction ${data.reduction}%` : ''}`)
+                  }
+                } catch (e) {
+                  setResyncMessage('❌ Erreur de synchronisation')
+                }
+                setResyncLoading(false)
+                setTimeout(() => setResyncMessage(''), 6000)
+              }} disabled={resyncLoading}
+                style={{ marginLeft: 12, background: 'white', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 20px', fontWeight: 600, fontSize: 14, cursor: resyncLoading ? 'not-allowed' : 'pointer' }}>
+                {resyncLoading ? '⏳ Synchronisation...' : '🔄 Resynchroniser mon abonnement'}
+              </button>
+              {resyncMessage && <p style={{ marginTop: 10, fontSize: 13, color: '#374151' }}>{resyncMessage}</p>}
 
               <h4 style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 14 }}>Changer de plan</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
