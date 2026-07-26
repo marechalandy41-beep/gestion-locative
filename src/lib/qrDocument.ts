@@ -7,14 +7,14 @@ const SITE_URL = 'https://www.magestion-locative.fr'
  * Ajoute un QR code + texte en bas de la page courante d'un document jsPDF.
  * À appeler juste avant de sauvegarder/exporter le PDF.
  */
-export async function ajouterQRFooter(doc: jsPDF, urlCible: string = SITE_URL): Promise<void> {
+export async function ajouterQRFooter(doc: jsPDF, urlCible: string = SITE_URL, position?: { x?: number, y?: number }): Promise<void> {
   try {
     const qrDataUrl = await QRCode.toDataURL(urlCible, { margin: 0, width: 120 })
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
     const taille = 16 // mm
-    const x = pageWidth - taille - 14
-    const y = pageHeight - taille - 12
+    const x = position?.x ?? (pageWidth - taille - 14)
+    const y = position?.y ?? (pageHeight - taille - 12)
 
     doc.addImage(qrDataUrl, 'PNG', x, y, taille, taille)
     doc.setFontSize(7)

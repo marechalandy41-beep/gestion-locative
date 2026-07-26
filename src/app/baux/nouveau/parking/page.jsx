@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../../supabase'
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from '@/lib/qrDocument'
 
 export default function NouveauBailParking() {
   const [user, setUser] = useState(null)
@@ -192,6 +193,8 @@ async function envoyerVersYousign() {
       y += 20; titre('SIGNATURES')
       doc.text(`À signer électroniquement via Yousign`, margin, y)
 
+      await ajouterQRFooter(doc)
+
       const nomFichier = `Bail_NonMeuble_${sanitize(form.locataire_nom)}_${sanitize(form.bailleur_nom)}_${form.date_debut || 'date'}.pdf`
       const pdfBase64 = doc.output('datauristring').split(',')[1]
 
@@ -317,7 +320,7 @@ async function envoyerVersYousign() {
       doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal')
       if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 5, 78, 32)
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 5, 78, 32)
-      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par Ma Gestion-Locative', pageW / 2, y, { align: 'center' })
+      y += 44; await ajouterQRFooter(doc, undefined, { x: margin, y: y - 4 })
 
       const nomFichier = `Bail_Parking_${sanitize(form.locataire_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)

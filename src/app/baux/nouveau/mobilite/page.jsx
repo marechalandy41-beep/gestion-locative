@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../../supabase'
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from '@/lib/qrDocument'
 
 export default function NouveauBailMobilite() {
   const [user, setUser] = useState(null)
@@ -138,6 +139,8 @@ async function envoyerVersYousign() {
 
       y += 20; titre('SIGNATURES')
       doc.text(`À signer électroniquement via Yousign`, margin, y)
+
+      await ajouterQRFooter(doc)
 
       const nomFichier = `Bail_NonMeuble_${sanitize(form.locataire_nom)}_${sanitize(form.bailleur_nom)}_${form.date_debut || 'date'}.pdf`
       const pdfBase64 = doc.output('datauristring').split(',')[1]
