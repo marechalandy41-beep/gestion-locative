@@ -705,6 +705,43 @@ async function voirDetailCode(code) {
               </div>
             </div>
 
+<div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>🚧 Blocage plans payants</h3>
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Empêche temporairement les nouveaux abonnements (utile en attendant vos infos URSSAF).</p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                <div onClick={async () => {
+                  const newVal = settings.plan_manuel_bloque === 'true' ? 'false' : 'true'
+                  setSettings(prev => ({ ...prev, plan_manuel_bloque: newVal }))
+                  await sauvegarderSetting('plan_manuel_bloque', newVal)
+                }}
+                  style={{ width: 52, height: 28, borderRadius: 99, background: settings.plan_manuel_bloque === 'true' ? '#dc2626' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 4, left: settings.plan_manuel_bloque === 'true' ? 28 : 4, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+                </div>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>
+                    {settings.plan_manuel_bloque === 'true' ? '🔒 Plan Manuel bloqué' : '✅ Plan Manuel disponible'}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div onClick={async () => {
+                  const newVal = settings.plan_auto_bloque === 'true' ? 'false' : 'true'
+                  setSettings(prev => ({ ...prev, plan_auto_bloque: newVal }))
+                  await sauvegarderSetting('plan_auto_bloque', newVal)
+                }}
+                  style={{ width: 52, height: 28, borderRadius: 99, background: settings.plan_auto_bloque === 'true' ? '#dc2626' : '#374151', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <div style={{ position: 'absolute', top: 4, left: settings.plan_auto_bloque === 'true' ? 28 : 4, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+                </div>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>
+                    {settings.plan_auto_bloque === 'true' ? '🔒 Plan Automatique bloqué' : '✅ Plan Automatique disponible'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div style={{ background: '#1f2937', borderRadius: 14, padding: 24, border: '1px solid #374151', marginBottom: 20 }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>📢 Bandeau d'annonce</h3>
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 16px' }}>Affiche un message en haut du dashboard des utilisateurs (maintenance, congés, info...).</p>

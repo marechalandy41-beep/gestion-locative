@@ -33,6 +33,19 @@ export async function POST(req: NextRequest) {
   try {
     const { customerId, priceId } = await req.json()
 
+    // Vérifier si ce plan est temporairement bloqué (back-office)
+    const { data: settingsData } = await supabaseAdmin.from('settings').select('cle, valeur')
+    const settingsMap: Record<string, string> = {}
+    settingsData?.forEach(s => { settingsMap[s.cle] = s.valeur })
+    const priceIdManuel = settingsMap['price_id_manuel']
+    const priceIdAuto = settingsMap['price_id_auto']
+    if (priceId === priceIdManuel && settingsMap['plan_manuel_bloque'] === 'true') {
+      return NextResponse.json({ error: "Le plan Manuel n'est pas disponible pour le moment." }, { status: 403 })
+    }
+    if (priceId === priceIdAuto && settingsMap['plan_auto_bloque'] === 'true') {
+      return NextResponse.json({ error: "Le plan Automatique n'est pas disponible pour le moment." }, { status: 403 })
+    }
+
     // Récupérer la réduction / mois gratuits liés à ce client
     const { data: client } = await supabaseAdmin
       .from('customers')

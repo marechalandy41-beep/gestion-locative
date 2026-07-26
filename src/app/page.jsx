@@ -397,17 +397,23 @@ export default function Home() {
               {
                 plan: 'Manuel', prix: `${prixManuel}€`, unite: '/bail actif/mois', couleur: '#2563eb', bg: 'white',
                 desc: 'Pour les propriétaires actifs', features: ['Tout le Gratuit +', 'Mes Baux complets', 'Email bail au locataire', 'Récap fiscal'],
-                badge: 'Populaire',
+                badge: 'Populaire', bloque: settings.plan_manuel_bloque === 'true',
               },
               {
                 plan: 'Automatique', prix: `${prixAuto}€`, unite: '/bail actif/mois', couleur: '#16a34a', bg: 'white',
                 desc: 'Pour l\'automatisation totale', features: ['Tout le Manuel +', 'Connexion bancaire', 'Détection auto des loyers', 'Quittances automatiques', 'Relances automatiques'],
+                bloque: settings.plan_auto_bloque === 'true',
               },
             ].map((p, i) => (
-              <div key={i} style={{ background: p.bg, borderRadius: 20, padding: 32, border: i === 1 ? '2px solid #2563eb' : '1px solid #e5e7eb', position: 'relative', boxShadow: i === 1 ? '0 8px 32px rgba(37,99,235,0.15)' : '0 1px 4px rgba(0,0,0,0.06)' }}>
-                {p.badge && (
+              <div key={i} style={{ background: p.bg, borderRadius: 20, padding: 32, border: i === 1 ? '2px solid #2563eb' : '1px solid #e5e7eb', position: 'relative', boxShadow: i === 1 ? '0 8px 32px rgba(37,99,235,0.15)' : '0 1px 4px rgba(0,0,0,0.06)', opacity: p.bloque ? 0.6 : 1 }}>
+                {p.badge && !p.bloque && (
                   <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#2563eb', color: 'white', padding: '4px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
                     {p.badge}
+                  </div>
+                )}
+                {p.bloque && (
+                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#f59e0b', color: 'white', padding: '4px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    🕒 Bientôt disponible
                   </div>
                 )}
                 <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>{p.plan}</h3>
@@ -423,9 +429,15 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <a href="/auth" style={{ display: 'block', background: i === 1 ? '#2563eb' : '#f3f4f6', color: i === 1 ? 'white' : '#374151', padding: '12px', borderRadius: 10, textAlign: 'center', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
-                  Commencer →
-                </a>
+                {p.bloque ? (
+                  <div style={{ display: 'block', background: '#f3f4f6', color: '#9ca3af', padding: '12px', borderRadius: 10, textAlign: 'center', fontWeight: 600, fontSize: 14, cursor: 'not-allowed' }}>
+                    Bientôt disponible
+                  </div>
+                ) : (
+                  <a href="/auth" style={{ display: 'block', background: i === 1 ? '#2563eb' : '#f3f4f6', color: i === 1 ? 'white' : '#374151', padding: '12px', borderRadius: 10, textAlign: 'center', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
+                    Commencer →
+                  </a>
+                )}
               </div>
             ))}
           </div>

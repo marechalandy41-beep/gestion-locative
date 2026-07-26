@@ -49,6 +49,8 @@ export default function Compte() {
   const [prixAutomatique, setPrixAutomatique] = useState('6')
   const [priceIdManuel, setPriceIdManuel] = useState('price_1TkNf95LCX9emtMyBEftu67t')
   const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
+  const [planManuelBloque, setPlanManuelBloque] = useState(false)
+  const [planAutoBloque, setPlanAutoBloque] = useState(false)
   const [isMobile, setIsMobile] = useState(false);
 const [isMobileDevice, setIsMobileDevice] = useState(false)
 
@@ -95,7 +97,7 @@ useEffect(() => {
         const { data: settingsData } = await supabase
           .from('settings')
           .select('cle, valeur')
-          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support', 'faq_dynamique', 'parrainage_reduction_parrain'])
+          .in('cle', ['prix_manuel', 'prix_auto', 'price_id_manuel', 'price_id_auto', 'categories_support', 'faq_dynamique', 'parrainage_reduction_parrain', 'plan_manuel_bloque', 'plan_auto_bloque'])
 
         if (settingsData) {
           const prixManuelSetting = settingsData.find(s => s.cle === 'prix_manuel')
@@ -108,6 +110,10 @@ useEffect(() => {
           if (priceIdAutoSetting) setPriceIdAutomatique(priceIdAutoSetting.valeur)
             const reducParrainSetting = settingsData.find(s => s.cle === 'parrainage_reduction_parrain')
           if (reducParrainSetting) setReductionParrain(parseInt(reducParrainSetting.valeur) || 5)
+          const planManuelBloqueSetting = settingsData.find(s => s.cle === 'plan_manuel_bloque')
+          const planAutoBloqueSetting = settingsData.find(s => s.cle === 'plan_auto_bloque')
+          if (planManuelBloqueSetting) setPlanManuelBloque(planManuelBloqueSetting.valeur === 'true')
+          if (planAutoBloqueSetting) setPlanAutoBloque(planAutoBloqueSetting.valeur === 'true')
         }
 
         const categoriesSetting = settingsData.find(s => s.cle === 'categories_support')
@@ -395,8 +401,8 @@ async function activerPushNotifications() {
 
   const PLANS = [
     { id: 'gratuit', nom: 'Gratuit', prix: '0€', description: 'Quittances manuelles, 50 Mo de stockage', priceId: null },
-    { id: 'manuel', nom: 'Manuel', prix: `${prixManuel}€`, description: 'Baux, états des lieux, coffre-fort complet', priceId: priceIdManuel },
-    { id: 'automatique', nom: 'Automatique', prix: `${prixAutomatique}€`, description: 'Connexion bancaire, quittances et relances automatiques', priceId: priceIdAutomatique },
+    { id: 'manuel', nom: 'Manuel', prix: `${prixManuel}€`, description: 'Baux, états des lieux, coffre-fort complet', priceId: priceIdManuel, bloque: planManuelBloque },
+    { id: 'automatique', nom: 'Automatique', prix: `${prixAutomatique}€`, description: 'Connexion bancaire, quittances et relances automatiques', priceId: priceIdAutomatique, bloque: planAutoBloque },
   ]
 
   async function confirmerChangementPlan() {
@@ -625,17 +631,23 @@ async function activerPushNotifications() {
                   const estActuel = p.id === plan
                   const estSelectionne = p.id === planSelectionne
                   return (
-                    <div key={p.id} onClick={() => setPlanSelectionne(p.id)}
+                    <div key={p.id} onClick={() => { if (!p.bloque) setPlanSelectionne(p.id) }}
                       style={{
                         position: 'relative',
                         border: estSelectionne ? '2px solid #2563eb' : '2px solid #e5e7eb',
-                        borderRadius: 14, padding: 18, cursor: 'pointer',
+                        borderRadius: 14, padding: 18, cursor: p.bloque ? 'not-allowed' : 'pointer',
                         background: estSelectionne ? '#eff6ff' : 'white',
+                        opacity: p.bloque ? 0.55 : 1,
                         transition: 'all 0.15s'
                       }}>
                       {estActuel && (
                         <span style={{ position: 'absolute', top: -10, right: 12, background: '#16a34a', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>
                           Plan actuel
+                        </span>
+                      )}
+                      {p.bloque && !estActuel && (
+                        <span style={{ position: 'absolute', top: -10, right: 12, background: '#f59e0b', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>
+                          🕒 Bientôt disponible
                         </span>
                       )}
                       <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>{p.nom}</p>
