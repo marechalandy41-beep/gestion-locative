@@ -601,9 +601,23 @@ async function voirDetailCode(code) {
                           {codeDetail.liste.map((cl, i) => (
                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111827', borderRadius: 8, padding: '10px 14px' }}>
                               <span style={{ color: 'white', fontSize: 13 }}>{cl.email}</span>
-                              <span style={{ color: cl.payant ? '#4ade80' : '#9ca3af', fontSize: 12, fontWeight: 600 }}>
-                                {cl.payant ? '💳 ' + cl.plan : 'gratuit'}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ color: cl.payant ? '#4ade80' : '#9ca3af', fontSize: 12, fontWeight: 600 }}>
+                                  {cl.payant ? '💳 ' + cl.plan : 'gratuit'}
+                                </span>
+                                <button onClick={async () => {
+                                  if (!confirm(`Retirer le code promo de ${cl.email} ? Sa réduction sera annulée.`)) return
+                                  await fetch('/api/admin/retirer-code-promo', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId: cl.user_id, code: codeDetail.code }),
+                                  })
+                                  await voirDetailCode(codeDetail.code)
+                                }}
+                                  style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+                                  🗑 Retirer
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>

@@ -29,7 +29,7 @@ async function getOrCreateCouponMoisGratuits(mois: number): Promise<string> {
 export async function resyncAbonnementUtilisateur(userId: string) {
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('stripe_customer_id, plan, reduction, mois_gratuits')
+    .select('stripe_customer_id, plan, reduction_code_promo, reduction_parrainage, mois_gratuits')
     .eq('user_id', userId)
     .single()
 
@@ -57,7 +57,7 @@ export async function resyncAbonnementUtilisateur(userId: string) {
 
   const quantite = Math.max(count || 0, 0)
 
-  const reduction = parseInt(customerData.reduction) || 0
+  const reduction = Math.min((parseInt(customerData.reduction_code_promo) || 0) + (parseInt(customerData.reduction_parrainage) || 0), 15)
   const moisGratuits = parseInt(customerData.mois_gratuits) || 0
   let discounts: { coupon: string }[] | undefined = undefined
   if (reduction > 0) {

@@ -49,11 +49,11 @@ export async function POST(req: NextRequest) {
     // Récupérer la réduction / mois gratuits liés à ce client
     const { data: client } = await supabaseAdmin
       .from('customers')
-      .select('reduction, mois_gratuits')
+      .select('reduction_code_promo, reduction_parrainage, mois_gratuits')
       .eq('stripe_customer_id', customerId)
       .single()
 
-    const reduction = parseInt(client?.reduction) || 0
+    const reduction = Math.min((parseInt(client?.reduction_code_promo) || 0) + (parseInt(client?.reduction_parrainage) || 0), 15)
     const moisGratuits = parseInt(client?.mois_gratuits) || 0
 
     // Construire la remise éventuelle (une seule remise possible sur une session Checkout)

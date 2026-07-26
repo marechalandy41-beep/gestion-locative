@@ -27,7 +27,7 @@ export async function POST(request) {
     // Trouver le parrain avec ce code
     const { data: parrain, error } = await supabase
       .from('customers')
-      .select('user_id, reduction')
+      .select('user_id, reduction_parrainage')
       .eq('code_parrainage', code)
       .single();
 
@@ -49,16 +49,22 @@ export async function POST(request) {
       })
       .eq('user_id', filleulId);
 
-    // Appliquer la récompense au parrain
-    const nouvelleReduction = typeParrain === 'reduction'
-      ? Math.min((parrain.reduction || 0) + reductionParrain, 15)
+    // Appliquer la récompense au parrain (dans sa propre colonne, distincte du code promo)
+    const { data: parrainActuel } = await supabase
+      .from('customers')
+      .select('reduction_parrainage')
+      .eq('user_id', parrain.user_id)
+      .single();
+
+    const nouvelleReductionParrainage = typeParrain === 'reduction'
+      ? Math.min((parrainActuel?.reduction_parrainage || 0) + reductionParrain, 15)
       : 0
     const moisGratuits = typeParrain === 'mois_gratuit' ? reductionParrain : 0
 
     await supabase
       .from('customers')
       .update({
-        reduction: nouvelleReduction,
+        reduction_parrainage: nouvelleReductionParrainage,
         mois_gratuits: moisGratuits,
       })
       .eq('user_id', parrain.user_id);

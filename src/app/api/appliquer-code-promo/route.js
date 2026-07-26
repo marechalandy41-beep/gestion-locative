@@ -52,7 +52,7 @@ if (customer?.code_promo) {
     // Sauvegarder la réduction dans la table customers
     await supabase
       .from('customers')
-      .update({ reduction: codeData.reduction, code_promo: code })
+      .update({ reduction_code_promo: codeData.reduction, code_promo: code })
       .eq('user_id', userId);
 
     return NextResponse.json({ success: true, reduction: codeData.reduction });

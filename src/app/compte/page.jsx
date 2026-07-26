@@ -77,9 +77,12 @@ useEffect(() => {
 
         const { data: customerData } = await supabase
           .from('customers')
-          .select('code_promo, reduction, code_parrainage, plan, signature')
+          .select('code_promo, reduction_code_promo, reduction_parrainage, code_parrainage, plan, signature')
           .eq('user_id', data.user.id)
           .single();
+
+        // Réduction totale = code promo + parrainage, plafonnée à 15%
+        setReductionActuelle(Math.min((parseInt(customerData?.reduction_code_promo) || 0) + (parseInt(customerData?.reduction_parrainage) || 0), 15))
           // Compter les filleuls parrainés
         const { count: nbF } = await supabase
           .from('parrainages')
@@ -137,19 +140,19 @@ useEffect(() => {
 
           if (!codeData) {
             setCodeActuel(customerData.code_promo)
-            setReductionActuelle(customerData.reduction)
           } else {
             const codeValide = codeData.actif &&
               (!codeData.expire_le || new Date(codeData.expire_le) >= new Date())
 
             if (codeValide) {
               setCodeActuel(customerData.code_promo)
-              setReductionActuelle(customerData.reduction)
             } else {
               setCodeExpire(true)
+              const reductionParrainageSeule = parseInt(customerData?.reduction_parrainage) || 0
+              setReductionActuelle(reductionParrainageSeule)
               await supabase
                 .from('customers')
-                .update({ code_promo: null, reduction: 0 })
+                .update({ code_promo: null, reduction_code_promo: 0 })
                 .eq('user_id', data.user.id)
             }
           }
@@ -276,7 +279,7 @@ function demarrerDessin(e) {
       if (data.success) {
         setCodeMessage(`✅ Code appliqué ! Réduction de ${data.reduction}% sur votre abonnement.`)
         setCodeActuel(codePromo.trim().toUpperCase())
-        setReductionActuelle(data.reduction)
+        setReductionActuelle(prev => Math.min(data.reduction + prev, 15))
         setCodeExpire(false)
         setCodePromo('')
       } else {

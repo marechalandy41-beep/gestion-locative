@@ -23,6 +23,7 @@ export async function POST(request) {
     (authData?.users || []).forEach(u => { emailMap[u.id] = u.email || ''; });
 
     const liste = (clients || []).map(c => ({
+      user_id: c.user_id,
       email: emailMap[c.user_id] || 'Inconnu',
       plan: c.plan || 'gratuit',
       payant: c.plan === 'manuel' || c.plan === 'automatique',
