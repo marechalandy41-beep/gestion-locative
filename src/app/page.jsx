@@ -272,6 +272,36 @@ export default function Home() {
 </AnimatedSection>
 
       <AnimatedSection delay={100}>
+      {/* GRATUIT AVEC COMPTE */}
+      <section style={{ padding: '56px 24px', background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)', borderTop: '1px solid #d1fae5', borderBottom: '1px solid #d1fae5' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+          <span style={{ background: '#16a34a', color: 'white', padding: '5px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, letterSpacing: 0.5 }}>✨ 100% GRATUIT</span>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#111827', margin: '16px 0 12px' }}>Créez un compte, et c'est gratuit à vie</h2>
+          <p style={{ color: '#374151', fontSize: 16, margin: '0 0 32px' }}>Pas de carte bancaire, pas d'engagement. Juste un compte, et vous avez accès à :</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 16, marginBottom: 32 }}>
+            {[
+              { emoji: '📋', label: 'États des lieux', lien: '/auth' },
+              { emoji: '📄', label: 'Quittances de loyer', lien: '/auth' },
+              { emoji: '⚠️', label: 'Mise en demeure', lien: '/auth' },
+              { emoji: '📝', label: 'Attestations', lien: '/attestation-gratuite' },
+            ].map((f, i) => (
+              <a key={i} href={f.lien}
+                style={{ background: 'white', borderRadius: 14, padding: '20px 12px', border: '1px solid #d1fae5', textDecoration: 'none', display: 'block', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(22,163,74,0.15)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                <div style={{ fontSize: 30, marginBottom: 8 }}>{f.emoji}</div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: 0 }}>{f.label}</p>
+              </a>
+            ))}
+          </div>
+          <a href="/auth" style={{ background: '#16a34a', color: 'white', padding: '14px 36px', borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: 'none', display: 'inline-block' }}>
+            Créer mon compte gratuit →
+          </a>
+        </div>
+      </section>
+      </AnimatedSection>
+
+      <AnimatedSection delay={100}>
       {/* FONCTIONNALITÉS */}
       <section id="fonctionnalites" style={{ padding: '80px 24px', background: 'white' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
