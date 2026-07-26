@@ -514,6 +514,10 @@ useEffect(() => {
                 </button>
               )}
               <button onClick={async () => {
+                if (bail.statut !== 'termine') {
+                  alert('Ce bail doit d\'abord être clôturé avant de pouvoir être supprimé. Utilisez le bouton "Clôturer ce bail" ci-dessus.');
+                  return;
+                }
                 const confirm1 = confirm('Supprimer définitivement ce bail ?');
                 if (!confirm1) return;
                 const confirm2 = confirm('Cette action est irréversible. Confirmer la suppression ?');
@@ -532,8 +536,8 @@ useEffect(() => {
                   window.location.href = '/baux';
                 } else { alert('Erreur : ' + error.message); }
               }}
-                style={{ flex: 1, background: 'white', color: '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                🗑 Supprimer
+                style={{ flex: 1, background: bail.statut !== 'termine' ? '#f9fafb' : 'white', color: bail.statut !== 'termine' ? '#d1d5db' : '#6b7280', padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', fontWeight: 600, fontSize: 14, cursor: bail.statut !== 'termine' ? 'not-allowed' : 'pointer' }}>
+                🗑 Supprimer{bail.statut !== 'termine' ? ' (clôturer d\'abord)' : ''}
               </button>
             </div>
           </>
