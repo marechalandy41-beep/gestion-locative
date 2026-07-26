@@ -133,7 +133,9 @@ export default function HomeClient({ initialSettings = {}, initialComingSoon = t
       {/* NAV */}
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: '#2563eb' }}>🏠 Ma Gestion-Locative</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src="/icon-192.png" alt="Ma Gestion-Locative" style={{ width: 26, height: 26, borderRadius: 6 }} /> Ma Gestion-Locative
+          </span>
 
           {/* Liens desktop uniquement */}
           <div className="hidden lg:flex" style={{ gap: 12, alignItems: 'center' }}>
@@ -552,7 +554,9 @@ export default function HomeClient({ initialSettings = {}, initialComingSoon = t
 </AnimatedSection>
       {/* FOOTER */}
       <footer style={{ background: '#111827', padding: '32px 24px', textAlign: 'center' }}>
-        <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px', fontWeight: 700 }}>🏠 Ma Gestion-Locative</p>
+        <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <img src="/icon-192.png" alt="Ma Gestion-Locative" style={{ width: 16, height: 16, borderRadius: 4 }} /> Ma Gestion-Locative
+        </p>
         <p style={{ color: '#6b7280', fontSize: 12, margin: 0 }}>
           © 2026 Ma Gestion-Locative —{' '}
           <a href="/cgu" style={{ color: '#6b7280', textDecoration: 'none' }}>CGU</a> —{' '}
