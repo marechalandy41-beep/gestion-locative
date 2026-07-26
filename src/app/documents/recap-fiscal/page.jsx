@@ -14,7 +14,9 @@ export default function RecapFiscal() {
   const [generating, setGenerating] = useState(false)
   const [sauvegarde, setSauvegarde] = useState(false)
   const [chargesParBien, setChargesParBien] = useState({})
+  const [chargesTousAns, setChargesTousAns] = useState({})
   const [showChargesForm, setShowChargesForm] = useState({})
+  const [showLoyerForm, setShowLoyerForm] = useState({})
   const [uploadingJustif, setUploadingJustif] = useState({})
   const [justificatifsParBien, setJustificatifsParBien] = useState({})
   const [showJustifModal, setShowJustifModal] = useState({})
@@ -22,6 +24,14 @@ const [categorieJustif, setCategorieJustif] = useState({})
   const [chargesSauvegardees, setChargesSauvegardees] = useState({})
 
   useEffect(() => { init() }, [])
+
+  useEffect(() => {
+    const initCharges = {}
+    Object.keys(chargesTousAns).forEach(bienId => {
+      initCharges[parseInt(bienId)] = chargesTousAns[parseInt(bienId)][annee] || {}
+    })
+    setChargesParBien(initCharges)
+  }, [annee, chargesTousAns])
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -50,14 +60,10 @@ const [categorieJustif, setCategorieJustif] = useState({})
           frais_gestion: c.frais_gestion?.toString() || '',
           interets_emprunt: c.interets_emprunt?.toString() || '',
           autres: c.autres?.toString() || '',
+          loyer_manuel: c.loyer_manuel?.toString() || '',
         }
       })
-      // Initialiser chargesParBien avec les données de l'année sélectionnée
-      const initCharges = {}
-      Object.keys(parBien).forEach(bienId => {
-        initCharges[parseInt(bienId)] = parBien[parseInt(bienId)][annee] || {}
-      })
-      setChargesParBien(initCharges)
+      setChargesTousAns(parBien)
     }
 
     // Charger les justificatifs déjà uploadés par bien
@@ -83,8 +89,9 @@ const [categorieJustif, setCategorieJustif] = useState({})
     const bauxBien = baux.filter(b => b.bien_id === bienId)
     const idsBaux = bauxBien.map(b => b.id)
     const paiementsBien = paiementsFiltres.filter(p => idsBaux.includes(p.bail_id) && (parseFloat(p.montant) || 0) > 0)
-    const totalLoyers = paiementsBien.reduce((acc, p) => acc + (parseFloat(p.montant) || 0), 0)
-    return { totalLoyers, nbPaiements: paiementsBien.length, bauxBien }
+    const loyerManuel = parseFloat(chargesParBien[bienId]?.loyer_manuel) || 0
+    const totalLoyers = paiementsBien.reduce((acc, p) => acc + (parseFloat(p.montant) || 0), 0) + loyerManuel
+    return { totalLoyers, nbPaiements: paiementsBien.length, bauxBien, loyerManuel }
   }
 
   function totalChargesBien(bienId) {
@@ -106,7 +113,7 @@ const [categorieJustif, setCategorieJustif] = useState({})
 
   async function sauvegarderCharges(bienId) {
     const c = chargesParBien[bienId] || {}
-    await supabase.from('charges_fiscales').upsert({
+    const { error } = await supabase.from('charges_fiscales').upsert({
       user_id: user.id,
       bien_id: bienId,
       annee,
@@ -116,8 +123,18 @@ const [categorieJustif, setCategorieJustif] = useState({})
       frais_gestion: parseFloat(c.frais_gestion) || 0,
       interets_emprunt: parseFloat(c.interets_emprunt) || 0,
       autres: parseFloat(c.autres) || 0,
+      loyer_manuel: parseFloat(c.loyer_manuel) || 0,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,bien_id,annee' })
+    if (error) {
+      alert('Erreur lors de la sauvegarde : ' + error.message)
+      console.error('Erreur sauvegarde charges:', error)
+      return
+    }
+    setChargesTousAns(prev => ({
+      ...prev,
+      [bienId]: { ...(prev[bienId] || {}), [annee]: c }
+    }))
     setChargesSauvegardees(prev => ({ ...prev, [bienId]: true }))
     setTimeout(() => setChargesSauvegardees(prev => ({ ...prev, [bienId]: false })), 2000)
   }
@@ -447,7 +464,28 @@ const cheminStorage = `${user.id}/${bienId}/${categorieSlug}/${nomFichier}`
     style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
     📎 Ajouter un justificatif
   </button>
+  <button onClick={() => setShowLoyerForm(prev => ({ ...prev, [bien.id]: !prev[bien.id] }))}
+    style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fde68a', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+    💶 Ajouter loyer perçu non comptabilisé
+  </button>
 </div>
+
+{showLoyerForm[bien.id] && (
+  <div style={{ background: '#fefce8', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+    <p style={{ fontSize: 12, color: '#78350f', margin: '0 0 12px' }}>
+      Montant total de loyers perçus pour {annee} sur ce bien, non suivis automatiquement par l'app (ex : avant création du bien ou de votre compte) :
+    </p>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <input type="number" placeholder="Montant en €" value={chargesParBien[bien.id]?.loyer_manuel || ''}
+        onChange={e => updateCharge(bien.id, 'loyer_manuel', e.target.value)}
+        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #fde68a', fontSize: 14 }} />
+      <button onClick={() => sauvegarderCharges(bien.id)}
+        style={{ background: chargesSauvegardees[bien.id] ? '#16a34a' : '#a16207', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.3s' }}>
+        {chargesSauvegardees[bien.id] ? '✅ Enregistré !' : 'Enregistrer'}
+      </button>
+    </div>
+  </div>
+)}
 
 {showForm && (
   <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 12 }}>
