@@ -279,7 +279,7 @@ async function envoyerVersYousign() {
       doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal')
       if (signatureBailleur) doc.addImage(signatureBailleur, 'PNG', margin + 1, y + 5, 78, 32)
       if (signatureLocataire) doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y + 5, 78, 32)
-      y += 44; doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.text('Document généré par Ma Gestion-Locative — Bail mobilité loi ELAN 2018', pageW / 2, y, { align: 'center' })
+      y += 44; await ajouterQRFooter(doc, undefined, { x: margin, y: y - 4 })
 
       const nomFichier = `Bail_Mobilite_${sanitize(form.locataire_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)
