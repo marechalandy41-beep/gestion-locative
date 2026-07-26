@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
+import { ajouterQRFooter } from '@/lib/qrDocument'
 import Nav from '../../components/nav'
 
 export default function DetailEDL() {
@@ -21,7 +22,7 @@ export default function DetailEDL() {
   async function chargerEDL(id) {
     const { data, error } = await supabase
       .from('EtatsDesLieux')
-      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(id, nom, adresse))')
+      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(id, nom, adresse)), Biens:bien_id(id, nom, adresse)')
       .eq('id', id)
       .single();
 
@@ -29,14 +30,18 @@ export default function DetailEDL() {
 
     if (data) {
       const typeComparaison = data.type === 'entree' ? 'sortie' : 'entree';
-      const { data: comp } = await supabase
+      let requeteComp = supabase
         .from('EtatsDesLieux')
         .select('*')
-        .eq('bail_id', data.bail_id)
         .eq('type', typeComparaison)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+
+      requeteComp = data.bail_id
+        ? requeteComp.eq('bail_id', data.bail_id)
+        : requeteComp.eq('bien_id', data.bien_id)
+
+      const { data: comp } = await requeteComp.single();
       setEdlComparaison(comp);
     }
     setLoading(false);
@@ -54,7 +59,7 @@ export default function DetailEDL() {
     return { color: '#dc2626', bg: '#fef2f2' };
   }
 
-  function construirePDF() {
+  async function construirePDF() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
@@ -77,12 +82,12 @@ export default function DetailEDL() {
     doc.setFont('helvetica', 'bold');
     doc.text('Bien :', 18, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(edl.bail?.Biens?.nom || '', 45, y);
+    doc.text(edl.bail?.Biens?.nom || edl.Biens?.nom || '', 45, y);
     y += 8;
     doc.setFont('helvetica', 'bold');
     doc.text('Locataire :', 18, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${edl.bail?.locataire_prenom || ''} ${edl.bail?.locataire_nom || ''}`, 45, y);
+    doc.text(edl.bail ? `${edl.bail.locataire_prenom || ''} ${edl.bail.locataire_nom || ''}` : '—', 45, y);
     y += 8;
     doc.setFont('helvetica', 'bold');
     doc.text('Date :', 18, y);
@@ -177,9 +182,7 @@ export default function DetailEDL() {
     doc.text('Signature du propriétaire', 14, y + 5);
     doc.text('Signature du locataire', 120, y + 5);
 
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
+    await ajouterQRFooter(doc);
 
     return doc;
   }
@@ -189,8 +192,8 @@ export default function DetailEDL() {
     setSaving(true);
 
     try {
-      const doc = construirePDF();
-      const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom}_${edl.date_edl}.pdf`;
+      const doc = await construirePDF();
+      const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom || edl.Biens?.nom || 'bien'}_${edl.date_edl}.pdf`;
 
       // Téléchargement local
       doc.save(nomFichier);
@@ -199,7 +202,7 @@ export default function DetailEDL() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non connecté');
 
-      const bienId = edl.bail?.Biens?.id;
+      const bienId = edl.bail?.Biens?.id || edl.Biens?.id || edl.bien_id;
       if (!bienId) throw new Error('Bien introuvable');
 
       const pdfBlob = doc.output('blob');
@@ -242,10 +245,22 @@ export default function DetailEDL() {
     }
   }
 
-  function telechargerSeulement() {
-    const doc = construirePDF();
-    const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom}_${edl.date_edl}.pdf`;
+  async function telechargerSeulement() {
+    const doc = await construirePDF();
+    const nomFichier = `EDL_${edl.type}_${edl.bail?.Biens?.nom || edl.Biens?.nom || 'bien'}_${edl.date_edl}.pdf`;
     doc.save(nomFichier);
+  }
+
+  async function supprimerEDL() {
+    if (!confirm('Supprimer définitivement cet état des lieux ?')) return;
+    if (!confirm('Cette action est irréversible. Confirmer la suppression ?')) return;
+
+    const { error } = await supabase.from('EtatsDesLieux').delete().eq('id', edl.id);
+    if (error) {
+      afficherToast('❌ Erreur : ' + error.message, false);
+      return;
+    }
+    window.location.href = '/etats-des-lieux';
   }
 
   const nav = (
@@ -296,6 +311,12 @@ export default function DetailEDL() {
           </div>
 
           <div style={{display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end'}}>
+            <button
+              onClick={supprimerEDL}
+              style={{background:'white', color:'#dc2626', padding:'8px 16px', borderRadius:10, border:'1px solid #fecaca', cursor:'pointer', fontWeight:600, fontSize:13}}
+            >
+              🗑 Supprimer
+            </button>
             {estFinalise ? (
               <button
                 onClick={telechargerEtSauvegarder}

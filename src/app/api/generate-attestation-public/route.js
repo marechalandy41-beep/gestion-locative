@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from '@/lib/qrDocument'
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '...'
 
@@ -89,6 +90,7 @@ export async function POST(request) {
     doc.setFontSize(7); doc.setTextColor(150, 150, 150)
     doc.text('Document généré gratuitement sur Ma Gestion-Locative — magestion-locative.fr', pageW / 2, 290, { align: 'center' })
 
+    await ajouterQRFooter(doc)
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
     const pdfBase64 = pdfBuffer.toString('base64')
     const nomFichier = `Attestation_${(typeLabel || 'attestation').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`

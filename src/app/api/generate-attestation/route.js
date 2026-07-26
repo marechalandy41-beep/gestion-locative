@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from '@/lib/qrDocument'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -113,6 +114,7 @@ export async function POST(request) {
     doc.setFontSize(7); doc.setTextColor(150, 150, 150)
     doc.text('Document généré par Ma Gestion-Locative', pageW / 2, 290, { align: 'center' })
 
+    await ajouterQRFooter(doc)
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
 
     // --- Sauvegarde coffre-fort ---

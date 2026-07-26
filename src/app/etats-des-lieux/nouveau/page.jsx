@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from '@/lib/qrDocument'
 
 const PIECES_DEFAUT = [
   'Entrée / Couloir', 'Salon', 'Cuisine', 'Salle de bain', 'WC', 'Chambre 1'
@@ -157,9 +158,7 @@ export default function NouvelEDL() {
         y += 6;
       }
 
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Document généré par Ma Gestion-Locative.fr', pageWidth / 2, 290, { align: 'center' });
+      await ajouterQRFooter(doc);
 
       const nomFichier = `EDL_${form.type}_${bailData?.Biens?.nom || bienSelectionne?.nom || 'bien'}_${form.date_edl}.pdf`;
       const pdfBlob = doc.output('blob');
