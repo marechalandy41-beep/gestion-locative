@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { ajouterQRFooter } from './qrDocument'
 
 interface QuittanceData {
   proprietaire: {
@@ -24,7 +25,7 @@ interface QuittanceData {
   signature?: string // image base64 optionnelle
 }
 
-export function buildQuittanceDoc(data: QuittanceData): jsPDF {
+export async function buildQuittanceDoc(data: QuittanceData): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = 210, margin = 20
   let y = 24
@@ -97,14 +98,11 @@ export function buildQuittanceDoc(data: QuittanceData): jsPDF {
     doc.line(pageW - margin - 55, y + 15, pageW - margin, y + 15)
   }
 
-  // Footer
-  doc.setFontSize(7); doc.setTextColor(150, 150, 150)
-  doc.text('Document généré par Ma Gestion-Locative', pageW / 2, 285, { align: 'center' })
-
+  await ajouterQRFooter(doc)
   return doc
 }
 
-export function generateQuittance(data: QuittanceData): void {
-  const doc = buildQuittanceDoc(data)
+export async function generateQuittance(data: QuittanceData): Promise<void> {
+  const doc = await buildQuittanceDoc(data)
   doc.save(`quittance_${data.loyer.periode.replace(' ', '_')}_${data.locataire.nom}.pdf`)
 }

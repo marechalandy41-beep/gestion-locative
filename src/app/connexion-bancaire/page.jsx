@@ -167,14 +167,14 @@ export default function ConnexionBancaire() {
     return matches.sort((a, b) => b.score - a.score);
   }
 
-  function genererPDFQuittance(bail, mois, annee, datePaiement) {
+  async function genererPDFQuittance(bail, mois, annee, datePaiement) {
     const montantTotal = (bail.loyer_hc || 0) + (bail.charges || 0);
     const periode = `${moisLabels[mois]} ${annee}`;
     const nomBailleur = bail.bailleur_type === 'morale' ? (bail.bailleur_denomination || '') : (bail.bailleur_nom || '');
     const prenomBailleur = bail.bailleur_type === 'morale' ? '' : (bail.bailleur_prenom || '');
     const nomLocataire = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '');
     const prenomLocataire = bail.locataire_type === 'morale' ? '' : (bail.locataire_prenom || '');
-    const doc = buildQuittanceDoc({
+    const doc = await buildQuittanceDoc({
       proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
       locataire: { nom: nomLocataire, prenom: prenomLocataire },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
@@ -230,7 +230,7 @@ export default function ConnexionBancaire() {
       libelle_virement: matching.transaction.label,
     });
 
-    const pdfBase64 = genererPDFQuittance(matching.bail, mois, annee, datePaiement);
+    const pdfBase64 = await genererPDFQuittance(matching.bail, mois, annee, datePaiement);
     const nomFichier = `Quittance_${moisLabels[mois]}_${annee}_${matching.bail.locataire_nom}.pdf`;
 
     try {

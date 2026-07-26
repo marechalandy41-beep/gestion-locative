@@ -114,7 +114,7 @@ async function genererManuel() {
     const nomLocataire = bail.locataire_type === 'morale' ? (bail.locataire_denomination || '') : (bail.locataire_nom || '')
     const prenomLocataire = bail.locataire_type === 'morale' ? '' : (bail.locataire_prenom || '')
 
-    generateQuittance({
+    await generateQuittance({
       proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
       locataire: { nom: nomLocataire, prenom: prenomLocataire },
         bien: { adresse: manuel.bien_adresse, ville: manuel.bien_ville, codePostal: manuel.bien_cp },
@@ -142,7 +142,7 @@ async function genererManuel() {
     const nomFichier = `Quittance_${moisLabels[mois]}_${annee}_${bail.locataire_nom}.pdf`
 
     // Générer et télécharger le PDF
-    generateQuittance({
+    await generateQuittance({
       proprietaire: { nom: bail.bailleur_nom || '', prenom: bail.bailleur_prenom || '', adresse: bail.bailleur_adresse || '' },
       locataire: { nom: bail.locataire_nom || '', prenom: bail.locataire_prenom || '' },
       bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
@@ -152,7 +152,7 @@ async function genererManuel() {
 
     // Sauvegarder dans le coffre le MÊME PDF détaillé que celui téléchargé
     try {
-      const docCoffre = buildQuittanceDoc({
+      const docCoffre = await buildQuittanceDoc({
         proprietaire: { nom: nomBailleur, prenom: prenomBailleur, adresse: bail.bailleur_adresse || '' },
         locataire: { nom: nomLocataire, prenom: prenomLocataire },
         bien: { adresse: bail.Biens?.adresse || '', ville: bail.Biens?.ville || '', codePostal: bail.Biens?.code_postal || '' },
