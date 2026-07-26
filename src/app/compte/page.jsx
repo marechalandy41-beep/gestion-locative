@@ -720,16 +720,16 @@ async function activerPushNotifications() {
                     <strong>{nbFilleuls}</strong> filleul{nbFilleuls > 1 ? 's' : ''} parrainé{nbFilleuls > 1 ? 's' : ''}
                   </span>
                   <span style={{ fontSize: 20, fontWeight: 800, color: '#2563eb' }}>
-                    -{Math.min(nbFilleuls * reductionParrain, 15)}%
+                    -{Math.min(reductionActuelle || 0, 15)}%
                   </span>
                 </div>
                 <div style={{ background: '#dbeafe', borderRadius: 99, height: 8, overflow: 'hidden' }}>
-                  <div style={{ background: '#2563eb', height: '100%', width: `${(Math.min(nbFilleuls * reductionParrain, 15) / 15) * 100}%`, transition: 'width .3s' }} />
+                  <div style={{ background: '#2563eb', height: '100%', width: `${(Math.min(reductionActuelle || 0, 15) / 15) * 100}%`, transition: 'width .3s' }} />
                 </div>
                 <p style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 0' }}>
-                  {(nbFilleuls * reductionParrain) >= 15 || reductionParrain <= 0
-                    ? '🎉 Vous avez atteint la réduction maximale de 15% !'
-                    : `Encore ${Math.ceil((15 - nbFilleuls * reductionParrain) / reductionParrain)} filleul(s) pour atteindre les 15%`}
+                  {(reductionActuelle || 0) >= 15
+                    ? '🎉 Vous avez atteint la réduction maximale de 15% (code promo et/ou parrainages compris) !'
+                    : `Encore ${Math.ceil((15 - (reductionActuelle || 0)) / (reductionParrain || 1))} filleul(s) pour atteindre les 15%`}
                 </p>
               </div>
             </div>
