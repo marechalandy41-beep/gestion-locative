@@ -56,6 +56,7 @@ export default function Biens() {
   const [user, setUser] = useState(null);
   const [isMobile, setIsMobile] = useState(false)
   const [showLotForm, setShowLotForm] = useState(null) // bien_id du lot en cours
+  const [uploadingPhoto, setUploadingPhoto] = useState(null) // bien_id en cours d'upload
 const [newLot, setNewLot] = useState({ nom: '', surface: '', etage: '', description: '' })
 const [savingLot, setSavingLot] = useState(false)
 
@@ -161,6 +162,36 @@ async function supprimerLot(lotId, bienId) {
 
   const inputStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'white' };
   const labelStyle = { fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 };
+
+  async function uploaderPhotoBien(bienId, fichier) {
+    if (!fichier || !user) return
+    setUploadingPhoto(bienId)
+    try {
+      const extension = fichier.name.split('.').pop()
+      const cheminStorage = `${user.id}/${bienId}/photo-bien/photo.${extension}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(cheminStorage, fichier, { contentType: fichier.type, upsert: true })
+
+      if (uploadError) { alert('Erreur upload : ' + uploadError.message); setUploadingPhoto(null); return }
+
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage)
+      const urlFraiche = `${urlData.publicUrl}?v=${Date.now()}`
+
+      const { error: updateError } = await supabase
+        .from('Biens')
+        .update({ photo_url: urlFraiche })
+        .eq('id', bienId)
+
+      if (updateError) { alert('Erreur sauvegarde : ' + updateError.message); setUploadingPhoto(null); return }
+
+      setBiens(prev => prev.map(b => b.id === bienId ? { ...b, photo_url: urlFraiche } : b))
+    } catch (e) {
+      alert('Erreur : ' + e.message)
+    }
+    setUploadingPhoto(null)
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -336,7 +367,21 @@ async function supprimerLot(lotId, bienId) {
               <div key={bien.id} onClick={() => handleSelect(bien)}
                 style={{ background: 'white', borderRadius: 20, border: selectionne === bien.id ? '2px solid #2563eb' : '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: 24, cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <div style={{ fontSize: 32 }}>{typesConfig[bien.type]?.icone || '🏠'}</div>
+                  <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
+                    {bien.photo_url ? (
+                      <img src={bien.photo_url} alt={bien.nom} style={{ width: 96, height: 96, borderRadius: 16, objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: 96, height: 96, borderRadius: 16, background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 50 }}>
+                        {typesConfig[bien.type]?.icone || '🏠'}
+                      </div>
+                    )}
+                    <label onClick={e => e.stopPropagation()}
+                      style={{ position: 'absolute', bottom: -6, right: -6, background: '#2563eb', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', border: '2px solid white' }}>
+                      {uploadingPhoto === bien.id ? '⏳' : '📷'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => { if (e.target.files[0]) uploaderPhotoBien(bien.id, e.target.files[0]); e.target.value = '' }} />
+                    </label>
+                  </div>
                   <div>
                     <h3 style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>{bien.nom}</h3>
                     <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{bien.adresse}</p>
