@@ -316,6 +316,84 @@ async function envoyerVersYousign() {
     setLoading(false)
   }
 
+  async function envoyerPourSignatureLocataire() {
+    if (!form.locataire_email) { alert('Email du locataire obligatoire pour cet envoi.'); return }
+    setLoading(true)
+    try {
+      // Récupérer la signature enregistrée du bailleur (Mon compte)
+      const { data: customerData } = await supabase.from('customers').select('signature').eq('user_id', user.id).single()
+      const signatureProfil = customerData?.signature || null
+      if (!signatureProfil) {
+        alert("Vous n'avez pas encore enregistré de signature dans « Mon compte ». Ajoutez-la avant d'utiliser cet envoi.")
+        setLoading(false)
+        return
+      }
+
+      const token = crypto.randomUUID()
+      const bailData = {
+        user_id: user.id, bien_id: parseInt(form.bien_id),
+        type_bail: 'Non meublé',
+        bailleur_type: form.bailleur_type, bailleur_denomination: form.bailleur_denomination, bailleur_forme_juridique: form.bailleur_forme_juridique, bailleur_siren: form.bailleur_siren, bailleur_representant: form.bailleur_representant, bailleur_representant_type: form.bailleur_representant_type, bailleur_representant_denomination: form.bailleur_representant_denomination, bailleur_representant_personne: form.bailleur_representant_personne,
+        locataire_type: form.locataire_type, locataire_denomination: form.locataire_denomination, locataire_forme_juridique: form.locataire_forme_juridique, locataire_siren: form.locataire_siren, locataire_representant: form.locataire_representant, locataire_representant_type: form.locataire_representant_type, locataire_representant_denomination: form.locataire_representant_denomination, locataire_representant_personne: form.locataire_representant_personne,
+        loyer_hc: parseFloat(form.loyer_hc), charges: parseFloat(form.charges) || 0,
+        type_charges: form.type_charges, depot_garantie: parseFloat(form.depot_garantie) || 0,
+        date_debut: form.date_debut || null, date_fin: form.date_fin || null,
+        date_exigibilite: parseInt(form.date_exigibilite) || 1,
+        revision_irl: form.revision_irl, modalite_paiement: form.modalite_paiement,
+        clauses: form.clauses, relance_auto_active: form.relance_auto_active || false,
+        relance_auto_jours: form.relance_auto_jours || 5,
+        bailleur_prenom: form.bailleur_prenom, bailleur_nom: form.bailleur_nom,
+        bailleur_adresse: form.bailleur_adresse, bailleur_naissance: form.bailleur_naissance || null,
+        bailleur_lieu_naissance: form.bailleur_lieu_naissance, bailleur_nationalite: form.bailleur_nationalite,
+        locataire_prenom: form.locataire_prenom, locataire_nom: form.locataire_nom,
+        locataire_email: form.locataire_email, locataire_telephone: form.locataire_telephone,
+        locataire_naissance: form.locataire_naissance || null, locataire_nationalite: form.locataire_nationalite,
+        locataire_profession: form.locataire_profession, locataire_adresse: form.locataire_adresse,
+        surface_habitable: parseFloat(form.surface_habitable) || null,
+        nombre_pieces: parseInt(form.nombre_pieces) || null,
+        etage: form.etage, equipements: form.equipements,
+        classe_dpe: form.classe_dpe, numero_lot: form.numero_lot,
+        signature_bailleur: signatureProfil, signature_locataire: null,
+        statut: 'attente_signature',
+        token_signature: token,
+      }
+
+      let bail, bailError
+      if (bailIdExistant) {
+        const res = await supabase.from('Baux').update(bailData).eq('id', bailIdExistant).select().single()
+        bail = res.data; bailError = res.error
+      } else {
+        const res = await supabase.from('Baux').insert(bailData).select().single()
+        bail = res.data; bailError = res.error
+      }
+      if (bailError) { alert('Erreur : ' + bailError.message); setLoading(false); return }
+
+      if (lotsSelectionnes.length > 0) {
+        await supabase.from('lots').update({ statut: 'loue', bail_id: bail.id }).in('id', lotsSelectionnes.map(l => l.id))
+      }
+      await fetch('/api/sync-quantity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      }).catch(() => {})
+
+      const nomBailleur = form.bailleur_type === 'morale' ? form.bailleur_denomination : `${form.bailleur_prenom} ${form.bailleur_nom}`
+      const nomLocataire = form.locataire_type === 'morale' ? form.locataire_denomination : `${form.locataire_prenom} ${form.locataire_nom}`
+      await fetch('/api/send-signature-bail', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token, locataireEmail: form.locataire_email, locataireNom: nomLocataire,
+          proprietaireNom: nomBailleur, bienNom: bienSel?.nom || bienSel?.adresse || '',
+        }),
+      })
+
+      setLoading(false)
+      window.location.href = `/baux/${bail.id}`
+    } catch (err) {
+      alert('Erreur : ' + err.message)
+      setLoading(false)
+    }
+  }
+
   async function finaliserEtSauvegarder() {
     setLoading(true)
     try {
@@ -938,19 +1016,26 @@ if (bailIdExistant) {
         <div style={{ marginLeft: 'auto', color: '#16a34a', fontSize: 18 }}>→</div>
       </div>
 
-      {/* Yousign */}
-      <div onClick={envoyerVersYousign}
-        style={{ background: '#f5f3ff', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }}
-        onMouseEnter={e => e.currentTarget.style.border = '2px solid #7c3aed'}
-        onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+      {/* Yousign — temporairement indisponible */}
+      <div style={{ background: '#f9fafb', borderRadius: 14, padding: '18px 20px', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent', opacity: 0.5, cursor: 'not-allowed' }}>
         <div style={{ fontSize: 32 }}>🔏</div>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed', margin: '0 0 3px' }}>Signature électronique via Yousign</h3>
-          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Envoi par email — signature légale à distance — valeur juridique.</p>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#6b7280', margin: '0 0 3px' }}>Signature électronique via Yousign</h3>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Temporairement indisponible.</p>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
-          →
+      </div>
+
+      {/* Envoi par email pour signature à distance */}
+      <div onClick={envoyerPourSignatureLocataire}
+        style={{ background: '#eff6ff', borderRadius: 14, padding: '18px 20px', cursor: 'pointer', display: 'flex', gap: 16, alignItems: 'center', border: '2px solid transparent' }}
+        onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+        onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+        <div style={{ fontSize: 32 }}>📧</div>
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#2563eb', margin: '0 0 3px' }}>Envoyer par email pour signature</h3>
+          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Vous signez immédiatement — le locataire reçoit un lien pour signer à son tour. Le bail passe en actif dès sa signature.</p>
         </div>
+        <div style={{ marginLeft: 'auto', color: '#2563eb', fontSize: 18 }}>→</div>
       </div>
 
       {/* Signer plus tard */}

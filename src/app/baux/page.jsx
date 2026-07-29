@@ -58,6 +58,7 @@ useEffect(() => {
     a_venir:   { bg: '#dbeafe', color: '#2563eb', label: '🕓 À venir' },
     brouillon: { bg: '#fef9c3', color: '#ca8a04', label: 'Brouillon' },
     termine:   { bg: '#fee2e2', color: '#dc2626', label: 'Terminé' },
+    attente_signature: { bg: '#ede9fe', color: '#7c3aed', label: '✍️ Attente signature' },
   }[s] || { bg: '#f3f4f6', color: '#6b7280', label: s })
 
 async function modifierNote(bail, e) {
@@ -97,6 +98,7 @@ async function modifierNote(bail, e) {
             { id: 'tous', label: '📋 Tous', count: baux.length },
             { id: 'actif', label: '✅ Actifs', count: baux.filter(b => b.statut === 'actif').length },
             { id: 'a_venir', label: '🕓 À venir', count: baux.filter(b => b.statut === 'a_venir').length },
+            { id: 'attente_signature', label: '✍️ Attente signature', count: baux.filter(b => b.statut === 'attente_signature').length },
             { id: 'brouillon', label: '✏️ Brouillons', count: baux.filter(b => b.statut === 'brouillon').length },
             { id: 'termine', label: '🔒 Terminés', count: baux.filter(b => b.statut === 'termine').length },
           ].map(f => (
