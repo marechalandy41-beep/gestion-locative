@@ -23,7 +23,7 @@ export async function POST(request) {
       locataireNom, locataireEmail, locataireAdresse,
       bienAdresse, dateDebut, dateFin,
       chargesProvisionnees, chargesReelles,
-      metAJourProvision, nouvelleProvision,
+      metAJourProvision, nouvelleProvision, envoyerEmail,
     } = body
 
     if (!userId || !bailleurNom || !locataireNom || !dateDebut || !dateFin) {
@@ -171,8 +171,8 @@ export async function POST(request) {
 
     const pdfBase64 = pdfBuffer.toString('base64')
 
-    // Envoyer le courrier par email au locataire (si email renseigné)
-    if (locataireEmail) {
+    // Envoyer le courrier par email au locataire (uniquement si demandé explicitement)
+    if (envoyerEmail && locataireEmail) {
       try {
         const periodeLabel = `${formatDateFr(dateDebut)} au ${formatDateFr(dateFin)}`
         await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-regularisation-charges`, {

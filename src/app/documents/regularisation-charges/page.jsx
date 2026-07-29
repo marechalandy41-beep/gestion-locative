@@ -24,6 +24,7 @@ export default function RegularisationCharges() {
   const [fichierJustificatif, setFichierJustificatif] = useState(null)
   const [metAJourProvision, setMetAJourProvision] = useState(false)
   const [nouvelleProvision, setNouvelleProvision] = useState('')
+  const [emailEnvoye, setEmailEnvoye] = useState(false)
 
   const [form, setForm] = useState({
     bailleurNom: '', bailleurAdresse: '',
@@ -92,7 +93,7 @@ export default function RegularisationCharges() {
     if (metAJourProvision && provisionSuggeree && !nouvelleProvision) setNouvelleProvision(provisionSuggeree)
   }, [metAJourProvision])
 
-  async function genererEtTelecharger() {
+  async function genererEtTelecharger(envoyerEmail) {
     setErreur('')
     if (!form.bailleurNom || !form.locataireNom) {
       setErreur('Le nom du bailleur et du locataire sont obligatoires.')
@@ -106,7 +107,12 @@ export default function RegularisationCharges() {
       setErreur('Les montants provisionnés et réels sont obligatoires.')
       return
     }
+    if (envoyerEmail && !form.locataireEmail) {
+      setErreur("L'email du locataire est nécessaire pour l'envoyer directement.")
+      return
+    }
     setLoading(true)
+    setEmailEnvoye(envoyerEmail)
     try {
       const bail = bailId ? baux.find(b => String(b.id) === String(bailId)) : null
       const res = await fetch('/api/generate-regularisation-charges', {
@@ -118,6 +124,7 @@ export default function RegularisationCharges() {
           bienId: bail?.bien_id || null,
           metAJourProvision: bailId ? metAJourProvision : false,
           nouvelleProvision: metAJourProvision ? nouvelleProvision : null,
+          envoyerEmail,
           ...form,
         }),
       })
@@ -181,7 +188,7 @@ export default function RegularisationCharges() {
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Régularisation générée</h2>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
               Le PDF a été téléchargé et enregistré dans votre coffre-fort{fichierJustificatif ? ', avec le justificatif joint' : ''}.
-              {form.locataireEmail ? ` Il a aussi été envoyé par email à ${form.locataireEmail}.` : ''}
+              {emailEnvoye ? ` Il a aussi été envoyé par email à ${form.locataireEmail}.` : ''}
               {metAJourProvision ? ` La provision mensuelle du bail a été mise à jour à ${nouvelleProvision} €.` : ''}
             </p>
             <a href="/coffre-fort" style={{ display: 'block', color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>
@@ -290,8 +297,11 @@ export default function RegularisationCharges() {
 
             {erreur && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{erreur}</p>}
 
-            <button onClick={genererEtTelecharger} disabled={loading} style={{ width: '100%', background: loading ? '#9ca3af' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, marginTop: 4 }}>
-              {loading ? 'Génération en cours...' : '📄 Générer et télécharger le PDF'}
+            <button onClick={() => genererEtTelecharger(false)} disabled={loading} style={{ width: '100%', background: loading ? '#9ca3af' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, marginTop: 4 }}>
+              {loading && !emailEnvoye ? 'Génération en cours...' : '📄 Générer et télécharger le PDF'}
+            </button>
+            <button onClick={() => genererEtTelecharger(true)} disabled={loading} style={{ width: '100%', background: 'white', color: loading ? '#9ca3af' : '#2563eb', border: `1px solid ${loading ? '#d1d5db' : '#2563eb'}`, padding: 14, borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, marginTop: 10 }}>
+              {loading && emailEnvoye ? 'Envoi en cours...' : '📧 Générer, télécharger et envoyer au locataire'}
             </button>
           </div>
         )}
