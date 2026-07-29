@@ -22,6 +22,8 @@ export default function RegularisationCharges() {
   const [envoye, setEnvoye] = useState(false)
   const [erreur, setErreur] = useState('')
   const [fichierJustificatif, setFichierJustificatif] = useState(null)
+  const [metAJourProvision, setMetAJourProvision] = useState(false)
+  const [nouvelleProvision, setNouvelleProvision] = useState('')
 
   const [form, setForm] = useState({
     bailleurNom: '', bailleurAdresse: '',
@@ -81,6 +83,14 @@ export default function RegularisationCharges() {
 
   const solde = (parseFloat(form.chargesReelles) || 0) - (parseFloat(form.chargesProvisionnees) || 0)
   const soldeAffichable = form.chargesReelles !== '' && form.chargesProvisionnees !== ''
+  const moisPeriode = nombreDeMois(form.dateDebut, form.dateFin)
+  const provisionSuggeree = (moisPeriode > 0 && form.chargesReelles !== '')
+    ? (parseFloat(form.chargesReelles) / moisPeriode).toFixed(2)
+    : ''
+
+  useEffect(() => {
+    if (metAJourProvision && provisionSuggeree && !nouvelleProvision) setNouvelleProvision(provisionSuggeree)
+  }, [metAJourProvision])
 
   async function genererEtTelecharger() {
     setErreur('')
@@ -106,6 +116,8 @@ export default function RegularisationCharges() {
           userId: user.id,
           bailId: bailId || null,
           bienId: bail?.bien_id || null,
+          metAJourProvision: bailId ? metAJourProvision : false,
+          nouvelleProvision: metAJourProvision ? nouvelleProvision : null,
           ...form,
         }),
       })
@@ -169,6 +181,8 @@ export default function RegularisationCharges() {
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Régularisation générée</h2>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
               Le PDF a été téléchargé et enregistré dans votre coffre-fort{fichierJustificatif ? ', avec le justificatif joint' : ''}.
+              {form.locataireEmail ? ` Il a aussi été envoyé par email à ${form.locataireEmail}.` : ''}
+              {metAJourProvision ? ` La provision mensuelle du bail a été mise à jour à ${nouvelleProvision} €.` : ''}
             </p>
             <a href="/coffre-fort" style={{ display: 'block', color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 14, marginBottom: 16 }}>
               📁 Retrouver le PDF dans mon coffre-fort
@@ -249,6 +263,24 @@ export default function RegularisationCharges() {
                 {solde > 0 && <>💰 Solde de <strong>{solde.toFixed(2)} €</strong> à réclamer au locataire.</>}
                 {solde < 0 && <>💰 Trop-perçu de <strong>{Math.abs(solde).toFixed(2)} €</strong> à rembourser au locataire.</>}
                 {solde === 0 && <>✅ Charges provisionnées et réelles à l'équilibre, aucun solde.</>}
+              </div>
+            )}
+
+            {bailId && soldeAffichable && (
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151', fontWeight: 500, cursor: 'pointer', marginBottom: metAJourProvision ? 10 : 0 }}>
+                  <input type="checkbox" checked={metAJourProvision} onChange={e => setMetAJourProvision(e.target.checked)} />
+                  Ajuster la provision mensuelle de charges pour la suite du bail
+                </label>
+                {metAJourProvision && (
+                  <>
+                    <label style={label}>Nouvelle provision mensuelle (€)</label>
+                    <input style={{ ...inp, marginBottom: 4 }} type="number" value={nouvelleProvision} onChange={e => setNouvelleProvision(e.target.value)} />
+                    <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+                      Suggestion basée sur les charges réelles ÷ nombre de mois de la période : {provisionSuggeree} €/mois
+                    </p>
+                  </>
+                )}
               </div>
             )}
 

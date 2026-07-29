@@ -23,6 +23,7 @@ export async function POST(request) {
       locataireNom, locataireEmail, locataireAdresse,
       bienAdresse, dateDebut, dateFin,
       chargesProvisionnees, chargesReelles,
+      metAJourProvision, nouvelleProvision,
     } = body
 
     if (!userId || !bailleurNom || !locataireNom || !dateDebut || !dateFin) {
@@ -114,6 +115,15 @@ export async function POST(request) {
     doc.text(lignes2, marge, y)
     y += lignes2.length * 6 + 10
 
+    if (metAJourProvision && nouvelleProvision) {
+      doc.setFont(undefined, 'bold')
+      const texte3 = `À compter du prochain terme, la provision mensuelle pour charges est ajustée à ${parseFloat(nouvelleProvision).toFixed(2)} € afin de mieux refléter les charges réelles constatées.`
+      const lignes3 = doc.splitTextToSize(texte3, 170)
+      doc.text(lignes3, marge, y)
+      y += lignes3.length * 6 + 10
+      doc.setFont(undefined, 'normal')
+    }
+
     doc.text('Les justificatifs de charges sont disponibles sur demande.', marge, y)
     y += 20
 
@@ -153,7 +163,39 @@ export async function POST(request) {
       if (insertErr) console.error('Insertion Documents échouée :', insertErr.message)
     }
 
+    // Mettre à jour la provision mensuelle du bail si demandé (n'affecte pas la régularisation déjà calculée)
+    if (metAJourProvision && nouvelleProvision && bailId) {
+      const { error: majErr } = await supabase.from('Baux').update({ charges: parseFloat(nouvelleProvision) }).eq('id', bailId)
+      if (majErr) console.error('Mise à jour provision échouée :', majErr.message)
+    }
+
     const pdfBase64 = pdfBuffer.toString('base64')
+
+    // Envoyer le courrier par email au locataire (si email renseigné)
+    if (locataireEmail) {
+      try {
+        const periodeLabel = `${formatDateFr(dateDebut)} au ${formatDateFr(dateFin)}`
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-regularisation-charges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            locataireEmail,
+            locataireNom,
+            bienNom: bienAdresse || '',
+            periode: periodeLabel,
+            solde: Math.abs(solde).toFixed(2),
+            sens: solde > 0 ? 'du' : solde < 0 ? 'trop_percu' : 'equilibre',
+            pdfBase64,
+            proprietaireNom: bailleurNom,
+            nomFichier,
+          }),
+        })
+      } catch (mailErr) {
+        console.error('Envoi email régularisation échoué :', mailErr)
+        // On ne bloque pas : le PDF est déjà généré et stocké
+      }
+    }
+
     return NextResponse.json({ pdfBase64, nomFichier })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
