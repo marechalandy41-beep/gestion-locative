@@ -29,6 +29,7 @@ export default function RevisionLoyer() {
   const [erreur, setErreur] = useState('')
   const [succes, setSucces] = useState(false)
   const [emailEnvoye, setEmailEnvoye] = useState(false)
+  const [nouveauLoyerManuel, setNouveauLoyerManuel] = useState('')
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -59,10 +60,16 @@ export default function RevisionLoyer() {
   const indiceRef = serieIRL.find(s => s.periode === trimestreReference)?.valeur
   const indiceNouveau = serieIRL.find(s => s.periode === trimestreNouveau)?.valeur
   const ancienLoyer = parseFloat(bail?.loyer_hc) || 0
-  const nouveauLoyer = (indiceRef && indiceNouveau && ancienLoyer)
+  const nouveauLoyerCalcule = (indiceRef && indiceNouveau && ancienLoyer)
     ? Math.round(ancienLoyer * (indiceNouveau / indiceRef) * 100) / 100
     : null
-  const variation = (nouveauLoyer !== null) ? ((nouveauLoyer - ancienLoyer) / ancienLoyer) * 100 : null
+
+  useEffect(() => {
+    if (nouveauLoyerCalcule !== null) setNouveauLoyerManuel(nouveauLoyerCalcule.toFixed(2))
+  }, [nouveauLoyerCalcule])
+
+  const nouveauLoyer = nouveauLoyerManuel !== '' ? parseFloat(nouveauLoyerManuel) : null
+  const variation = (nouveauLoyer !== null && ancienLoyer) ? ((nouveauLoyer - ancienLoyer) / ancienLoyer) * 100 : null
 
   async function appliquerRevision(envoyerEmail) {
     setErreur('')
@@ -169,14 +176,19 @@ export default function RevisionLoyer() {
                 <label style={label}>Date d'effet de la révision</label>
                 <input style={inp} type="date" value={dateEffet} onChange={e => setDateEffet(e.target.value)} />
 
-                {nouveauLoyer !== null && (
+                {nouveauLoyerCalcule !== null && (
                   <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                    <p style={{ fontSize: 13, color: '#1e40af', margin: '0 0 6px' }}>
-                      Nouveau loyer hors charges : <strong style={{ fontSize: 16 }}>{nouveauLoyer.toFixed(2)} €</strong>
+                    <p style={{ fontSize: 12, color: '#3b82f6', margin: '0 0 8px' }}>
+                      Montant calculé selon l'IRL : {nouveauLoyerCalcule.toFixed(2)} € — vous pouvez l'ajuster ci-dessous si besoin.
                     </p>
-                    <p style={{ fontSize: 12, color: '#3b82f6', margin: 0 }}>
-                      Variation : {variation >= 0 ? '+' : ''}{variation.toFixed(2)} % — {ancienLoyer.toFixed(2)} € → {nouveauLoyer.toFixed(2)} €
-                    </p>
+                    <label style={{ ...label, color: '#1e40af' }}>Nouveau loyer hors charges (€)</label>
+                    <input style={{ ...inp, marginBottom: 8, fontWeight: 700, fontSize: 16 }} type="number" step="0.01"
+                      value={nouveauLoyerManuel} onChange={e => setNouveauLoyerManuel(e.target.value)} />
+                    {nouveauLoyer !== null && (
+                      <p style={{ fontSize: 12, color: '#3b82f6', margin: 0 }}>
+                        Variation : {variation >= 0 ? '+' : ''}{variation.toFixed(2)} % — {ancienLoyer.toFixed(2)} € → {nouveauLoyer.toFixed(2)} €
+                      </p>
+                    )}
                   </div>
                 )}
 
