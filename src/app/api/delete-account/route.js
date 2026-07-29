@@ -62,6 +62,22 @@ export async function POST(request) {
     await supabaseAdmin.from('invitations').delete().eq('user_id', userId)
 
     // 4ter. Parrainage (l'utilisateur peut être parrain ET/OU filleul) et notifications push
+    // Si l'utilisateur supprimé était filleul de quelqu'un, on retire la réduction correspondante chez le parrain
+    const { data: parrainagesEnTantQueFilleul } = await supabaseAdmin
+      .from('parrainages')
+      .select('parrain_id, reduction_parrain')
+      .eq('filleul_id', userId)
+
+    for (const p of (parrainagesEnTantQueFilleul || [])) {
+      const { data: parrainActuel } = await supabaseAdmin
+        .from('customers')
+        .select('reduction_parrainage')
+        .eq('user_id', p.parrain_id)
+        .single()
+      const nouvelleReduction = Math.max((parrainActuel?.reduction_parrainage || 0) - (p.reduction_parrain || 0), 0)
+      await supabaseAdmin.from('customers').update({ reduction_parrainage: nouvelleReduction }).eq('user_id', p.parrain_id)
+    }
+
     await supabaseAdmin.from('parrainages').delete().eq('parrain_id', userId)
     await supabaseAdmin.from('parrainages').delete().eq('filleul_id', userId)
     await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', userId)
