@@ -453,6 +453,11 @@ useEffect(() => {
               {info('Modalité de paiement', bail.modalite_paiement)}
               {info('Échéance', bail.date_exigibilite ? 'Le ' + bail.date_exigibilite + ' du mois' : null)}
               {info('Révision IRL', bail.revision_irl === true ? 'Oui' : bail.revision_irl === false ? 'Non' : null)}
+              {bail.revision_irl === true && bail.statut === 'actif' && (
+                <a href={`/baux/${bail.id}/revision-loyer`} style={{ display: 'inline-block', marginTop: 4, marginBottom: 8, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 10, padding: '8px 16px', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+                  📈 Réviser le loyer (IRL)
+                </a>
+              )}
 
               {section('📅 Durée du bail')}
               {info('Date de début', bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : null)}
