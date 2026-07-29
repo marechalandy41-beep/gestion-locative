@@ -356,8 +356,14 @@ export default function NouvelEDL() {
                     {piece.photos.map((url, j) => (
                       <img key={j} src={url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:8, border:'1px solid #e5e7eb'}} />
                     ))}
-                    <label style={{width:64, height:64, borderRadius:8, border:'2px dashed #d1d5db', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#9ca3af', fontSize:24}}>
-                      +
+                    <label style={{width:64, height:64, borderRadius:8, border:'2px dashed #d1d5db', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#6b7280', fontSize:20}}>
+                      📷
+                      <span style={{fontSize:9, marginTop:2}}>Photo</span>
+                      <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={e => { if (e.target.files[0]) uploadPhoto(i, e.target.files[0]); }} />
+                    </label>
+                    <label style={{width:64, height:64, borderRadius:8, border:'2px dashed #d1d5db', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#6b7280', fontSize:20}}>
+                      🖼️
+                      <span style={{fontSize:9, marginTop:2}}>Galerie</span>
                       <input type="file" accept="image/*" style={{display:'none'}} onChange={e => { if (e.target.files[0]) uploadPhoto(i, e.target.files[0]); }} />
                     </label>
                   </div>

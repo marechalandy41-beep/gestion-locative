@@ -376,8 +376,14 @@ async function supprimerLot(lotId, bienId) {
                       </div>
                     )}
                     <label onClick={e => e.stopPropagation()}
-                      style={{ position: 'absolute', bottom: -6, right: -6, background: '#2563eb', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', border: '2px solid white' }}>
+                      style={{ position: 'absolute', bottom: -6, right: 20, background: '#2563eb', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', border: '2px solid white' }}>
                       {uploadingPhoto === bien.id ? '⏳' : '📷'}
+                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                        onChange={e => { if (e.target.files[0]) uploaderPhotoBien(bien.id, e.target.files[0]); e.target.value = '' }} />
+                    </label>
+                    <label onClick={e => e.stopPropagation()}
+                      style={{ position: 'absolute', bottom: -6, right: -6, background: '#6b7280', color: 'white', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', border: '2px solid white' }}>
+                      🖼️
                       <input type="file" accept="image/*" style={{ display: 'none' }}
                         onChange={e => { if (e.target.files[0]) uploaderPhotoBien(bien.id, e.target.files[0]); e.target.value = '' }} />
                     </label>
