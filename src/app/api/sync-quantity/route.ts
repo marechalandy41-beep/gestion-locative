@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     await stripe.subscriptions.update(subscription.id, {
       items: [{ id: itemId, quantity: quantiteFinale }],
-      proration_behavior: 'always_invoice',
+      proration_behavior: 'none',
     })
 
     return NextResponse.json({ success: true, quantite: quantiteFinale })
