@@ -16,7 +16,7 @@ export async function POST(request) {
       ancienLoyer, nouveauLoyer,
       trimestreReference, indiceReference,
       trimestreNouveau, indiceNouveau,
-      dateEffet,
+      dateEffet, envoyerEmail,
     } = body
 
     if (!userId || !bailId || !ancienLoyer || !nouveauLoyer) {
@@ -155,7 +155,30 @@ export async function POST(request) {
       console.error('Upload coffre-fort échoué :', uploadErr.message)
     }
 
-    return NextResponse.json({ success: true, pdfBase64: pdfBuffer.toString('base64'), nomFichier })
+    const pdfBase64 = pdfBuffer.toString('base64')
+
+    if (envoyerEmail && bail.locataire_email) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-revision-loyer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            locataireEmail: bail.locataire_email,
+            locataireNom: nomLocataire,
+            bienNom: adresseBien,
+            ancienLoyer, nouveauLoyer, dateEffet,
+            pdfBase64,
+            proprietaireNom: nomBailleur,
+            nomFichier,
+          }),
+        })
+      } catch (mailErr) {
+        console.error('Envoi email révision échoué :', mailErr)
+        // On ne bloque pas : le PDF est déjà généré et stocké
+      }
+    }
+
+    return NextResponse.json({ success: true, pdfBase64, nomFichier })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

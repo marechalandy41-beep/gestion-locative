@@ -28,6 +28,7 @@ export default function RevisionLoyer() {
   const [loading, setLoading] = useState(false)
   const [erreur, setErreur] = useState('')
   const [succes, setSucces] = useState(false)
+  const [emailEnvoye, setEmailEnvoye] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -63,13 +64,18 @@ export default function RevisionLoyer() {
     : null
   const variation = (nouveauLoyer !== null) ? ((nouveauLoyer - ancienLoyer) / ancienLoyer) * 100 : null
 
-  async function appliquerRevision() {
+  async function appliquerRevision(envoyerEmail) {
     setErreur('')
     if (!indiceRef || !indiceNouveau || !nouveauLoyer) {
       setErreur('Sélectionnez les deux trimestres IRL pour calculer le nouveau loyer.')
       return
     }
+    if (envoyerEmail && !bail.locataire_email) {
+      setErreur("Aucun email locataire renseigné sur ce bail : impossible d'envoyer directement.")
+      return
+    }
     setLoading(true)
+    setEmailEnvoye(envoyerEmail)
     try {
       const res = await fetch('/api/appliquer-revision-loyer', {
         method: 'POST',
@@ -79,7 +85,7 @@ export default function RevisionLoyer() {
           ancienLoyer, nouveauLoyer,
           trimestreReference, indiceReference: indiceRef,
           trimestreNouveau, indiceNouveau,
-          dateEffet,
+          dateEffet, envoyerEmail,
         }),
       })
       const json = await res.json()
@@ -121,6 +127,7 @@ export default function RevisionLoyer() {
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Loyer révisé</h2>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
               Le nouveau loyer ({nouveauLoyer?.toFixed(2)} €) s'applique désormais à ce bail. Le courrier d'information a été téléchargé et enregistré dans votre coffre-fort.
+              {emailEnvoye ? ` Il a aussi été envoyé par email à ${bail.locataire_email}.` : ''}
             </p>
             <a href={`/baux/${id}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>← Retour au bail</a>
           </div>
@@ -175,9 +182,13 @@ export default function RevisionLoyer() {
 
                 {erreur && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{erreur}</p>}
 
-                <button onClick={appliquerRevision} disabled={loading || !nouveauLoyer}
+                <button onClick={() => appliquerRevision(false)} disabled={loading || !nouveauLoyer}
                   style={{ width: '100%', background: (loading || !nouveauLoyer) ? '#9ca3af' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: (loading || !nouveauLoyer) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15 }}>
-                  {loading ? 'Application en cours...' : '✅ Appliquer la révision et générer le courrier'}
+                  {loading && !emailEnvoye ? 'Application en cours...' : '📄 Appliquer et télécharger le courrier'}
+                </button>
+                <button onClick={() => appliquerRevision(true)} disabled={loading || !nouveauLoyer}
+                  style={{ width: '100%', background: 'white', color: (loading || !nouveauLoyer) ? '#9ca3af' : '#2563eb', border: `1px solid ${(loading || !nouveauLoyer) ? '#d1d5db' : '#2563eb'}`, padding: 14, borderRadius: 10, cursor: (loading || !nouveauLoyer) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15, marginTop: 10 }}>
+                  {loading && emailEnvoye ? 'Envoi en cours...' : '📧 Appliquer, télécharger et envoyer au locataire'}
                 </button>
                 <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 10, textAlign: 'center' }}>
                   Cette action met à jour le loyer du bail : les prochaines quittances refléteront le nouveau montant.
