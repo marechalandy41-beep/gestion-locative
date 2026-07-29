@@ -28,6 +28,10 @@ export default function Compte() {
   const [codeParrainage, setCodeParrainage] = useState('')
   const [reductionParrain, setReductionParrain] = useState(5)
   const [nbFilleuls, setNbFilleuls] = useState(0)
+  const [suppressionOuverte, setSuppressionOuverte] = useState(false)
+  const [confirmationSuppression, setConfirmationSuppression] = useState('')
+  const [suppressionLoading, setSuppressionLoading] = useState(false)
+  const [erreurSuppression, setErreurSuppression] = useState('')
  const [conversations, setConversations] = useState([])
   const [conversationActive, setConversationActive] = useState(null)
   const [messagesConversation, setMessagesConversation] = useState([])
@@ -262,6 +266,27 @@ function demarrerDessin(e) {
       setMessage('Mot de passe modifié avec succès !');
       setAncienMdp(''); setNouveauMdp(''); setConfirmMdp('');
       setTimeout(() => setMessage(''), 3000);
+    }
+  }
+
+  async function supprimerCompte() {
+    if (confirmationSuppression !== 'SUPPRIMER') return
+    setSuppressionLoading(true)
+    setErreurSuppression('')
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erreur lors de la suppression du compte.')
+      await supabase.auth.signOut()
+      window.location.href = '/'
+    } catch (e) {
+      setErreurSuppression(e.message)
+      setSuppressionLoading(false)
     }
   }
 
@@ -615,6 +640,43 @@ async function activerPushNotifications() {
             <button onClick={changerMotDePasse} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               Changer le mot de passe
             </button>
+
+            <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid #fecaca' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#dc2626', marginBottom: 8 }}>⚠️ Zone dangereuse</h3>
+              <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16, lineHeight: 1.6 }}>
+                La suppression de votre compte est <strong>définitive et irréversible</strong>. Elle va automatiquement :
+              </p>
+              <ul style={{ fontSize: 13, color: '#6b7280', marginBottom: 16, paddingLeft: 20, lineHeight: 1.8 }}>
+                <li>Clôturer tous vos baux en cours</li>
+                <li>Résilier immédiatement votre abonnement</li>
+                <li>Supprimer définitivement vos biens, baux, documents et données personnelles</li>
+              </ul>
+
+              {!suppressionOuverte ? (
+                <button onClick={() => setSuppressionOuverte(true)} style={{ background: 'white', color: '#dc2626', border: '1px solid #dc2626', padding: '10px 24px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                  Supprimer mon compte
+                </button>
+              ) : (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 20 }}>
+                  <p style={{ fontSize: 13, color: '#991b1b', fontWeight: 600, marginBottom: 12 }}>
+                    Pour confirmer, tapez "SUPPRIMER" ci-dessous :
+                  </p>
+                  <input value={confirmationSuppression} onChange={e => setConfirmationSuppression(e.target.value)}
+                    placeholder="SUPPRIMER" style={{ ...inputStyle, marginBottom: 12, background: 'white' }} />
+                  {erreurSuppression && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{erreurSuppression}</p>}
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={supprimerCompte} disabled={confirmationSuppression !== 'SUPPRIMER' || suppressionLoading}
+                      style={{ background: confirmationSuppression === 'SUPPRIMER' ? '#dc2626' : '#fca5a5', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: confirmationSuppression === 'SUPPRIMER' ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: 14 }}>
+                      {suppressionLoading ? 'Suppression en cours...' : 'Supprimer définitivement mon compte'}
+                    </button>
+                    <button onClick={() => { setSuppressionOuverte(false); setConfirmationSuppression(''); setErreurSuppression('') }}
+                      style={{ background: 'white', color: '#6b7280', border: '1px solid #d1d5db', padding: '10px 24px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
