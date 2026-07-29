@@ -99,6 +99,19 @@ export default function Documents() {
             <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Impayé de loyer, troubles, dégradations : générez une mise en demeure PDF.</p>
           </div>
 
+          {/* Régularisation des charges — accessible à tous */}
+          <div onClick={() => window.location.href = '/documents/regularisation-charges'}
+            style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
+            onMouseEnter={e => e.currentTarget.style.border = '2px solid #2563eb'}
+            onMouseLeave={e => e.currentTarget.style.border = '2px solid transparent'}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div>
+              <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>✨ Gratuit</span>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Régularisation des charges</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Comparez charges provisionnées et réelles, générez le courrier de régularisation.</p>
+          </div>
+
           {/* Attestations — accessible à tous */}
           <div onClick={() => window.location.href = '/documents/attestations'}
             style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', cursor: 'pointer', border: '2px solid transparent' }}
