@@ -64,6 +64,12 @@ export default function NouvelEDL() {
     setPieces(newPieces);
   }
 
+  function supprimerPhoto(pieceIndex, photoIndex) {
+    const newPieces = [...pieces];
+    newPieces[pieceIndex].photos = newPieces[pieceIndex].photos.filter((_, j) => j !== photoIndex);
+    setPieces(newPieces);
+  }
+
   async function sauvegarder(statut = 'brouillon') {
   if (!form.bien_id) { alert('Sélectionnez un bien'); return; }
   setLoading(true);
@@ -354,7 +360,13 @@ export default function NouvelEDL() {
                   <label style={{fontSize:12, color:'#6b7280', marginBottom:6, display:'block'}}>Photos</label>
                   <div style={{display:'flex', gap:8, flexWrap:'wrap', alignItems:'center'}}>
                     {piece.photos.map((url, j) => (
-                      <img key={j} src={url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:8, border:'1px solid #e5e7eb'}} />
+                      <div key={j} style={{ position: 'relative', width: 64, height: 64 }}>
+                        <img src={url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:8, border:'1px solid #e5e7eb'}} />
+                        <button type="button" onClick={() => supprimerPhoto(i, j)}
+                          style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#dc2626', color: 'white', border: '2px solid white', fontSize: 11, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                          ✕
+                        </button>
+                      </div>
                     ))}
                     <label style={{width:64, height:64, borderRadius:8, border:'2px dashed #d1d5db', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#6b7280', fontSize:20}}>
                       📷

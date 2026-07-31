@@ -193,6 +193,13 @@ async function supprimerLot(lotId, bienId) {
     setUploadingPhoto(null)
   }
 
+  async function supprimerPhotoBien(bienId) {
+    if (!confirm('Retirer la photo de ce bien ?')) return
+    const { error } = await supabase.from('Biens').update({ photo_url: null }).eq('id', bienId)
+    if (error) { alert('Erreur : ' + error.message); return }
+    setBiens(prev => prev.map(b => b.id === bienId ? { ...b, photo_url: null } : b))
+  }
+
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
 
@@ -387,6 +394,12 @@ async function supprimerLot(lotId, bienId) {
                       <input type="file" accept="image/*" style={{ display: 'none' }}
                         onChange={e => { if (e.target.files[0]) uploaderPhotoBien(bien.id, e.target.files[0]); e.target.value = '' }} />
                     </label>
+                    {bien.photo_url && (
+                      <button onClick={e => { e.stopPropagation(); supprimerPhotoBien(bien.id) }}
+                        style={{ position: 'absolute', top: -6, right: -6, background: '#dc2626', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, cursor: 'pointer', border: '2px solid white', padding: 0 }}>
+                        ✕
+                      </button>
+                    )}
                   </div>
                   <div>
                     <h3 style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>{bien.nom}</h3>
