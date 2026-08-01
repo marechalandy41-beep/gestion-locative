@@ -49,7 +49,13 @@ function signatures(doc, bail, signatureLocataire, h, labelLocataire = 'Le Locat
   doc.text('Lu et approuvé', pageW / 2 + 7, y.v + 4)
   doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal')
   if (bail.signature_bailleur) doc.addImage(bail.signature_bailleur, 'PNG', margin + 1, y.v + 5, 78, 32)
-  doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y.v + 5, 78, 32)
+  if (signatureLocataire) {
+    doc.addImage(signatureLocataire, 'PNG', pageW / 2 + 6, y.v + 5, 78, 32)
+  } else {
+    doc.setFontSize(8); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150)
+    doc.text('En attente de signature', pageW / 2 + 8, y.v + 22)
+    doc.setTextColor(0, 0, 0)
+  }
   y.v += 44
 }
 

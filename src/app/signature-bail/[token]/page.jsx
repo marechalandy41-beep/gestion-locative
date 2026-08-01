@@ -115,7 +115,10 @@ export default function SignatureBail() {
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Loyer HC :</b> {bail.loyer_hc} € — <b>Charges :</b> {bail.charges} €</p>
               {bail.depot_garantie ? <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Dépôt de garantie :</b> {bail.depot_garantie} €</p> : null}
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Début du bail :</b> {bail.date_debut ? new Date(bail.date_debut).toLocaleDateString('fr-FR') : '—'}</p>
-              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 12 }}>Le détail complet des clauses figure dans le contrat que vous recevrez signé par email.</p>
+              <a href={`/api/apercu-bail?token=${token}`} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, background: '#eff6ff', color: '#1e40af', padding: '12px', borderRadius: 10, textDecoration: 'none', fontWeight: 600, fontSize: 14, border: '1px solid #bfdbfe' }}>
+                📄 Lire le contrat complet avant de signer
+              </a>
             </div>
 
             <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
