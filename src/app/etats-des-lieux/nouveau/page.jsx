@@ -3,8 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf'
-import { ajouterQRFooter } from '@/lib/qrDocument'
-import { ajouterAnnexePhotosEDL, ajouterSignaturesEDL } from '@/lib/pdfEdlExtras'
+import { genererCorpsEDL } from '@/lib/pdfEdlExtras'
 
 const PIECES_DEFAUT = [
   'Entrée / Couloir', 'Salon', 'Cuisine', 'Salle de bain', 'WC', 'Chambre 1'
@@ -49,7 +48,7 @@ export default function NouvelEDL() {
 
     setUser(data.user);
     supabase.from('Baux')
-      .select('id, locataire_prenom, locataire_nom, bien_id, Biens(nom)')
+      .select('id, locataire_prenom, locataire_nom, locataire_email, bien_id, bailleur_prenom, bailleur_nom, bailleur_type, bailleur_denomination, Biens(nom)')
       .eq('user_id', data.user.id)
       .in('statut', ['actif', 'brouillon'])
       .then(({ data: bauxData }) => setBaux(bauxData || []));
@@ -145,80 +144,22 @@ export default function NouvelEDL() {
   if (error) { alert('Erreur : ' + error.message); setLoading(false); return; }
 
   // Si finalisé, générer et uploader le PDF
-  if (statut === 'finalise' && bailData) {
+  if (statut === 'finalise') {
     try {
       const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      let y = 20;
 
-      doc.setFillColor(37, 99, 235);
-      doc.rect(0, 0, pageWidth, 35, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('ÉTAT DES LIEUX', pageWidth / 2, 15, { align: 'center' });
-      doc.setFontSize(12);
-      doc.text(form.type === 'entree' ? "D'ENTRÉE" : 'DE SORTIE', pageWidth / 2, 26, { align: 'center' });
-      y = 50;
-      doc.setTextColor(0, 0, 0);
-      doc.setFillColor(243, 244, 246);
-      doc.rect(14, y - 6, pageWidth - 28, 28, 'F');
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Bien :', 18, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(bailData?.Biens?.nom || bienSelectionne?.nom || bienSelectionne?.adresse || '', 45, y);
-      y += 8;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Locataire :', 18, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(bailData ? `${bailData.locataire_prenom || ''} ${bailData.locataire_nom || ''}` : '—', 45, y);
-      y += 8;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Date :', 18, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(new Date(form.date_edl).toLocaleDateString('fr-FR'), 45, y);
-      y += 18;
-
-      if (pieces.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.setTextColor(37, 99, 235);
-        doc.text('ÉTAT DES PIÈCES', 14, y);
-        y += 8;
-        pieces.forEach((piece, i) => {
-          if (y > 260) { doc.addPage(); y = 20; }
-          doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 251 : 255);
-          doc.rect(14, y - 5, pageWidth - 28, piece.commentaire ? 14 : 8, 'F');
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
-          doc.text(piece.nom, 18, y);
-          doc.setFont('helvetica', 'bold');
-          doc.text(piece.etat, 110, y);
-          if (piece.commentaire) {
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.text(piece.commentaire, 18, y + 7);
-            doc.setTextColor(0, 0, 0);
-            y += 14;
-          } else { y += 8; }
-        });
-        y += 6;
-      }
-
-      if (y > 230) { doc.addPage(); y = 20; }
-      y += 15;
-      ajouterSignaturesEDL(doc, y, {
+      await genererCorpsEDL(doc, {
+        type: form.type,
+        date_edl: form.date_edl,
+        bienNom: bailData?.Biens?.nom || bienSelectionne?.nom || bienSelectionne?.adresse || '',
+        locataireNom: bailData ? `${bailData.locataire_prenom || ''} ${bailData.locataire_nom || ''}` : '—',
+        pieces,
+        compteurs,
+        observations: form.observations,
         signatureBailleur: signatureBailleurEnregistree,
         signatureLocataire: signatureLocataireFinale,
         locataireRefuse,
       });
-
-      await ajouterAnnexePhotosEDL(doc, pieces);
-
-      await ajouterQRFooter(doc);
 
       const nomFichier = `EDL_${form.type}_${bailData?.Biens?.nom || bienSelectionne?.nom || 'bien'}_${form.date_edl}.pdf`;
       const pdfBlob = doc.output('blob');
@@ -251,6 +192,50 @@ export default function NouvelEDL() {
   setLoading(false);
   router.push(`/etats-des-lieux/${edl.id}`);
 }
+
+  async function envoyerSignatureEmail() {
+    if (!form.bien_id) { alert('Sélectionnez un bien'); return; }
+    if (!form.bail_id) { alert('Sélectionnez un bail lié pour connaître l\'email du locataire.'); return; }
+    const bailSelectionne = baux.find(b => b.id === parseInt(form.bail_id));
+    if (!bailSelectionne?.locataire_email) { alert('Ce bail n\'a pas d\'email locataire renseigné.'); return; }
+    if (!signatureBailleurEnregistree) { alert('Enregistrez d\'abord votre signature dans "Mon compte" avant d\'envoyer par email.'); return; }
+
+    setLoading(true);
+    const token = crypto.randomUUID();
+    const bienSelectionne = biens.find(b => b.id === parseInt(form.bien_id));
+
+    const { data: edl, error } = await supabase.from('EtatsDesLieux').insert({
+      bail_id: parseInt(form.bail_id),
+      bien_id: parseInt(form.bien_id),
+      user_id: user.id,
+      type: form.type,
+      date_edl: form.date_edl,
+      pieces,
+      compteurs,
+      observations: form.observations,
+      statut: 'attente_signature',
+      signature_bailleur: signatureBailleurEnregistree,
+      token_signature: token,
+    }).select().single();
+
+    if (error) { alert('Erreur : ' + error.message); setLoading(false); return; }
+
+    await fetch('/api/send-signature-edl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        locataireEmail: bailSelectionne.locataire_email,
+        locataireNom: `${bailSelectionne.locataire_prenom || ''} ${bailSelectionne.locataire_nom || ''}`,
+        proprietaireNom: bailSelectionne.bailleur_type === 'morale' ? bailSelectionne.bailleur_denomination : `${bailSelectionne.bailleur_prenom || ''} ${bailSelectionne.bailleur_nom || ''}`,
+        bienNom: bienSelectionne?.nom || bienSelectionne?.adresse || '',
+        typeEdl: form.type,
+      }),
+    }).catch(() => {});
+
+    setLoading(false);
+    router.push('/etats-des-lieux');
+  }
 
   const nav = (
     <nav style={{background:'white', borderBottom:'1px solid #e5e7eb', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
@@ -547,6 +532,35 @@ export default function NouvelEDL() {
                   ? '✅ Votre signature (propriétaire) est enregistrée et sera appliquée automatiquement.'
                   : '⚠️ Vous n\'avez pas de signature enregistrée dans "Mon compte". Le PDF sera généré sans signature propriétaire.'}
               </p>
+            </div>
+
+            {(() => {
+              const bailSelectionne = baux.find(b => b.id === parseInt(form.bail_id));
+              const emailDisponible = !!bailSelectionne?.locataire_email;
+              return (
+                <div style={{background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12, padding:16, marginBottom:20}}>
+                  <p style={{fontSize:14, fontWeight:600, color:'#1e40af', margin:'0 0 6px'}}>📧 Le locataire n'est pas sur place ?</p>
+                  <p style={{fontSize:12, color:'#374151', margin:'0 0 12px'}}>
+                    {emailDisponible
+                      ? `Envoyez-lui un lien pour signer à distance à ${bailSelectionne.locataire_email}. Votre signature sera appliquée tout de suite, la sienne dès qu'il aura signé.`
+                      : 'Sélectionnez un bail avec un email locataire renseigné (étape 1) pour activer l\'envoi à distance.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={envoyerSignatureEmail}
+                    disabled={!emailDisponible || !signatureBailleurEnregistree || loading}
+                    style={{width:'100%', background: (!emailDisponible || !signatureBailleurEnregistree) ? '#c7d2fe' : '#4f46e5', color:'white', padding:'10px', borderRadius:10, border:'none', cursor: (!emailDisponible || !signatureBailleurEnregistree || loading) ? 'not-allowed' : 'pointer', fontWeight:600, fontSize:14}}
+                  >
+                    {loading ? '⏳ Envoi...' : '📧 Envoyer par email pour signature à distance'}
+                  </button>
+                </div>
+              );
+            })()}
+
+            <div style={{display:'flex', alignItems:'center', gap:12, margin:'20px 0'}}>
+              <div style={{flex:1, height:1, background:'#e5e7eb'}}></div>
+              <span style={{fontSize:12, color:'#9ca3af', fontWeight:600}}>OU SIGNER SUR PLACE</span>
+              <div style={{flex:1, height:1, background:'#e5e7eb'}}></div>
             </div>
 
             <label style={{display:'flex', alignItems:'flex-start', gap:8, fontSize:13, color:'#374151', marginBottom:16, cursor:'pointer'}}>
