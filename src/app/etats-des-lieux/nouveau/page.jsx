@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf'
 import { ajouterQRFooter } from '@/lib/qrDocument'
+import { ajouterAnnexePhotosEDL, ajouterSignaturesEDL } from '@/lib/pdfEdlExtras'
 
 const PIECES_DEFAUT = [
   'Entrée / Couloir', 'Salon', 'Cuisine', 'Salle de bain', 'WC', 'Chambre 1'
@@ -36,6 +37,12 @@ export default function NouvelEDL() {
     eau_froide: '', eau_chaude: '', electricite: '', gaz: '', chauffage: ''
   });
 
+  const [signatureBailleurEnregistree, setSignatureBailleurEnregistree] = useState(null);
+  const [locataireRefuse, setLocataireRefuse] = useState(false);
+  const [dessin, setDessin] = useState(false);
+  const [aSigneLocataire, setASigneLocataire] = useState(false);
+  const canvasRef = useRef(null);
+
   useEffect(() => {
   supabase.auth.getUser().then(async ({ data }) => {
     if (!data.user) { router.push('/auth'); return; }
@@ -50,8 +57,40 @@ export default function NouvelEDL() {
       .select('id, nom, adresse')
       .eq('user_id', data.user.id)
       .then(({ data: biensData }) => setBiens(biensData || []));
+    supabase.from('customers')
+      .select('signature')
+      .eq('user_id', data.user.id)
+      .single()
+      .then(({ data: custData }) => setSignatureBailleurEnregistree(custData?.signature || null));
   });
 }, []);
+
+  function startDraw(e) {
+    setDessin(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    ctx.beginPath(); ctx.moveTo(x, y);
+  }
+  function draw(e) {
+    if (!dessin) return;
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1e40af'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    ctx.lineTo(x, y); ctx.stroke();
+    setASigneLocataire(true);
+  }
+  function stopDraw() { setDessin(false); }
+  function effacerSignature() {
+    if (canvasRef.current) canvasRef.current.getContext('2d').clearRect(0, 0, 520, 160);
+    setASigneLocataire(false);
+  }
 
   async function uploadPhoto(pieceIndex, file) {
     const ext = file.name.split('.').pop();
@@ -72,7 +111,9 @@ export default function NouvelEDL() {
 
   async function sauvegarder(statut = 'brouillon') {
   if (!form.bien_id) { alert('Sélectionnez un bien'); return; }
+  if (statut === 'finalise' && !locataireRefuse && !aSigneLocataire) { alert('Faites signer le locataire, ou cochez la case de refus.'); return; }
   setLoading(true);
+  const signatureLocataireFinale = (statut === 'finalise' && !locataireRefuse && canvasRef.current) ? canvasRef.current.toDataURL('image/png') : null;
 
   // Bail optionnel (peut ne pas exister en plan gratuit) : on récupère infos locataire si dispo
   let bailData = null;
@@ -96,6 +137,9 @@ export default function NouvelEDL() {
     compteurs,
     observations: form.observations,
     statut,
+    signature_bailleur: statut === 'finalise' ? signatureBailleurEnregistree : null,
+    signature_locataire: signatureLocataireFinale,
+    locataire_refuse_signature: statut === 'finalise' ? locataireRefuse : false,
   }).select().single();
 
   if (error) { alert('Erreur : ' + error.message); setLoading(false); return; }
@@ -164,6 +208,16 @@ export default function NouvelEDL() {
         y += 6;
       }
 
+      if (y > 230) { doc.addPage(); y = 20; }
+      y += 15;
+      ajouterSignaturesEDL(doc, y, {
+        signatureBailleur: signatureBailleurEnregistree,
+        signatureLocataire: signatureLocataireFinale,
+        locataireRefuse,
+      });
+
+      await ajouterAnnexePhotosEDL(doc, pieces);
+
       await ajouterQRFooter(doc);
 
       const nomFichier = `EDL_${form.type}_${bailData?.Biens?.nom || bienSelectionne?.nom || 'bien'}_${form.date_edl}.pdf`;
@@ -218,7 +272,7 @@ export default function NouvelEDL() {
 
         {/* Barre de progression */}
         <div style={{display:'flex', gap:8, marginBottom:32}}>
-          {['Informations', 'Pièces', 'Compteurs', 'Récapitulatif'].map((label, i) => (
+          {['Informations', 'Pièces', 'Compteurs', 'Récapitulatif', 'Signature'].map((label, i) => (
             <div key={i} style={{flex:1, textAlign:'center'}}>
               <div style={{height:4, borderRadius:999, background: i < etape ? '#2563eb' : '#e5e7eb', marginBottom:6}}></div>
               <span style={{fontSize:12, color: i < etape ? '#2563eb' : '#9ca3af', fontWeight: i + 1 === etape ? 700 : 400}}>{label}</span>
@@ -470,6 +524,52 @@ export default function NouvelEDL() {
                 style={{flex:1, background:'white', color:'#2563eb', padding:'12px', borderRadius:10, border:'1px solid #2563eb', cursor:'pointer', fontWeight:600}}
               >
                 💾 Brouillon
+              </button>
+              <button
+                onClick={() => setEtape(5)}
+                style={{flex:2, background:'#2563eb', color:'white', padding:'12px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:600, fontSize:15}}
+              >
+                Suivant → Signature
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ETAPE 5 - Signature */}
+        {etape === 5 && (
+          <div style={{background:'white', borderRadius:16, padding:32, border:'1px solid #f3f4f6'}}>
+            <h2 style={{fontSize:18, fontWeight:700, color:'#111827', marginBottom:8}}>Signature</h2>
+            <p style={{color:'#6b7280', fontSize:14, marginBottom:24}}>À faire signer sur place, sur cet appareil (tablette ou mobile).</p>
+
+            <div style={{background:'#f9fafb', borderRadius:12, padding:16, marginBottom:20}}>
+              <p style={{fontSize:13, color:'#374151', margin:0}}>
+                {signatureBailleurEnregistree
+                  ? '✅ Votre signature (propriétaire) est enregistrée et sera appliquée automatiquement.'
+                  : '⚠️ Vous n\'avez pas de signature enregistrée dans "Mon compte". Le PDF sera généré sans signature propriétaire.'}
+              </p>
+            </div>
+
+            <label style={{display:'flex', alignItems:'flex-start', gap:8, fontSize:13, color:'#374151', marginBottom:16, cursor:'pointer'}}>
+              <input type="checkbox" checked={locataireRefuse} onChange={e => { setLocataireRefuse(e.target.checked); if (e.target.checked) effacerSignature(); }} style={{marginTop:2}} />
+              Le locataire refuse de signer l'état des lieux
+            </label>
+
+            {!locataireRefuse && (
+              <div style={{marginBottom:20}}>
+                <p style={{fontSize:13, fontWeight:600, color:'#374151', marginBottom:8}}>Signature du locataire :</p>
+                <canvas ref={canvasRef} width={520} height={160}
+                  onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+                  onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
+                  style={{width:'100%', maxWidth:520, height:160, border:'2px dashed #d1d5db', borderRadius:10, touchAction:'none', background:'#fafafa'}} />
+                <button type="button" onClick={effacerSignature} style={{background:'none', border:'none', color:'#6b7280', fontSize:12, cursor:'pointer', marginTop:6}}>
+                  Effacer et recommencer
+                </button>
+              </div>
+            )}
+
+            <div style={{display:'flex', gap:12, marginTop:8}}>
+              <button onClick={() => setEtape(4)} style={{flex:1, background:'white', color:'#6b7280', padding:'12px', borderRadius:10, border:'1px solid #e5e7eb', cursor:'pointer', fontWeight:600}}>
+                ← Retour
               </button>
               <button
                 onClick={() => sauvegarder('finalise')}
