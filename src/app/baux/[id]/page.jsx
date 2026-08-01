@@ -21,6 +21,8 @@ export default function DetailBail() {
   const [relanceToast, setRelanceToast] = useState(null);
   const [sendingInvitation, setSendingInvitation] = useState(false);
   const [invitationToast, setInvitationToast] = useState(null);
+  const [sendingRelanceSignature, setSendingRelanceSignature] = useState(false);
+  const [relanceSignatureToast, setRelanceSignatureToast] = useState(null);
   // ===== MESSAGERIE =====
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -180,7 +182,39 @@ useEffect(() => {
     window.location.href = '/baux';
   }
 
-  // ===== ENVOYER RELANCE =====
+  // ===== RELANCER SIGNATURE A DISTANCE =====
+  async function relancerSignatureBail() {
+    if (!bail.token_signature) { alert('Aucune signature à distance en cours pour ce bail.'); return; }
+    if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
+    if (!confirm(`Renvoyer le lien de signature à ${bail.locataire_email} ?`)) return;
+    setSendingRelanceSignature(true);
+    try {
+      const res = await fetch('/api/send-signature-bail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: bail.token_signature,
+          locataireEmail: bail.locataire_email,
+          locataireNom: `${bail.locataire_prenom || ''} ${bail.locataire_nom || ''}`,
+          proprietaireNom: bail.bailleur_type === 'morale' ? bail.bailleur_denomination : `${bail.bailleur_prenom || ''} ${bail.bailleur_nom || ''}`,
+          bienNom: bien?.nom || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRelanceSignatureToast({ msg: '✅ Lien de signature renvoyé au locataire !', succes: true });
+      } else {
+        setRelanceSignatureToast({ msg: '❌ Erreur : ' + data.error, succes: false });
+      }
+    } catch (err) {
+      setRelanceSignatureToast({ msg: '❌ Erreur : ' + err.message, succes: false });
+    } finally {
+      setSendingRelanceSignature(false);
+      setTimeout(() => setRelanceSignatureToast(null), 4000);
+    }
+  }
+
+
   async function envoyerRelance() {
     if (!bail.locataire_email) { alert('Email du locataire manquant.'); return; }
     if (!confirm(`Envoyer une relance de loyer à ${bail.locataire_email} ?`)) return;
@@ -264,6 +298,11 @@ useEffect(() => {
       {invitationToast && (
         <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: invitationToast.succes ? '#dcfce7' : '#fef2f2', color: invitationToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${invitationToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           {invitationToast.msg}
+        </div>
+      )}
+      {relanceSignatureToast && (
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, background: relanceSignatureToast.succes ? '#dcfce7' : '#fef2f2', color: relanceSignatureToast.succes ? '#15803d' : '#dc2626', border: `1px solid ${relanceSignatureToast.succes ? '#86efac' : '#fca5a5'}`, borderRadius: 12, padding: '14px 20px', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {relanceSignatureToast.msg}
         </div>
       )}
 
@@ -498,6 +537,12 @@ useEffect(() => {
                 </button>
               )}
 
+              {bail.statut === 'attente_signature' && bail.locataire_email && (
+                <button onClick={relancerSignatureBail} disabled={sendingRelanceSignature}
+                  style={{ flex: 1, background: sendingRelanceSignature ? '#fde68a' : '#f59e0b', color: 'white', padding: 14, borderRadius: 12, border: 'none', fontWeight: 600, fontSize: 14, cursor: sendingRelanceSignature ? 'not-allowed' : 'pointer' }}>
+                  {sendingRelanceSignature ? '⏳ Envoi...' : '✉️ Relancer pour signature'}
+                </button>
+              )}
               {bail.statut === 'brouillon' && (
   <button onClick={() => window.location.href = `/baux/nouveau/${
   bail.type_bail === 'Meublé' ? 'meuble' :

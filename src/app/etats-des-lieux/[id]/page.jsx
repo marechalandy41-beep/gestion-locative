@@ -22,7 +22,7 @@ export default function DetailEDL() {
   async function chargerEDL(id) {
     const { data, error } = await supabase
       .from('EtatsDesLieux')
-      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, Biens(id, nom, adresse)), Biens:bien_id(id, nom, adresse)')
+      .select('*, bail:bail_id(id, locataire_prenom, locataire_nom, locataire_email, bailleur_prenom, bailleur_nom, bailleur_type, bailleur_denomination, Biens(id, nom, adresse)), Biens:bien_id(id, nom, adresse)')
       .eq('id', id)
       .single();
 
@@ -50,6 +50,35 @@ export default function DetailEDL() {
   function afficherToast(msg, succes = true) {
     setToastMsg({ msg, succes });
     setTimeout(() => setToastMsg(null), 4000);
+  }
+
+  async function relancerSignatureEDL() {
+    if (!edl.token_signature) { afficherToast('❌ Aucune signature à distance en cours pour cet état des lieux.', false); return; }
+    const locataireEmail = edl.bail?.locataire_email;
+    if (!locataireEmail) { afficherToast('❌ Email du locataire manquant.', false); return; }
+    if (!confirm(`Renvoyer le lien de signature à ${locataireEmail} ?`)) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/send-signature-edl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: edl.token_signature,
+          locataireEmail,
+          locataireNom: `${edl.bail?.locataire_prenom || ''} ${edl.bail?.locataire_nom || ''}`,
+          proprietaireNom: edl.bail?.bailleur_type === 'morale' ? edl.bail.bailleur_denomination : `${edl.bail?.bailleur_prenom || ''} ${edl.bail?.bailleur_nom || ''}`,
+          bienNom: edl.bail?.Biens?.nom || edl.Biens?.nom || '',
+          typeEdl: edl.type,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) afficherToast('✅ Lien de signature renvoyé au locataire !', true);
+      else afficherToast('❌ Erreur : ' + data.error, false);
+    } catch (err) {
+      afficherToast('❌ Erreur : ' + err.message, false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function couleurEtat(etat) {
@@ -300,8 +329,12 @@ export default function DetailEDL() {
               <span style={{background: edl.type === 'entree' ? '#dbeafe' : '#fce7f3', color: edl.type === 'entree' ? '#1d4ed8' : '#be185d', fontSize:13, fontWeight:700, padding:'4px 12px', borderRadius:999}}>
                 {edl.type === 'entree' ? '🔑 État des lieux d\'entrée' : '🚪 État des lieux de sortie'}
               </span>
-              <span style={{background: estFinalise ? '#dcfce7' : '#fef9c3', color: estFinalise ? '#15803d' : '#854d0e', fontSize:12, fontWeight:600, padding:'4px 10px', borderRadius:999}}>
-                {estFinalise ? '✅ Finalisé' : '📝 Brouillon'}
+              <span style={{
+                background: estFinalise ? '#dcfce7' : edl.statut === 'attente_signature' ? '#fef3c7' : '#fef9c3',
+                color: estFinalise ? '#15803d' : edl.statut === 'attente_signature' ? '#92400e' : '#854d0e',
+                fontSize:12, fontWeight:600, padding:'4px 10px', borderRadius:999
+              }}>
+                {estFinalise ? '✅ Finalisé' : edl.statut === 'attente_signature' ? '✉️ En attente de signature' : '📝 Brouillon'}
               </span>
             </div>
             <h1 style={{fontSize:22, fontWeight:700, color:'#111827'}}>{edl.bail?.Biens?.nom}</h1>
@@ -317,6 +350,15 @@ export default function DetailEDL() {
             >
               🗑 Supprimer
             </button>
+            {edl.statut === 'attente_signature' && (
+              <button
+                onClick={relancerSignatureEDL}
+                disabled={saving}
+                style={{background: saving ? '#fde68a' : '#f59e0b', color:'white', padding:'10px 20px', borderRadius:10, border:'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', gap:8}}
+              >
+                {saving ? '⏳ Envoi...' : '✉️ Relancer pour signature'}
+              </button>
+            )}
             {estFinalise ? (
               <button
                 onClick={telechargerEtSauvegarder}
