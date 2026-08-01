@@ -34,6 +34,8 @@ export async function GET(request) {
         bailleur_nom: nomBailleur,
         pieces: edl.pieces,
         nb_pieces: Array.isArray(edl.pieces) ? edl.pieces.length : 0,
+        compteurs: edl.compteurs,
+        observations: edl.observations,
       },
     })
   } catch (err) {
