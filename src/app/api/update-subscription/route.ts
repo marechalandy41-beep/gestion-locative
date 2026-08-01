@@ -7,8 +7,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const PRICE_MANUEL = 'price_1TkNf95LCX9emtMyBEftu67t'
-const PRICE_AUTOMATIQUE = 'price_1TkNdU5LCX9emtMyGZ3X1hwy'
+const PRICE_MANUEL = 'price_1Tza9b5XPgNwBzW4iVRXU2JJ'
+const PRICE_AUTOMATIQUE = 'price_1Tza9o5XPgNwBzW40ngUPcyx'
 
 export async function POST(req: NextRequest) {
   try {

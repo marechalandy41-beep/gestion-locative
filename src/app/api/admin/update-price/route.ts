@@ -8,8 +8,8 @@ const supabaseAdmin = createClient(
 )
 
 // IDs produits Stripe (le produit reste le même, seul le Price change)
-const PRODUCT_MANUEL = 'prod_UjrNEmHJV4r8wO'
-const PRODUCT_AUTOMATIQUE = 'prod_UeJMxD0Uu8Twge'
+const PRODUCT_MANUEL = 'prod_UzZIjwsI8yTuTG'
+const PRODUCT_AUTOMATIQUE = 'prod_UzZIvJinGC5hvs'
 
 export async function POST(req: NextRequest) {
   try {
