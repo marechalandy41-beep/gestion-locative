@@ -89,7 +89,9 @@ export default function SignatureBail() {
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <div style={{ background: '#2563eb', padding: '20px 24px', textAlign: 'center' }}>
-        <span style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>🏠 Ma Gestion-Locative</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'white', fontWeight: 800, fontSize: 20 }}>
+          <img src="/icon-192.png" alt="Ma Gestion-Locative" style={{ width: 28, height: 28, borderRadius: 6 }} /> Ma Gestion-Locative
+        </span>
       </div>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '40px 24px' }}>
 

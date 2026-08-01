@@ -21,7 +21,9 @@ export default function Blog() {
       {/* NAV */}
       <nav style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <a href={connecte ? '/dashboard' : '/'} style={{ fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>🏠 Ma Gestion-Locative</a>
+          <a href={connecte ? '/dashboard' : '/'} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 20, fontWeight: 800, color: '#2563eb', textDecoration: 'none' }}>
+            <img src="/icon-192.png" alt="Ma Gestion-Locative" style={{ width: 28, height: 28, borderRadius: 6 }} /> Ma Gestion-Locative
+          </a>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <a href="/attestation-gratuite" style={{ color: '#2563eb', fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>📝 Attestations gratuites</a>
             <a href={connecte ? '/compte' : '/auth'} style={{ background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>{connecte ? '👤 Mon compte' : 'Se connecter'}</a>
