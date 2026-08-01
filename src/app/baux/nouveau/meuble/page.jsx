@@ -527,7 +527,7 @@ async function envoyerVersYousign() {
       doc.save(nomFichier)
 
       const pdfBlob = doc.output('blob')
-      const cheminStorage = `baux/${user.id}/${Date.now()}_${nomFichier}`
+      const cheminStorage = `${user.id}/baux/${Date.now()}_${nomFichier}`
       const { error: uploadError } = await supabase.storage.from('documents').upload(cheminStorage, pdfBlob, { contentType: 'application/pdf' })
       let bailPdfUrl = null
       if (!uploadError) {

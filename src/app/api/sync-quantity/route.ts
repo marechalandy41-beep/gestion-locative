@@ -33,10 +33,19 @@ export async function POST(req: NextRequest) {
     const quantite = count || 0
 
     // Récupère l'abonnement actif
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerData.stripe_customer_id,
-      status: 'active',
-    })
+    let subscriptions
+    try {
+      subscriptions = await stripe.subscriptions.list({
+        customer: customerData.stripe_customer_id,
+        status: 'active',
+      })
+    } catch (stripeError: any) {
+      if (stripeError?.code === 'resource_missing') {
+        await supabaseAdmin.from('customers').update({ stripe_customer_id: 'none' }).eq('user_id', userId)
+        return NextResponse.json({ success: true, skipped: true, reason: 'customer_id invalide, reinitialise' })
+      }
+      throw stripeError
+    }
 
     if (subscriptions.data.length === 0) {
       return NextResponse.json({ success: true, skipped: true, reason: 'Aucun abonnement actif' })

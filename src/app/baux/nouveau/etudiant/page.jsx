@@ -355,7 +355,7 @@ async function envoyerVersYousign() {
       const nomFichier = `Bail_Etudiant_${sanitize(form.locataire_nom)}_${form.date_debut || 'date'}.pdf`
       doc.save(nomFichier)
       const pdfBlob = doc.output('blob')
-      const cheminStorage = `baux/${user.id}/${Date.now()}_${nomFichier}`
+      const cheminStorage = `${user.id}/baux/${Date.now()}_${nomFichier}`
       const { error: uploadError } = await supabase.storage.from('documents').upload(cheminStorage, pdfBlob, { contentType: 'application/pdf' })
       let bailPdfUrl = null
       if (!uploadError) { const { data: urlData } = supabase.storage.from('documents').getPublicUrl(cheminStorage); bailPdfUrl = urlData.publicUrl; await supabase.from('Documents').insert({ user_id: user.id, bien_id: parseInt(form.bien_id), nom_fichier: nomFichier, categorie: 'Bail', url: bailPdfUrl, storage_path: cheminStorage, annee: new Date().getFullYear() }) }

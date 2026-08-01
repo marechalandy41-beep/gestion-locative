@@ -48,7 +48,7 @@ export async function POST(request) {
     const nomBailleur = bail.bailleur_type === 'morale' ? bail.bailleur_denomination : `${bail.bailleur_prenom} ${bail.bailleur_nom}`
     const nomLocataire = bail.locataire_type === 'morale' ? bail.locataire_denomination : `${bail.locataire_prenom} ${bail.locataire_nom}`
 
-    const cheminStorage = `baux/${bail.user_id}/${Date.now()}_${nomFichier}`
+    const cheminStorage = `${bail.user_id}/baux/${Date.now()}_${nomFichier}`
     const { error: uploadErr } = await supabase.storage.from('documents').upload(cheminStorage, pdfBuffer, { contentType: 'application/pdf' })
     let bailPdfUrl = bail.bail_pdf_url || null
     if (!uploadErr) {

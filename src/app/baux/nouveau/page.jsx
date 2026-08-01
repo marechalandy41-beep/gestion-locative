@@ -39,7 +39,7 @@ export default function NouveauBail() {
     setUploading(true)
     let pdfUrl = null
     if (pdfFile) {
-      const nomFichier = `baux/${user.id}/${Date.now()}_${pdfFile.name}`
+      const nomFichier = `${user.id}/baux/${Date.now()}_${pdfFile.name}`
       const { error } = await supabase.storage.from('documents').upload(nomFichier, pdfFile)
       if (!error) {
         const { data: urlData } = supabase.storage.from('documents').getPublicUrl(nomFichier)

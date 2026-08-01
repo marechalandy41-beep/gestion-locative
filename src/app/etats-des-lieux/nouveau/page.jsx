@@ -93,7 +93,7 @@ export default function NouvelEDL() {
 
   async function uploadPhoto(pieceIndex, file) {
     const ext = file.name.split('.').pop();
-    const path = `edl/${user.id}/${Date.now()}_${pieceIndex}.${ext}`;
+    const path = `${user.id}/edl/${Date.now()}_${pieceIndex}.${ext}`;
     const { error } = await supabase.storage.from('documents').upload(path, file);
     if (error) { alert('Erreur upload : ' + error.message); return; }
     const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
