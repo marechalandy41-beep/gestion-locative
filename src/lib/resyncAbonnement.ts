@@ -29,7 +29,7 @@ async function getOrCreateCouponMoisGratuits(mois: number): Promise<string> {
 export async function resyncAbonnementUtilisateur(userId: string) {
   const { data: customerData } = await supabaseAdmin
     .from('customers')
-    .select('stripe_customer_id, plan, reduction_code_promo, reduction_parrainage, mois_gratuits')
+    .select('stripe_customer_id, plan, reduction_code_promo, reduction_parrainage, mois_gratuits, geste_commercial_pct, geste_commercial_expire_le')
     .eq('user_id', userId)
     .single()
 
@@ -57,8 +57,21 @@ export async function resyncAbonnementUtilisateur(userId: string) {
 
   const quantite = Math.max(count || 0, 0)
 
-  const reduction = Math.min((parseInt(customerData.reduction_code_promo) || 0) + (parseInt(customerData.reduction_parrainage) || 0), 15)
+  const reductionBase = Math.min((parseInt(customerData.reduction_code_promo) || 0) + (parseInt(customerData.reduction_parrainage) || 0), 15)
+
+  // Geste commercial temporaire : actif tant que sa date d'expiration n'est pas dépassée
+  const gestePct = parseInt(customerData.geste_commercial_pct as any) || 0
+  const gesteExpire = customerData.geste_commercial_expire_le ? new Date(customerData.geste_commercial_expire_le) : null
+  const gesteActif = gestePct > 0 && (!gesteExpire || gesteExpire >= new Date())
+
+  if (gestePct > 0 && !gesteActif) {
+    // Le geste commercial est expiré : on nettoie en base pour ne plus le recalculer inutilement
+    await supabaseAdmin.from('customers').update({ geste_commercial_pct: 0, geste_commercial_expire_le: null }).eq('user_id', userId)
+  }
+
+  const reduction = reductionBase + (gesteActif ? gestePct : 0)
   const moisGratuits = parseInt(customerData.mois_gratuits) || 0
+
   let discounts: { coupon: string }[] | undefined = undefined
   if (reduction > 0) {
     discounts = [{ coupon: await getOrCreateCouponPercent(reduction) }]
@@ -68,18 +81,18 @@ export async function resyncAbonnementUtilisateur(userId: string) {
 
   // Ne réécrit que si quelque chose a réellement changé (évite des appels Stripe inutiles)
   const quantiteActuelle = subscription.items.data[0].quantity
-  const aUneReduction = subscription.discounts && subscription.discounts.length > 0
-  const devraitAvoirReduction = !!discounts
+  const couponActuel = (subscription.discounts?.[0] as any)?.coupon?.id || (subscription.discounts?.[0] as any) || null
+  const couponVoulu = discounts ? discounts[0].coupon : null
 
-  if (quantiteActuelle === quantite && !!aUneReduction === devraitAvoirReduction) {
+  if (quantiteActuelle === quantite && couponActuel === couponVoulu) {
     return { success: true, skipped: true, reason: 'Déjà synchronisé' }
   }
 
   await stripe.subscriptions.update(subscription.id, {
     items: [{ id: itemId, quantity: quantite }],
     proration_behavior: 'always_invoice',
-    ...(discounts ? { discounts } : {}),
+    discounts: discounts || [],
   })
 
-  return { success: true, quantite, reduction, moisGratuits }
+  return { success: true, quantite, reduction, moisGratuits, gesteActif }
 }

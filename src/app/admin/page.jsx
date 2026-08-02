@@ -326,6 +326,24 @@ async function voirDetailCode(code) {
                     </select>
                     <button
                       onClick={async () => {
+                        const pourcentage = prompt(`Geste commercial pour ${u.email}\n\nPourcentage de réduction (ex: 50) :`)
+                        if (!pourcentage) return
+                        const mois = prompt('Pendant combien de mois ? (ex: 3)')
+                        if (!mois) return
+                        const res = await fetch('/api/admin/geste-commercial', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userId: u.id, pourcentage: parseInt(pourcentage), mois: parseInt(mois) }),
+                        })
+                        const data = await res.json()
+                        if (data.success) alert(`✅ Geste commercial de -${pourcentage}% appliqué jusqu'au ${data.expire_le}.`)
+                        else alert('Erreur : ' + data.error)
+                      }}
+                      style={{ background: '#374151', color: '#f59e0b', border: '1px solid #4b5563', borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>
+                      🎁 Geste
+                    </button>
+                    <button
+                      onClick={async () => {
                         if (!confirm(`Exporter les données RGPD de ${u.email} ?`)) return
                         const res = await fetch('/api/admin/export-rgpd', {
                           method: 'POST',
