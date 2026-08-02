@@ -48,7 +48,7 @@ export default function NouvelEDL() {
 
     setUser(data.user);
     supabase.from('Baux')
-      .select('id, locataire_prenom, locataire_nom, locataire_email, bien_id, bailleur_prenom, bailleur_nom, bailleur_type, bailleur_denomination, Biens(nom)')
+      .select('id, locataire_prenom, locataire_nom, locataire_type, locataire_denomination, locataire_email, bien_id, bailleur_prenom, bailleur_nom, bailleur_type, bailleur_denomination, Biens(nom)')
       .eq('user_id', data.user.id)
       .in('statut', ['actif', 'brouillon'])
       .then(({ data: bauxData }) => setBaux(bauxData || []));
@@ -297,7 +297,7 @@ export default function NouvelEDL() {
                   <option value="">Aucun</option>
                   {baux.filter(b => !form.bien_id || b.bien_id === parseInt(form.bien_id)).map(bail => (
                     <option key={bail.id} value={bail.id}>
-                      {bail.locataire_prenom} {bail.locataire_nom}
+                      {bail.locataire_type === 'morale' ? bail.locataire_denomination : `${bail.locataire_prenom || ''} ${bail.locataire_nom || ''}`}
                     </option>
                   ))}
                 </select>
