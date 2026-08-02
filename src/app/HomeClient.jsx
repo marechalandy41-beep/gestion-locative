@@ -143,6 +143,7 @@ export default function HomeClient({ initialSettings = {}, initialComingSoon = t
             <a href="#fonctionnalites" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Fonctionnalités</a>
             <a href="/blog" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Blog</a>
             <a href="/attestation-gratuite" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Attestations gratuites</a>
+            <a href="/simulateur-rentabilite" style={{ color: '#6b7280', fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Simulateur de rentabilité</a>
             {user ? (
               <a href="/dashboard" style={{ background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>
                 Mon espace →
@@ -172,6 +173,7 @@ export default function HomeClient({ initialSettings = {}, initialComingSoon = t
             <a href="#fonctionnalites" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Fonctionnalités</a>
             <a href="/blog" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Blog</a>
             <a href="/attestation-gratuite" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Attestations gratuites</a>
+            <a href="/simulateur-rentabilite" onClick={() => setMenuOpen(false)} style={{ color: '#374151', fontSize: 15, textDecoration: 'none', fontWeight: 500 }}>Simulateur de rentabilité</a>
             {user ? (
               <a href="/dashboard" onClick={() => setMenuOpen(false)} style={{ background: '#2563eb', color: 'white', padding: '10px 18px', borderRadius: 8, fontSize: 15, textDecoration: 'none', fontWeight: 600, textAlign: 'center' }}>
                 Mon espace →
