@@ -68,6 +68,7 @@ export async function POST(request) {
       locataire_refuse_signature: !!locataireRefuse,
       statut: 'finalise',
       token_signature: null,
+      pdf_url: urlData.publicUrl,
     }).eq('id', edl.id)
 
     await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/notifications`, {

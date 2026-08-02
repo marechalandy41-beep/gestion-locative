@@ -155,6 +155,8 @@ export default function DetailEDL() {
 
       if (insertError) throw insertError;
 
+      await supabase.from('EtatsDesLieux').update({ pdf_url: urlData.publicUrl }).eq('id', edl.id);
+
       afficherToast('✅ PDF téléchargé et sauvegardé dans le coffre-fort !', true);
 
     } catch (err) {

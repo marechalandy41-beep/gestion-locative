@@ -181,6 +181,7 @@ export default function NouvelEDL() {
           storage_path: cheminStorage,
           annee: new Date(form.date_edl).getFullYear(),
         });
+        await supabase.from('EtatsDesLieux').update({ pdf_url: urlData.publicUrl }).eq('id', edl.id);
         // Téléchargement local aussi
         doc.save(nomFichier);
       }

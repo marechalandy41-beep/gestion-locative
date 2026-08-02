@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const [historiquePaiements, setHistoriquePaiements] = useState([]);
   const [bauxEnFin, setBauxEnFin] = useState([]);
+  const [evenementsCalendrier, setEvenementsCalendrier] = useState([]);
   const [ongletActif, setOngletActif] = useState('overview');
   const [anneeFiscale, setAnneeFiscale] = useState(new Date().getFullYear());
   const [paiementsFiscal, setPaiementsFiscal] = useState([]);
@@ -81,6 +82,43 @@ export default function Dashboard() {
       return fin <= dans60jours && fin >= new Date()
     })
     setBauxEnFin(bauxFin)
+
+    // Calendrier unifié : fins de bail + révisions IRL + diagnostics à renouveler
+    const DUREE_DIAGNOSTIC = { 'DPE': 10, 'Diagnostic électricité': 3, 'Diagnostic gaz': 3 }
+    function prochaineAnniversaire(dateDebut) {
+      const debut = new Date(dateDebut)
+      const now = new Date()
+      const anniv = new Date(now.getFullYear(), debut.getMonth(), debut.getDate())
+      if (anniv < now) anniv.setFullYear(anniv.getFullYear() + 1)
+      return anniv
+    }
+    const listeEvenements = []
+    for (const bail of bauxData || []) {
+      const bienNom = bail.bien?.nom || 'Bien'
+      if (bail.date_fin) {
+        listeEvenements.push({ date: new Date(bail.date_fin), type: 'fin_bail', titre: `Fin de bail — ${bienNom}`, lien: `/baux/${bail.id}` })
+      }
+      if (bail.revision_irl === true && bail.date_debut) {
+        listeEvenements.push({ date: prochaineAnniversaire(bail.date_debut), type: 'revision', titre: `Révision IRL possible — ${bienNom}`, lien: `/baux/${bail.id}` })
+      }
+    }
+    const { data: documentsData } = await supabase
+      .from('Documents')
+      .select('id, categorie, date_document, Biens(nom)')
+      .eq('user_id', userId)
+      .eq('archive', false)
+      .in('categorie', Object.keys(DUREE_DIAGNOSTIC))
+      .not('date_document', 'is', null)
+    for (const doc of documentsData || []) {
+      const dateExp = new Date(doc.date_document)
+      dateExp.setFullYear(dateExp.getFullYear() + DUREE_DIAGNOSTIC[doc.categorie])
+      listeEvenements.push({ date: dateExp, type: 'diagnostic', titre: `${doc.categorie} à renouveler — ${doc.Biens?.nom || 'Bien'}`, lien: '/coffre-fort' })
+    }
+    setEvenementsCalendrier(
+      listeEvenements
+        .sort((a, b) => a.date - b.date)
+        .slice(0, 8)
+    )
 
     setLoading(false);
     if (bauxData && bauxData.length > 0) chargerNonLus(bauxData.map(b => b.id));
@@ -328,8 +366,8 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* GRAPHIQUE + ALERTES */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20, marginBottom: 24 }}>
+        {/* GRAPHIQUE + CALENDRIER + ALERTES */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr 1fr', gap: 20, marginBottom: 24 }}>
 
           {/* GRAPHIQUE 6 MOIS */}
           <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -344,6 +382,32 @@ useEffect(() => {
               ))}
             </div>
           </div>
+
+          {/* PETIT CALENDRIER DES ÉCHÉANCES (fins de bail + révisions IRL + diagnostics) */}
+          <a href="/calendrier" style={{ textDecoration: 'none' }}>
+            <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', height: '100%', cursor: 'pointer' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 16px' }}>📅 Calendrier</h3>
+              {evenementsCalendrier.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <p style={{ fontSize: 28, marginBottom: 8 }}>✅</p>
+                  <p style={{ color: '#9ca3af', fontSize: 13 }}>Rien à signaler</p>
+                </div>
+              ) : evenementsCalendrier.slice(0, 3).map((e, i) => {
+                const jours = Math.ceil((e.date - new Date()) / (1000 * 60 * 60 * 24))
+                const enRetard = jours < 0
+                const emoji = { fin_bail: '📄', revision: '📈', diagnostic: '🔍' }[e.type]
+                return (
+                  <div key={i} style={{ padding: '8px 0', borderTop: i > 0 ? '1px solid #f3f4f6' : 'none' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{emoji} {e.titre}</p>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: enRetard ? '#dc2626' : '#6b7280', margin: 0 }}>
+                      {enRetard ? `En retard` : `Dans ${jours} j.`} — {e.date.toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )
+              })}
+              <p style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, margin: '12px 0 0' }}>Voir tout →</p>
+            </div>
+          </a>
 
           {/* ALERTES BAUX EN FIN */}
           <div style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
