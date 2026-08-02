@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import OneSignalInit from "./components/OneSignalInit";
 
@@ -31,6 +32,17 @@ export default function RootLayout({
         <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
         <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* Google Ads - suivi des conversions */}
+        <Script async src="https://www.googletagmanager.com/gtag/js?id=AW-18366116287" strategy="afterInteractive" />
+        <Script id="google-ads-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-18366116287');
+          `}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col">
         <OneSignalInit />
