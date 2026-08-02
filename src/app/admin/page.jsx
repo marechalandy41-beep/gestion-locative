@@ -294,13 +294,21 @@ async function voirDetailCode(code) {
               {users.map((u, i) => (
                 <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
                   <span style={{ color: 'white', fontSize: 14 }}>{u.email}</span>
-                  <span style={{
-                    background: u.plan === 'automatique' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
-                    color: u.plan === 'automatique' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
-                    padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600, display: 'inline-block'
-                  }}>
-                    {u.plan || 'gratuit'}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                    <span style={{
+                      background: u.plan === 'automatique' ? '#14532d' : u.plan === 'manuel' ? '#1e3a5f' : '#374151',
+                      color: u.plan === 'automatique' ? '#4ade80' : u.plan === 'manuel' ? '#60a5fa' : '#9ca3af',
+                      padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600, display: 'inline-block'
+                    }}>
+                      {u.plan || 'gratuit'}
+                    </span>
+                    {u.gesteCommercialPct > 0 && (
+                      <span title={`Geste commercial actif jusqu'au ${new Date(u.gesteCommercialExpireLe).toLocaleDateString('fr-FR')}`}
+                        style={{ background: '#78350f', color: '#fbbf24', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, display: 'inline-block' }}>
+                        🎁 -{u.gesteCommercialPct}% jusqu'au {new Date(u.gesteCommercialExpireLe).toLocaleDateString('fr-FR')}
+                      </span>
+                    )}
+                  </div>
                   <span style={{ color: '#9ca3af', fontSize: 14 }}>{u.nbBaux}</span>
                   <span style={{ color: '#9ca3af', fontSize: 13 }}>{new Date(u.created_at).toLocaleDateString('fr-FR')}</span>
                   <div style={{ display: 'flex', gap: 6 }}>

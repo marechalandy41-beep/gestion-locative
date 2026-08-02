@@ -15,12 +15,15 @@ export async function GET() {
     const users = (authUsers?.users || []).map(u => {
       const customer = customers?.find(c => c.user_id === u.id);
       const nbBaux = baux?.filter(b => b.user_id === u.id).length || 0;
+      const gesteActif = customer?.geste_commercial_pct > 0 && (!customer?.geste_commercial_expire_le || new Date(customer.geste_commercial_expire_le) >= new Date());
       return {
         id: u.id,
         email: u.email,
         plan: customer?.plan || 'gratuit',
         nbBaux,
         created_at: u.created_at,
+        gesteCommercialPct: gesteActif ? customer.geste_commercial_pct : 0,
+        gesteCommercialExpireLe: gesteActif ? customer.geste_commercial_expire_le : null,
       }
     });
 

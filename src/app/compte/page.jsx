@@ -24,6 +24,7 @@ export default function Compte() {
   const [codeLoading, setCodeLoading] = useState(false)
   const [codeActuel, setCodeActuel] = useState(null)
   const [reductionActuelle, setReductionActuelle] = useState(0)
+  const [gesteCommercial, setGesteCommercial] = useState(null)
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
   const [reductionParrain, setReductionParrain] = useState(5)
@@ -81,12 +82,19 @@ useEffect(() => {
 
         const { data: customerData } = await supabase
           .from('customers')
-          .select('code_promo, reduction_code_promo, reduction_parrainage, code_parrainage, plan, signature')
+          .select('code_promo, reduction_code_promo, reduction_parrainage, code_parrainage, plan, signature, geste_commercial_pct, geste_commercial_expire_le')
           .eq('user_id', data.user.id)
           .single();
 
         // Réduction totale = code promo + parrainage, plafonnée à 15%
         setReductionActuelle(Math.min((parseInt(customerData?.reduction_code_promo) || 0) + (parseInt(customerData?.reduction_parrainage) || 0), 15))
+
+        // Geste commercial temporaire (s'ajoute par-dessus, peut dépasser 15%)
+        const gestePct = parseInt(customerData?.geste_commercial_pct) || 0
+        const gesteExpire = customerData?.geste_commercial_expire_le ? new Date(customerData.geste_commercial_expire_le) : null
+        if (gestePct > 0 && (!gesteExpire || gesteExpire >= new Date())) {
+          setGesteCommercial({ pct: gestePct, expireLe: customerData.geste_commercial_expire_le })
+        }
           // Compter les filleuls parrainés
         const { count: nbF } = await supabase
           .from('parrainages')
@@ -687,6 +695,17 @@ async function activerPushNotifications() {
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Mon abonnement</h3>
               <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Gérez votre abonnement — facture, moyen de paiement, résiliation.</p>
+
+              {gesteCommercial && (
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 24 }}>🎁</span>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#92400e', margin: 0 }}>Vous bénéficiez d'une réduction spéciale de -{gesteCommercial.pct}% !</p>
+                    <p style={{ fontSize: 12, color: '#b45309', margin: '2px 0 0' }}>Valable jusqu'au {new Date(gesteCommercial.expireLe).toLocaleDateString('fr-FR')}, puis retour au tarif habituel.</p>
+                  </div>
+                </div>
+              )}
+
               <button onClick={gererAbonnement} disabled={portalLoading}
                 style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, marginBottom: 28 }}>
                 {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
