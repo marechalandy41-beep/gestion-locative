@@ -36,6 +36,8 @@ export async function GET(request) {
         nb_pieces: Array.isArray(edl.pieces) ? edl.pieces.length : 0,
         compteurs: edl.compteurs,
         observations: edl.observations,
+        compteurs: edl.compteurs,
+        observations: edl.observations,
       },
     })
   } catch (err) {

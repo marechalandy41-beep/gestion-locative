@@ -118,9 +118,53 @@ export default function SignatureEDL() {
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Logement :</b> {edl.bien_nom || edl.bien_adresse}</p>
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Adresse :</b> {edl.bien_adresse}</p>
               <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>Date :</b> {edl.date_edl ? new Date(edl.date_edl).toLocaleDateString('fr-FR') : '—'}</p>
-              <p style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>{edl.nb_pieces} pièce{edl.nb_pieces > 1 ? 's' : ''}</b> renseignée{edl.nb_pieces > 1 ? 's' : ''}</p>
-              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 12 }}>Le détail complet par pièce figure dans le document que vous recevrez signé par email.</p>
             </div>
+
+            {Array.isArray(edl.pieces) && edl.pieces.length > 0 && (
+              <div style={{ background: 'white', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 12px' }}>Détail par pièce</h2>
+                {edl.pieces.map((piece, i) => (
+                  <div key={i} style={{ padding: '12px 0', borderTop: i > 0 ? '1px solid #f3f4f6' : 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: piece.commentaire || (piece.photos && piece.photos.length > 0) ? 8 : 0 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{piece.nom}</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
+                        color: piece.etat === 'Très bon état' ? '#15803d' : piece.etat === 'Bon état' ? '#1d4ed8' : piece.etat === 'État moyen' ? '#854d0e' : '#dc2626',
+                        background: piece.etat === 'Très bon état' ? '#dcfce7' : piece.etat === 'Bon état' ? '#dbeafe' : piece.etat === 'État moyen' ? '#fef9c3' : '#fef2f2',
+                      }}>{piece.etat}</span>
+                    </div>
+                    {piece.commentaire && <p style={{ fontSize: 13, color: '#6b7280', fontStyle: 'italic', margin: '0 0 8px' }}>{piece.commentaire}</p>}
+                    {Array.isArray(piece.photos) && piece.photos.length > 0 && (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {piece.photos.map((url, j) => (
+                          <a key={j} href={url} target="_blank" rel="noopener noreferrer">
+                            <img src={url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {edl.compteurs && Object.values(edl.compteurs).some(v => v) && (
+              <div style={{ background: 'white', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 12px' }}>Relevés de compteurs</h2>
+                {[['eau_froide', 'Eau froide (m³)'], ['eau_chaude', 'Eau chaude (m³)'], ['electricite', 'Électricité (kWh)'], ['gaz', 'Gaz (m³)'], ['chauffage', 'Chauffage']]
+                  .filter(([key]) => edl.compteurs[key])
+                  .map(([key, label]) => (
+                    <p key={key} style={{ fontSize: 13, color: '#374151', margin: '0 0 4px' }}><b>{label} :</b> {edl.compteurs[key]}</p>
+                  ))}
+              </div>
+            )}
+
+            {edl.observations && (
+              <div style={{ background: 'white', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 12px' }}>Observations</h2>
+                <p style={{ fontSize: 13, color: '#374151', margin: 0 }}>{edl.observations}</p>
+              </div>
+            )}
 
             <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#374151', marginBottom: 16, cursor: 'pointer' }}>
