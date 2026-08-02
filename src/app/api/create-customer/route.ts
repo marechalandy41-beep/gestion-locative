@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     const customer = await stripe.customers.create({
       email,
       name,
+      preferred_locales: ['fr'],
       metadata: { source: 'gestion-locative', user_id: userId },
     })
 

@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
+      locale: 'fr',
       ...(discounts ? { discounts } : {}),
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://magestion-locative.fr'}/dashboard?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://magestion-locative.fr'}/abonnement?cancelled=true`,
