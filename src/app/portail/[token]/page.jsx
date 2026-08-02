@@ -323,16 +323,31 @@ export default function PortailLocataire() {
                 style={{ width: '100%', minHeight: 100, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, marginBottom: 14, boxSizing: 'border-box', resize: 'vertical' }} />
 
               <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Photo (optionnel)</label>
-              <input type="file" accept="image/*" onChange={gererPhotoSignalement}
-                style={{ width: '100%', fontSize: 13, marginBottom: 14 }} />
-              {photoSignalement && (
-                <div style={{ marginBottom: 14 }}>
-                  <img src={photoSignalement} alt="Aperçu" style={{ maxWidth: 160, maxHeight: 160, borderRadius: 10, border: '1px solid #e5e7eb' }} />
-                  <button onClick={() => setPhotoSignalement(null)} style={{ display: 'block', background: 'none', border: 'none', color: '#dc2626', fontSize: 12, cursor: 'pointer', marginTop: 6, padding: 0 }}>
-                    Retirer la photo
-                  </button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+                {photoSignalement && (
+                  <div style={{ position: 'relative', width: 64, height: 64 }}>
+                    <img src={photoSignalement} alt="Aperçu" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+                    <button type="button" onClick={() => setPhotoSignalement(null)}
+                      style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#dc2626', color: 'white', border: '2px solid white', fontSize: 11, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {!photoSignalement && (
+                  <>
+                    <label style={{ width: 64, height: 64, borderRadius: 8, border: '2px dashed #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', fontSize: 20 }}>
+                      📷
+                      <span style={{ fontSize: 9, marginTop: 2 }}>Photo</span>
+                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={gererPhotoSignalement} />
+                    </label>
+                    <label style={{ width: 64, height: 64, borderRadius: 8, border: '2px dashed #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', fontSize: 20 }}>
+                      🖼️
+                      <span style={{ fontSize: 9, marginTop: 2 }}>Galerie</span>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={gererPhotoSignalement} />
+                    </label>
+                  </>
+                )}
+              </div>
 
               {erreurSignalement && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{erreurSignalement}</p>}
 
