@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
-import { ajouterQRFooter } from '@/lib/qrDocument'
+import { genererCorpsEDL } from '@/lib/pdfEdlExtras'
 import Nav from '../../components/nav'
 
 export default function DetailEDL() {
@@ -90,128 +90,19 @@ export default function DetailEDL() {
 
   async function construirePDF() {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
 
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ÉTAT DES LIEUX', pageWidth / 2, 15, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(edl.type === 'entree' ? "D'ENTRÉE" : 'DE SORTIE', pageWidth / 2, 26, { align: 'center' });
-
-    y = 50;
-    doc.setTextColor(0, 0, 0);
-
-    doc.setFillColor(243, 244, 246);
-    doc.rect(14, y - 6, pageWidth - 28, 28, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bien :', 18, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(edl.bail?.Biens?.nom || edl.Biens?.nom || '', 45, y);
-    y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Locataire :', 18, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(edl.bail ? `${edl.bail.locataire_prenom || ''} ${edl.bail.locataire_nom || ''}` : '—', 45, y);
-    y += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date :', 18, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date(edl.date_edl).toLocaleDateString('fr-FR'), 45, y);
-    y += 18;
-
-    const pieces = Array.isArray(edl.pieces) ? edl.pieces : [];
-    if (pieces.length > 0) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(37, 99, 235);
-      doc.text('ÉTAT DES PIÈCES', 14, y);
-      y += 8;
-
-      doc.setFillColor(37, 99, 235);
-      doc.rect(14, y - 5, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.text('Pièce', 18, y);
-      doc.text('État', 110, y);
-      y += 6;
-      doc.setTextColor(0, 0, 0);
-
-      pieces.forEach((piece, i) => {
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 251 : 255);
-        doc.rect(14, y - 5, pageWidth - 28, piece.commentaire ? 14 : 8, 'F');
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(piece.nom, 18, y);
-        doc.setFont('helvetica', 'bold');
-        doc.text(piece.etat, 110, y);
-        if (piece.commentaire) {
-          doc.setFont('helvetica', 'italic');
-          doc.setFontSize(9);
-          doc.setTextColor(100, 100, 100);
-          doc.text(piece.commentaire, 18, y + 7);
-          doc.setTextColor(0, 0, 0);
-          y += 14;
-        } else {
-          y += 8;
-        }
-      });
-      y += 6;
-    }
-
-    const compteurEntries = Object.entries(edl.compteurs || {}).filter(([, v]) => v);
-    if (compteurEntries.length > 0) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(37, 99, 235);
-      doc.text('RELEVÉS DE COMPTEURS', 14, y);
-      y += 8;
-      const labels = { eau_froide: 'Eau froide (m³)', eau_chaude: 'Eau chaude (m³)', electricite: 'Électricité (kWh)', gaz: 'Gaz (m³)', chauffage: 'Chauffage' };
-      compteurEntries.forEach(([key, val]) => {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${labels[key] || key} :`, 18, y);
-        doc.setFont('helvetica', 'bold');
-        doc.text(String(val), 90, y);
-        y += 7;
-      });
-      y += 6;
-    }
-
-    if (edl.observations) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(37, 99, 235);
-      doc.text('OBSERVATIONS', 14, y);
-      y += 8;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      const lines = doc.splitTextToSize(edl.observations, pageWidth - 28);
-      doc.text(lines, 14, y);
-      y += lines.length * 6 + 6;
-    }
-
-    if (y > 230) { doc.addPage(); y = 20; }
-    y += 15;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, 90, y);
-    doc.line(120, y, pageWidth - 14, y);
-    doc.setFontSize(9);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Signature du propriétaire', 14, y + 5);
-    doc.text('Signature du locataire', 120, y + 5);
-
-    await ajouterQRFooter(doc);
+    await genererCorpsEDL(doc, {
+      type: edl.type,
+      date_edl: edl.date_edl,
+      bienNom: edl.bail?.Biens?.nom || edl.Biens?.nom || '',
+      locataireNom: edl.bail ? `${edl.bail.locataire_prenom || ''} ${edl.bail.locataire_nom || ''}` : '—',
+      pieces: edl.pieces,
+      compteurs: edl.compteurs,
+      observations: edl.observations,
+      signatureBailleur: edl.signature_bailleur,
+      signatureLocataire: edl.signature_locataire,
+      locataireRefuse: edl.locataire_refuse_signature,
+    });
 
     return doc;
   }
