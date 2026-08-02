@@ -25,6 +25,7 @@ export default function DetailBail() {
   const [relanceSignatureToast, setRelanceSignatureToast] = useState(null);
   // ===== MESSAGERIE =====
   const [messages, setMessages] = useState([]);
+  const [signalements, setSignalements] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
   const [ongletBail, setOngletBail] = useState('details');
@@ -38,6 +39,7 @@ export default function DetailBail() {
   useEffect(() => {
   if (!bail) return;
   chargerMessages();
+  chargerSignalements();
 }, [bail]);
 
 useEffect(() => {
@@ -55,6 +57,24 @@ useEffect(() => {
       .eq('bail_id', parseInt(id))
       .order('created_at', { ascending: true });
     setMessages(data || []);
+  }
+
+  // ===== CHARGER SIGNALEMENTS =====
+  async function chargerSignalements() {
+    const { data } = await supabase
+      .from('signalements_locataires')
+      .select('*')
+      .eq('bail_id', parseInt(id))
+      .order('created_at', { ascending: false });
+    setSignalements(data || []);
+  }
+
+  async function changerStatutSignalement(signalementId, statut) {
+    await supabase
+      .from('signalements_locataires')
+      .update({ statut })
+      .eq('id', signalementId);
+    await chargerSignalements();
   }
 
   async function marquerLus() {
@@ -279,6 +299,7 @@ useEffect(() => {
 
   // Nombre de messages non lus du locataire
   const nbNonLus = messages.filter(m => !m.lu && m.expediteur === 'locataire').length;
+  const nbSignalementsNouveaux = signalements.filter(s => s.statut === 'nouveau').length;
 
   return (
     <main style={{ minHeight: '100vh', background: '#f9fafb' }}>
@@ -330,6 +351,7 @@ useEffect(() => {
           {[
             { id: 'details', label: '📄 Détails' },
             { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴 ${nbNonLus}` : '💬 Messages' },
+            { id: 'signalements', label: nbSignalementsNouveaux > 0 ? `🔧 Signalements 🔴 ${nbSignalementsNouveaux}` : '🔧 Signalements' },
           ].map(o => (
             <button key={o.id} onClick={() => { setOngletBail(o.id); if (o.id === 'messages') marquerLus(); }}
               style={{ background: ongletBail === o.id ? '#2563eb' : 'white', color: ongletBail === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
@@ -591,6 +613,57 @@ useEffect(() => {
               </button>
             </div>
           </>
+        )}
+
+        {/* ===== ONGLET SIGNALEMENTS ===== */}
+        {ongletBail === 'signalements' && (
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 20 }}>
+              🔧 Signalements de {bail.locataire_prenom} {bail.locataire_nom}
+            </h3>
+            {signalements.length === 0 ? (
+              <p style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>Aucun signalement pour le moment.</p>
+            ) : signalements.map((s, i) => {
+              const styleStatut = {
+                nouveau: { bg: '#fef9c3', color: '#854d0e', label: 'Nouveau' },
+                en_cours: { bg: '#dbeafe', color: '#1e40af', label: 'En cours' },
+                resolu: { bg: '#dcfce7', color: '#15803d', label: 'Résolu' },
+              }[s.statut] || { bg: '#f3f4f6', color: '#6b7280', label: s.statut };
+              return (
+                <div key={s.id} style={{ padding: '18px 0', borderTop: i > 0 ? '1px solid #f3f4f6' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>{s.titre}</p>
+                      <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>{new Date(s.created_at).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    <span style={{ background: styleStatut.bg, color: styleStatut.color, fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                      {styleStatut.label}
+                    </span>
+                  </div>
+                  {s.description && <p style={{ fontSize: 14, color: '#374151', margin: '0 0 10px' }}>{s.description}</p>}
+                  {s.photo_url && (
+                    <a href={s.photo_url} target="_blank" rel="noopener noreferrer">
+                      <img src={s.photo_url} alt="" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 10, border: '1px solid #e5e7eb', marginBottom: 10 }} />
+                    </a>
+                  )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {['nouveau', 'en_cours', 'resolu'].map(statutOption => (
+                      <button key={statutOption} onClick={() => changerStatutSignalement(s.id, statutOption)}
+                        disabled={s.statut === statutOption}
+                        style={{
+                          background: s.statut === statutOption ? '#e5e7eb' : 'white',
+                          color: s.statut === statutOption ? '#9ca3af' : '#374151',
+                          border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                          cursor: s.statut === statutOption ? 'not-allowed' : 'pointer',
+                        }}>
+                        {{ nouveau: 'Nouveau', en_cours: 'En cours', resolu: 'Résolu' }[statutOption]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
         {/* ===== ONGLET MESSAGES ===== */}

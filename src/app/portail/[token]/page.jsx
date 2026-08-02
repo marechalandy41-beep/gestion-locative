@@ -15,6 +15,14 @@ export default function PortailLocataire() {
   const [newMessage, setNewMessage] = useState('')
   const [sendingMsg, setSendingMsg] = useState(false)
   const [vuMessages, setVuMessages] = useState(false)
+  // ===== SIGNALEMENT =====
+  const [signalements, setSignalements] = useState([])
+  const [titreSignalement, setTitreSignalement] = useState('')
+  const [descriptionSignalement, setDescriptionSignalement] = useState('')
+  const [photoSignalement, setPhotoSignalement] = useState(null)
+  const [envoiSignalement, setEnvoiSignalement] = useState(false)
+  const [confirmationSignalement, setConfirmationSignalement] = useState(false)
+  const [erreurSignalement, setErreurSignalement] = useState('')
 
   useEffect(() => {
     if (token) charger()
@@ -94,6 +102,56 @@ export default function PortailLocataire() {
     setSendingMsg(false)
   }
 
+  // ===== CHARGER SIGNALEMENTS =====
+  async function chargerSignalements() {
+    if (!token) return
+    const res = await fetch(`/api/portail-signalements?token=${token}`)
+    const json = await res.json()
+    setSignalements(json.signalements || [])
+  }
+
+  function gererPhotoSignalement(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setErreurSignalement('La photo est trop lourde (5 Mo maximum).')
+      return
+    }
+    setErreurSignalement('')
+    const reader = new FileReader()
+    reader.onloadend = () => setPhotoSignalement(reader.result)
+    reader.readAsDataURL(file)
+  }
+
+  async function envoyerSignalement() {
+    setErreurSignalement('')
+    if (!titreSignalement.trim()) { setErreurSignalement('Merci de décrire brièvement le problème.'); return }
+    setEnvoiSignalement(true)
+    try {
+      const res = await fetch('/api/portail-signalement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          titre: titreSignalement.trim(),
+          description: descriptionSignalement.trim(),
+          photoBase64: photoSignalement,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Erreur lors de l\'envoi')
+      setTitreSignalement('')
+      setDescriptionSignalement('')
+      setPhotoSignalement(null)
+      setConfirmationSignalement(true)
+      await chargerSignalements()
+      setTimeout(() => setConfirmationSignalement(false), 4000)
+    } catch (e) {
+      setErreurSignalement(e.message)
+    }
+    setEnvoiSignalement(false)
+  }
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
       <p style={{ color: '#6b7280' }}>Chargement...</p>
@@ -164,8 +222,9 @@ export default function PortailLocataire() {
             { id: 'bail', label: '📄 Mon bail' },
             { id: 'edl', label: '🔑 États des lieux' },
             { id: 'messages', label: nbNonLus > 0 ? `💬 Messages 🔴` : '💬 Messages' },
+            { id: 'signalement', label: '🔧 Signaler un problème' },
           ].map(o => (
-            <button key={o.id} onClick={() => { setOnglet(o.id); if (o.id === 'messages') setVuMessages(true); }}
+            <button key={o.id} onClick={() => { setOnglet(o.id); if (o.id === 'messages') setVuMessages(true); if (o.id === 'signalement') chargerSignalements(); }}
               style={{ background: onglet === o.id ? '#2563eb' : 'white', color: onglet === o.id ? 'white' : '#6b7280', border: '1px solid #e5e7eb', padding: '8px 18px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
               {o.label}
             </button>
@@ -237,6 +296,81 @@ export default function PortailLocataire() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* SIGNALEMENT D'UN PROBLÈME */}
+        {onglet === 'signalement' && (
+          <div>
+            <div style={{ background: 'white', borderRadius: 16, padding: 24, marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>Signaler un problème</h2>
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Décrivez le problème rencontré (panne, fuite, dégradation...), avec une photo si besoin.</p>
+
+              {confirmationSignalement && (
+                <div style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                  <p style={{ color: '#15803d', fontSize: 13, margin: 0, fontWeight: 600 }}>✅ Signalement envoyé, le propriétaire a été prévenu.</p>
+                </div>
+              )}
+
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Objet du problème *</label>
+              <input value={titreSignalement} onChange={e => setTitreSignalement(e.target.value)}
+                placeholder="Ex : Fuite d'eau sous l'évier de la cuisine"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, marginBottom: 14, boxSizing: 'border-box' }} />
+
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Description (optionnel)</label>
+              <textarea value={descriptionSignalement} onChange={e => setDescriptionSignalement(e.target.value)}
+                placeholder="Donnez plus de détails si besoin (depuis quand, où précisément...)"
+                style={{ width: '100%', minHeight: 100, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, marginBottom: 14, boxSizing: 'border-box', resize: 'vertical' }} />
+
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Photo (optionnel)</label>
+              <input type="file" accept="image/*" onChange={gererPhotoSignalement}
+                style={{ width: '100%', fontSize: 13, marginBottom: 14 }} />
+              {photoSignalement && (
+                <div style={{ marginBottom: 14 }}>
+                  <img src={photoSignalement} alt="Aperçu" style={{ maxWidth: 160, maxHeight: 160, borderRadius: 10, border: '1px solid #e5e7eb' }} />
+                  <button onClick={() => setPhotoSignalement(null)} style={{ display: 'block', background: 'none', border: 'none', color: '#dc2626', fontSize: 12, cursor: 'pointer', marginTop: 6, padding: 0 }}>
+                    Retirer la photo
+                  </button>
+                </div>
+              )}
+
+              {erreurSignalement && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{erreurSignalement}</p>}
+
+              <button onClick={envoyerSignalement} disabled={envoiSignalement}
+                style={{ width: '100%', background: envoiSignalement ? '#93c5fd' : '#2563eb', color: 'white', padding: 14, borderRadius: 10, border: 'none', cursor: envoiSignalement ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 15 }}>
+                {envoiSignalement ? 'Envoi...' : '📤 Envoyer le signalement'}
+              </button>
+            </div>
+
+            {signalements.length > 0 && (
+              <div style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 12px' }}>Historique de vos signalements</h2>
+                {signalements.map((s, i) => {
+                  const styleStatut = {
+                    nouveau: { bg: '#fef9c3', color: '#854d0e', label: 'Nouveau' },
+                    en_cours: { bg: '#dbeafe', color: '#1e40af', label: 'En cours' },
+                    resolu: { bg: '#dcfce7', color: '#15803d', label: 'Résolu' },
+                  }[s.statut] || { bg: '#f3f4f6', color: '#6b7280', label: s.statut }
+                  return (
+                    <div key={s.id} style={{ padding: '14px 0', borderTop: i > 0 ? '1px solid #f3f4f6' : 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{s.titre}</p>
+                        <span style={{ background: styleStatut.bg, color: styleStatut.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, whiteSpace: 'nowrap', marginLeft: 8 }}>
+                          {styleStatut.label}
+                        </span>
+                      </div>
+                      {s.description && <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 8px' }}>{s.description}</p>}
+                      {s.photo_url && (
+                        <a href={s.photo_url} target="_blank" rel="noopener noreferrer">
+                          <img src={s.photo_url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 6 }} />
+                        </a>
+                      )}
+                      <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{new Date(s.created_at).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
