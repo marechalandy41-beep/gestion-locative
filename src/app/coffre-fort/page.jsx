@@ -54,6 +54,7 @@ export default function CoffreFort() {
   const [voirArchives, setVoirArchives] = useState(false)
   const [sousTypeSelectionne, setSousTypeSelectionne] = useState(null)
   const [vueAttestations, setVueAttestations] = useState(false)
+  const [vueFactures, setVueFactures] = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -130,6 +131,9 @@ export default function CoffreFort() {
       if (sousTypeSelectionne && (d.sous_categorie || 'Autre') !== sousTypeSelectionne) return false
       return true
     }
+    if (vueFactures) {
+      return d.categorie === 'Facture abonnement'
+    }
     if (bienSelectionne && d.bien_id !== bienSelectionne) return false
     if (categorieSelectionnee && d.categorie !== categorieSelectionnee) return false
     if (anneeSelectionnee && d.annee !== anneeSelectionnee) return false
@@ -144,6 +148,7 @@ export default function CoffreFort() {
       .map(d => d.sous_categorie || 'Autre')
   )]
   const nbAttestations = documents.filter(d => d.categorie === 'Attestation' && !d.archive).length
+  const nbFactures = documents.filter(d => d.categorie === 'Facture abonnement' && !d.archive).length
 
   const docParBien = (bienId) => documents.filter(d => d.bien_id === bienId).length
   const docParCategorie = (bienId, cat) => documents.filter(d => d.bien_id === bienId && d.categorie === cat).length
@@ -159,7 +164,7 @@ export default function CoffreFort() {
 
   const SidebarContenu = () => (
     <>
-      <div onClick={() => { setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+      <div onClick={() => { setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setVueFactures(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
         style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4,
           background: !bienSelectionne ? '#eff6ff' : 'transparent',
           color: !bienSelectionne ? '#2563eb' : '#374151',
@@ -168,7 +173,7 @@ export default function CoffreFort() {
       </div>
       {biens.map(bien => (
         <div key={bien.id}>
-          <div onClick={() => { setBienSelectionne(bien.id); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+          <div onClick={() => { setBienSelectionne(bien.id); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setVueFactures(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
 
             style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
               background: bienSelectionne === bien.id && !categorieSelectionnee ? '#eff6ff' : 'transparent',
@@ -199,7 +204,7 @@ export default function CoffreFort() {
 
 {nbAttestations > 0 && (
         <div style={{ marginTop: 4 }}>
-          <div onClick={() => { setVueAttestations(true); setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+          <div onClick={() => { setVueAttestations(true); setVueFactures(false); setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
             style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
               background: vueAttestations && !sousTypeSelectionne ? '#eff6ff' : 'transparent',
               color: vueAttestations ? '#2563eb' : '#374151',
@@ -214,6 +219,18 @@ export default function CoffreFort() {
               📂 {t} <span style={{ fontSize: 11, color: '#9ca3af' }}>({documents.filter(d => d.categorie === 'Attestation' && !d.archive && (d.sous_categorie || 'Autre') === t).length})</span>
             </div>
           ))}
+        </div>
+      )}
+
+{nbFactures > 0 && (
+        <div style={{ marginTop: 4 }}>
+          <div onClick={() => { setVueFactures(true); setBienSelectionne(null); setCategorieSelectionnee(null); setAnneeSelectionnee(null); setVueAttestations(false); setSousTypeSelectionne(null); setSidebarOuverte(false) }}
+            style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+              background: vueFactures ? '#eff6ff' : 'transparent',
+              color: vueFactures ? '#2563eb' : '#374151',
+              fontWeight: vueFactures ? 600 : 400, fontSize: 14 }}>
+            🧾 Factures d'abonnement <span style={{ fontSize: 12, color: '#9ca3af' }}>({nbFactures})</span>
+          </div>
         </div>
       )}
 
@@ -382,7 +399,7 @@ async function telechargerPuisSupprimer(doc) {
                         ) : null })()}
                       </div>
                       <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, margin: '4px 0 0' }}>
-                        🏠 {doc.Biens?.nom} — 📂 {doc.categorie} — 📅 {doc.annee}
+                        {doc.bien_id ? `🏠 ${doc.Biens?.nom} — ` : ''}📂 {doc.categorie} — 📅 {doc.annee}
                         {doc.taille ? ` — ${(doc.taille / 1024).toFixed(0)} Ko` : ''}
                       </p>
                     </div>
