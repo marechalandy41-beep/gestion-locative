@@ -113,13 +113,28 @@ export default function PortailLocataire() {
   function gererPhotoSignalement(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      setErreurSignalement('La photo est trop lourde (5 Mo maximum).')
-      return
-    }
     setErreurSignalement('')
+
     const reader = new FileReader()
-    reader.onloadend = () => setPhotoSignalement(reader.result)
+    reader.onload = (ev) => {
+      const img = new Image()
+      img.onload = () => {
+        const maxDim = 1280
+        let { width, height } = img
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim }
+          else { width = Math.round(width * (maxDim / height)); height = maxDim }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        setPhotoSignalement(canvas.toDataURL('image/jpeg', 0.75))
+      }
+      img.onerror = () => setErreurSignalement('Image illisible, merci d\'en choisir une autre.')
+      img.src = ev.target.result
+    }
+    reader.onerror = () => setErreurSignalement('Erreur de lecture du fichier.')
     reader.readAsDataURL(file)
   }
 
