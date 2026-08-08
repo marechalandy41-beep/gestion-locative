@@ -529,8 +529,8 @@ async function activerPushNotifications() {
         </div>
 
         {message && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 12, marginBottom: 16 }}>
-            <p style={{ color: '#15803d', fontSize: 13 }}>{message}</p>
+          <div style={{ background: message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#fecaca' : '#bbf7d0'}`, borderRadius: 8, padding: 12, marginBottom: 16 }}>
+            <p style={{ color: message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#991b1b' : '#15803d', fontSize: 13 }}>{message}</p>
           </div>
         )}
 
