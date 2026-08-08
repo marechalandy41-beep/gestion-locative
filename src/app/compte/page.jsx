@@ -24,11 +24,8 @@ export default function Compte() {
   const [codeLoading, setCodeLoading] = useState(false)
   const [codeActuel, setCodeActuel] = useState(null)
   const [reductionActuelle, setReductionActuelle] = useState(0)
-  const [gesteCommercial, setGesteCommercial] = useState(null)
   const [codeExpire, setCodeExpire] = useState(false)
   const [codeParrainage, setCodeParrainage] = useState('')
-  const [lienComptable, setLienComptable] = useState(null)
-  const [loadingComptable, setLoadingComptable] = useState(false)
   const [reductionParrain, setReductionParrain] = useState(5)
   const [nbFilleuls, setNbFilleuls] = useState(0)
   const [suppressionOuverte, setSuppressionOuverte] = useState(false)
@@ -54,8 +51,8 @@ export default function Compte() {
   const [changementLoading, setChangementLoading] = useState(false)
   const [prixManuel, setPrixManuel] = useState('4')
   const [prixAutomatique, setPrixAutomatique] = useState('6')
-  const [priceIdManuel, setPriceIdManuel] = useState('price_1Tza9b5XPgNwBzW4iVRXU2JJ')
-  const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1Tza9o5XPgNwBzW40ngUPcyx')
+  const [priceIdManuel, setPriceIdManuel] = useState('price_1TkNf95LCX9emtMyBEftu67t')
+  const [priceIdAutomatique, setPriceIdAutomatique] = useState('price_1TkNdU5LCX9emtMyGZ3X1hwy')
   const [planManuelBloque, setPlanManuelBloque] = useState(false)
   const [planAutoBloque, setPlanAutoBloque] = useState(false)
   const [resyncLoading, setResyncLoading] = useState(false)
@@ -82,32 +79,14 @@ useEffect(() => {
         setNom(data.user.user_metadata?.nom || '');
         setTelephone(data.user.user_metadata?.telephone || '');
 
-        supabase.from('invitations_comptable')
-          .select('token')
-          .eq('user_id', data.user.id)
-          .eq('actif', true)
-          .maybeSingle()
-          .then(({ data: invComptable }) => {
-            if (invComptable?.token) {
-              setLienComptable(`${window.location.origin}/comptable/${invComptable.token}`)
-            }
-          });
-
         const { data: customerData } = await supabase
           .from('customers')
-          .select('code_promo, reduction_code_promo, reduction_parrainage, code_parrainage, plan, signature, geste_commercial_pct, geste_commercial_expire_le')
+          .select('code_promo, reduction_code_promo, reduction_parrainage, code_parrainage, plan, signature')
           .eq('user_id', data.user.id)
           .single();
 
         // Réduction totale = code promo + parrainage, plafonnée à 15%
         setReductionActuelle(Math.min((parseInt(customerData?.reduction_code_promo) || 0) + (parseInt(customerData?.reduction_parrainage) || 0), 15))
-
-        // Geste commercial temporaire (s'ajoute par-dessus, peut dépasser 15%)
-        const gestePct = parseInt(customerData?.geste_commercial_pct) || 0
-        const gesteExpire = customerData?.geste_commercial_expire_le ? new Date(customerData.geste_commercial_expire_le) : null
-        if (gestePct > 0 && (!gesteExpire || gesteExpire >= new Date())) {
-          setGesteCommercial({ pct: gestePct, expireLe: customerData.geste_commercial_expire_le })
-        }
           // Compter les filleuls parrainés
         const { count: nbF } = await supabase
           .from('parrainages')
@@ -283,11 +262,14 @@ function demarrerDessin(e) {
     if (nouveauMdp !== confirmMdp) { setMessage('Les mots de passe ne correspondent pas'); return; }
     if (nouveauMdp.length < 6) { setMessage('Le mot de passe doit contenir au moins 6 caractères'); return; }
     const { error } = await supabase.auth.updateUser({ password: nouveauMdp });
-    if (!error) {
-      setMessage('Mot de passe modifié avec succès !');
-      setAncienMdp(''); setNouveauMdp(''); setConfirmMdp('');
-      setTimeout(() => setMessage(''), 3000);
+    if (error) {
+      setMessage('Erreur : ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
+      return;
     }
+    setMessage('Mot de passe modifié avec succès !');
+    setAncienMdp(''); setNouveauMdp(''); setConfirmMdp('');
+    setTimeout(() => setMessage(''), 3000);
   }
 
   async function supprimerCompte() {
@@ -533,41 +515,6 @@ async function activerPushNotifications() {
     padding: '10px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box'
   };
 
-  async function genererLienComptable() {
-    if (!user) return
-    setLoadingComptable(true)
-    try {
-      const res = await fetch('/api/comptable-lien', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Erreur de génération')
-      setLienComptable(`${window.location.origin}/comptable/${json.token}`)
-    } catch (e) {
-      alert('Erreur : ' + e.message)
-    }
-    setLoadingComptable(false)
-  }
-
-  async function revoquerLienComptable() {
-    if (!user) return
-    if (!confirm('Révoquer ce lien ? Votre comptable ne pourra plus y accéder tant que vous n\'en générez pas un nouveau.')) return
-    setLoadingComptable(true)
-    try {
-      await fetch('/api/comptable-lien', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      })
-      setLienComptable(null)
-    } catch (e) {
-      alert('Erreur : ' + e.message)
-    }
-    setLoadingComptable(false)
-  }
-
   if (loading) return <p style={{ textAlign: 'center', padding: 40 }}>Chargement...</p>;
 
   return (
@@ -685,6 +632,11 @@ async function activerPushNotifications() {
         {onglet === 'securite' && (
           <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 24 }}>Changer le mot de passe</h3>
+            {message && (
+              <div style={{ background: message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#fef2f2' : '#f0fdf4', border: `1px solid ${message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#fecaca' : '#bbf7d0'}`, borderRadius: 8, padding: 12, marginBottom: 16 }}>
+                <p style={{ color: message.startsWith('Erreur') || message.includes('ne correspondent') || message.includes('caractères') ? '#991b1b' : '#15803d', fontSize: 13, margin: 0 }}>{message}</p>
+              </div>
+            )}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 6 }}>Nouveau mot de passe</label>
               <input type="password" value={nouveauMdp} onChange={e => setNouveauMdp(e.target.value)} placeholder="6 caractères minimum" style={inputStyle} />
@@ -696,33 +648,6 @@ async function activerPushNotifications() {
             <button onClick={changerMotDePasse} style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
               Changer le mot de passe
             </button>
-
-            <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid #f3f4f6' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>🧮 Accès comptable</h3>
-              <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px', lineHeight: 1.6 }}>
-                Générez un lien à partager avec votre comptable : il pourra consulter votre bilan fiscal et vos documents comptables, en lecture seule, <strong>sans avoir besoin de créer de compte</strong>.
-              </p>
-              {lienComptable ? (
-                <>
-                  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                    <p style={{ fontSize: 12, color: '#374151', margin: 0, wordBreak: 'break-all', flex: 1 }}>{lienComptable}</p>
-                    <button onClick={() => { navigator.clipboard.writeText(lienComptable); alert('Lien copié !') }}
-                      style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 13, flexShrink: 0 }}>
-                      📋 Copier
-                    </button>
-                  </div>
-                  <button onClick={revoquerLienComptable} disabled={loadingComptable}
-                    style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, cursor: 'pointer', marginTop: 10, padding: 0 }}>
-                    🗑 Révoquer ce lien
-                  </button>
-                </>
-              ) : (
-                <button onClick={genererLienComptable} disabled={loadingComptable}
-                  style={{ background: loadingComptable ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', cursor: loadingComptable ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14 }}>
-                  {loadingComptable ? 'Génération...' : '🔗 Générer le lien comptable'}
-                </button>
-              )}
-            </div>
 
             <div style={{ marginTop: 40, paddingTop: 32, borderTop: '1px solid #fecaca' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#dc2626', marginBottom: 8 }}>⚠️ Zone dangereuse</h3>
@@ -770,17 +695,6 @@ async function activerPushNotifications() {
             <div style={{ background: 'white', borderRadius: 20, border: '1px solid #f3f4f6', padding: 32, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', marginBottom: 8 }}>💳 Mon abonnement</h3>
               <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Gérez votre abonnement — facture, moyen de paiement, résiliation.</p>
-
-              {gesteCommercial && (
-                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 16, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 24 }}>🎁</span>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#92400e', margin: 0 }}>Vous bénéficiez d'une réduction spéciale de -{gesteCommercial.pct}% !</p>
-                    <p style={{ fontSize: 12, color: '#b45309', margin: '2px 0 0' }}>Valable jusqu'au {new Date(gesteCommercial.expireLe).toLocaleDateString('fr-FR')}, puis retour au tarif habituel.</p>
-                  </div>
-                </div>
-              )}
-
               <button onClick={gererAbonnement} disabled={portalLoading}
                 style={{ background: portalLoading ? '#93c5fd' : '#2563eb', color: 'white', padding: '10px 24px', borderRadius: 10, border: 'none', cursor: portalLoading ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 14, marginBottom: 28 }}>
                 {portalLoading ? 'Ouverture...' : '⚙️ Gérer mon abonnement'}
