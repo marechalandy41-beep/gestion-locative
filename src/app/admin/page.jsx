@@ -440,6 +440,18 @@ async function voirDetailCode(code) {
                         style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
                         {conversationActive.statut === 'ferme' ? '🔓 Rouvrir' : '✅ Marquer résolu'}
                       </button>
+                      <button onClick={async () => {
+                        if (!confirm('Supprimer définitivement cette conversation et tous ses messages ?')) return
+                        await fetch('/api/admin/conversations', {
+                          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: conversationActive.id }),
+                        })
+                        setConversations(prev => prev.filter(c => c.id !== conversationActive.id))
+                        setConversationActive(null)
+                      }}
+                        style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, marginLeft: 8 }}>
+                        🗑️ Supprimer
+                      </button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {messagesConversation.map(m => (
@@ -543,6 +555,18 @@ async function voirDetailCode(code) {
                         }}
                           style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
                           {contactActif.statut === 'traite' ? '🔓 Rouvrir' : '✅ Marquer traité'}
+                        </button>
+                        <button onClick={async () => {
+                          if (!confirm('Supprimer définitivement ce message ?')) return
+                          await fetch('/api/admin/contacts', {
+                            method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: contactActif.id }),
+                          })
+                          setContactsMessages(prev => prev.filter(c => c.id !== contactActif.id))
+                          setContactActif(null)
+                        }}
+                          style={{ background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                          🗑️ Supprimer
                         </button>
                       </div>
                     </div>

@@ -21,3 +21,11 @@ export async function POST(request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(request) {
+  const { id } = await request.json()
+  if (!id) return NextResponse.json({ error: 'id manquant' }, { status: 400 })
+  const { error } = await supabase.from('contacts').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
+}
