@@ -21,6 +21,8 @@ export default function Admin() {
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
   const [conversations, setConversations] = useState([])
+  const [contactsMessages, setContactsMessages] = useState([])
+  const [contactActif, setContactActif] = useState(null)
   const [conversationActive, setConversationActive] = useState(null)
   const [messagesConversation, setMessagesConversation] = useState([])
   const [nouveauMessageAdmin, setNouveauMessageAdmin] = useState('')
@@ -91,6 +93,10 @@ export default function Admin() {
     const resConvs = await fetch('/api/admin/conversations')
     const dataConvs = await resConvs.json()
     if (dataConvs.conversations) setConversations(dataConvs.conversations)
+
+    const resContacts = await fetch('/api/admin/contacts')
+    const dataContacts = await resContacts.json()
+    if (dataContacts.messages) setContactsMessages(dataContacts.messages)
 
     const resArticles = await fetch('/api/admin/articles')
     const dataArticles = await resArticles.json()
@@ -189,6 +195,7 @@ async function voirDetailCode(code) {
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'users', label: '👥 Utilisateurs' },
     { id: 'messages', label: `📬 Messages${conversations.filter(c => c.statut === 'ouvert').length > 0 ? ` (${conversations.filter(c => c.statut === 'ouvert').length})` : ''}` },
+    { id: 'contacts', label: `📇 Contacts${contactsMessages.filter(c => c.statut === 'non_lu').length > 0 ? ` (${contactsMessages.filter(c => c.statut === 'non_lu').length})` : ''}` },
     { id: 'parametres', label: '⚙️ Paramètres' },
     { id: 'codes', label: '🎟️ Codes promo' },
     { id: 'liens', label: '🔗 Liens rapides' },
@@ -467,7 +474,93 @@ async function voirDetailCode(code) {
           </div>
         )}
 
-        {/* CODES PROMO */}
+        {/* CONTACTS — formulaire public du site */}
+        {onglet === 'contacts' && (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>📇 Contacts ({contactsMessages.length})</h2>
+            <div style={{ display: 'flex', gap: 16, height: 600 }}>
+
+              {/* LISTE */}
+              <div style={{ width: 320, background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {contactsMessages.length === 0 ? (
+                    <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: 20 }}>Aucun message reçu via le formulaire de contact.</p>
+                  ) : contactsMessages.map(c => (
+                    <div key={c.id} onClick={async () => {
+                      setContactActif(c)
+                      if (c.statut === 'non_lu') {
+                        await fetch('/api/admin/contacts', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: c.id, statut: 'lu' }),
+                        })
+                        setContactsMessages(prev => prev.map(x => x.id === c.id ? { ...x, statut: 'lu' } : x))
+                      }
+                    }}
+                      style={{ padding: 14, borderBottom: '1px solid #374151', cursor: 'pointer', background: contactActif?.id === c.id ? '#374151' : c.statut === 'non_lu' ? '#1e3a5f' : 'transparent' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: 13 }}>{c.nom}</span>
+                        <span style={{
+                          background: c.statut === 'non_lu' ? '#1e3a5f' : c.statut === 'traite' ? '#166534' : '#374151',
+                          color: c.statut === 'non_lu' ? '#60a5fa' : c.statut === 'traite' ? '#4ade80' : '#9ca3af',
+                          padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 600
+                        }}>
+                          {c.statut === 'non_lu' ? 'Non lu' : c.statut === 'traite' ? 'Traité' : 'Lu'}
+                        </span>
+                      </div>
+                      <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 4px' }}>{c.sujet || 'Sans sujet'}</p>
+                      <p style={{ color: '#6b7280', fontSize: 11, margin: 0 }}>{new Date(c.created_at).toLocaleDateString('fr-FR')} à {new Date(c.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* DÉTAIL */}
+              <div style={{ flex: 1, background: '#1f2937', borderRadius: 14, border: '1px solid #374151', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {!contactActif ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p style={{ color: '#9ca3af', fontSize: 14 }}>Sélectionnez un message</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ padding: 16, borderBottom: '1px solid #374151', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ color: 'white', fontWeight: 600, fontSize: 14, margin: 0 }}>{contactActif.nom} — {contactActif.email}</p>
+                        <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0' }}>{contactActif.sujet || 'Sans sujet'}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <a href={`mailto:${contactActif.email}?subject=RE: ${contactActif.sujet || 'Votre message'}`}
+                          style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none' }}>
+                          ✉️ Répondre par email
+                        </a>
+                        <button onClick={async () => {
+                          const nouveauStatut = contactActif.statut === 'traite' ? 'lu' : 'traite'
+                          await fetch('/api/admin/contacts', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: contactActif.id, statut: nouveauStatut }),
+                          })
+                          setContactActif(prev => ({ ...prev, statut: nouveauStatut }))
+                          setContactsMessages(prev => prev.map(c => c.id === contactActif.id ? { ...c, statut: nouveauStatut } : c))
+                        }}
+                          style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                          {contactActif.statut === 'traite' ? '🔓 Rouvrir' : '✅ Marquer traité'}
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                      <div style={{ background: '#111827', borderRadius: 12, padding: 18, border: '1px solid #374151' }}>
+                        <p style={{ color: 'white', fontSize: 13, whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.6 }}>{contactActif.message}</p>
+                      </div>
+                      <p style={{ color: '#6b7280', fontSize: 11, marginTop: 12 }}>
+                        Reçu le {new Date(contactActif.created_at).toLocaleDateString('fr-FR')} à {new Date(contactActif.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {contactActif.user_id ? ' — envoyé depuis un compte connecté' : ' — visiteur non connecté'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {onglet === 'codes' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

@@ -29,7 +29,7 @@ export async function POST(request) {
     // Email à toi
     await resend.emails.send({
       from: 'Ma Gestion-Locative <noreply@magestion-locative.fr>',
-      to: ['ton@email.fr'],
+      to: ['contact@magestion-locative.fr'],
       subject: `[Contact] ${sujet || 'Nouveau message'} — ${nom}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
