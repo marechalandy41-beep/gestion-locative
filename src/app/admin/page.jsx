@@ -23,6 +23,7 @@ export default function Admin() {
   const [conversations, setConversations] = useState([])
   const [contactsMessages, setContactsMessages] = useState([])
   const [contactActif, setContactActif] = useState(null)
+  const [emailCopie, setEmailCopie] = useState(null)
   const [conversationActive, setConversationActive] = useState(null)
   const [messagesConversation, setMessagesConversation] = useState([])
   const [nouveauMessageAdmin, setNouveauMessageAdmin] = useState('')
@@ -540,9 +541,21 @@ async function voirDetailCode(code) {
                         <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0' }}>{contactActif.sujet || 'Sans sujet'}</p>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => {
+                          navigator.clipboard.writeText(contactActif.email)
+                          setEmailCopie(contactActif.id)
+                          setTimeout(() => setEmailCopie(null), 2000)
+                        }}
+                          style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                          {emailCopie === contactActif.id ? '✅ Adresse copiée !' : '📋 Copier l\'adresse'}
+                        </button>
+                        <a href="https://zimbra1.mail.ovh.net/modern/" target="_blank" rel="noopener noreferrer"
+                          style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none' }}>
+                          ↗️ Ouvrir Zimbra
+                        </a>
                         <a href={`mailto:${contactActif.email}?subject=RE: ${contactActif.sujet || 'Votre message'}`}
-                          style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none' }}>
-                          ✉️ Répondre par email
+                          style={{ background: '#374151', color: '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, textDecoration: 'none' }}>
+                          ✉️ Client mail par défaut
                         </a>
                         <button onClick={async () => {
                           const nouveauStatut = contactActif.statut === 'traite' ? 'lu' : 'traite'
