@@ -20,6 +20,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
+  const [rechercheUtilisateur, setRechercheUtilisateur] = useState('')
+  const [triUtilisateur, setTriUtilisateur] = useState('date_desc')
   const [conversations, setConversations] = useState([])
   const [contactsMessages, setContactsMessages] = useState([])
   const [contactActif, setContactActif] = useState(null)
@@ -293,14 +295,43 @@ async function voirDetailCode(code) {
         {onglet === 'users' && (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 24 }}>Utilisateurs ({users.length})</h2>
+
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <input value={rechercheUtilisateur} onChange={e => setRechercheUtilisateur(e.target.value)}
+                placeholder="🔍 Rechercher par email..."
+                style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'white', outline: 'none' }} />
+              <select value={triUtilisateur} onChange={e => setTriUtilisateur(e.target.value)}
+                style={{ background: '#1f2937', color: 'white', border: '1px solid #374151', borderRadius: 10, padding: '10px 14px', fontSize: 13, cursor: 'pointer' }}>
+                <option value="date_desc">📅 Plus récents d'abord</option>
+                <option value="date_asc">📅 Plus anciens d'abord</option>
+                <option value="alpha_asc">🔤 Email A → Z</option>
+                <option value="alpha_desc">🔤 Email Z → A</option>
+                <option value="baux_desc">🏠 Plus de baux d'abord</option>
+              </select>
+            </div>
+
+            {(() => {
+              const usersFiltres = users
+                .filter(u => u.email.toLowerCase().includes(rechercheUtilisateur.toLowerCase()))
+                .sort((a, b) => {
+                  if (triUtilisateur === 'date_desc') return new Date(b.created_at) - new Date(a.created_at)
+                  if (triUtilisateur === 'date_asc') return new Date(a.created_at) - new Date(b.created_at)
+                  if (triUtilisateur === 'alpha_asc') return a.email.localeCompare(b.email)
+                  if (triUtilisateur === 'alpha_desc') return b.email.localeCompare(a.email)
+                  if (triUtilisateur === 'baux_desc') return (b.nbBaux || 0) - (a.nbBaux || 0)
+                  return 0
+                })
+              return usersFiltres.length === 0 ? (
+                <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: 40 }}>Aucun utilisateur ne correspond à cette recherche.</p>
+              ) : (
             <div style={{ background: '#1f2937', borderRadius: 14, border: '1px solid #374151', overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', background: '#374151', padding: '12px 20px' }}>
                 {['Email', 'Plan', 'Baux actifs', 'Inscrit le', 'Action'].map(h => (
                   <span key={h} style={{ color: '#9ca3af', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{h}</span>
                 ))}
               </div>
-              {users.map((u, i) => (
-                <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
+              {usersFiltres.map((u, i) => (
+                <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: i < usersFiltres.length - 1 ? '1px solid #374151' : 'none', alignItems: 'center' }}>
                   <span style={{ color: 'white', fontSize: 14 }}>{u.email}</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                     <span style={{
@@ -381,6 +412,8 @@ async function voirDetailCode(code) {
                 </div>
               ))}
             </div>
+              )
+            })()}
           </div>
         )}
 
